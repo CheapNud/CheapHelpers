@@ -1,4 +1,4 @@
-﻿namespace CheapHelpers
+﻿namespace CheapHelpers.Models
 {
 	public interface IEntityCode : IEntityId
 	{

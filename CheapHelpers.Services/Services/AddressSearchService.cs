@@ -20,12 +20,12 @@ namespace CheapHelpers.Services
         private readonly string _clientid;
         private readonly string _endpoint;
 
-        public async Task<List<CheapHelpers.Result>> FuzzyAddressSearch(string searchtext, CancellationToken token = default)
+        public async Task<List<Result>> FuzzyAddressSearch(string searchtext, CancellationToken token = default)
         {
             return await FuzzyAddressSearch(searchtext, default, default, token);
         }
 
-        public async Task<List<CheapHelpers.Result>> FuzzyAddressSearch(string searchtext, string countrycodes = "BE,NL", bool typeahead = true, CancellationToken token = default)
+        public async Task<List<Result>> FuzzyAddressSearch(string searchtext, string countrycodes = "BE,NL", bool typeahead = true, CancellationToken token = default)
         {
             if (string.IsNullOrWhiteSpace(searchtext))
             {
@@ -49,7 +49,7 @@ namespace CheapHelpers.Services
                         {
                             // Read response as a string.
                             string rawresult = await response.Content.ReadAsStringAsync(token);
-                            var resultobj = rawresult.FromJson<CheapHelpers.Root>();
+                            var resultobj = rawresult.FromJson<Root>();
                             return resultobj.Results;
                         }
                     }

@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.AI.Translation.Document" Version="2.0.0" />
+    <PackageReference Include="Azure.Identity" Version="1.14.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.24.0" />
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
+    <PackageReference Include="Duende.IdentityModel" Version="7.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Connections" Version="1.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.5" />
+    <PackageReference Include="Microsoft.Graph" Version="5.78.0" />
+    <PackageReference Include="MimeMapping" Version="3.1.0" />
+    <PackageReference Include="morelinq" Version="4.4.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.8" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
+    <PackageReference Include="Twilio" Version="7.11.1" />
+    <PackageReference Include="UblSharp" Version="1.1.1" />
+    <PackageReference Include="ZXing.Net" Version="0.16.10" />
+    <PackageReference Include="ZXing.Net.Bindings.ImageSharp.V3" Version="0.16.17" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CheapHelpers.Models\CheapHelpers.Models.csproj" />
+    <ProjectReference Include="..\CheapHelpers\CheapHelpers.csproj" />
+  </ItemGroup>
+
+</Project>

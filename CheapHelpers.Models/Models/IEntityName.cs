@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CheapHelpers
+namespace CheapHelpers.Models
 {
     public interface IEntityName : IEntityCode
     {

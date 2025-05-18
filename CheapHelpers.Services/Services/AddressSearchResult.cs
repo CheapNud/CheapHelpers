@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace CheapHelpers
+namespace CheapHelpers.Services
 {
 	public class Root
 	{

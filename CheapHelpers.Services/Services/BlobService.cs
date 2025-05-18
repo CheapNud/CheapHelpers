@@ -1,5 +1,6 @@
 ﻿using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using CheapHelpers.Models;
 using MimeMapping;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;

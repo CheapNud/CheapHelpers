@@ -15,12 +15,6 @@ namespace CheapHelpers.Services
 {
     public class BarcodeService : IBarcodeService
     {
-        public BarcodeService()
-        {
-        }
-
-        //public event System.Action<string> BarcodeScanned = delegate { };
-
         private event Func<string, Task> Handler;
 
         event Func<string, Task> IBarcodeService.BarcodeScanned

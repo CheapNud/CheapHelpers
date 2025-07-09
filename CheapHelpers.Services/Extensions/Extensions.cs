@@ -38,22 +38,34 @@ namespace CheapHelpers.Services
             }
         }
 
-        public static Task SendDeveloperAsync(this IEmailService emailSender, string body)
+        private const string DeveloperInfoSubject = "Developer info";
+        private const string DeveloperExceptionSubject = "Developer info exception";
+
+        /// <summary>
+        /// Sends a developer notification email with custom body content
+        /// </summary>
+        public static Task SendDeveloperAsync(this IEmailService emailSender, string body) =>
+            emailSender.SendEmailAsync(emailSender.Developers, DeveloperInfoSubject, body);
+
+        /// <summary>
+        /// Sends a developer notification email with exception details
+        /// </summary>
+        public static Task SendDeveloperAsync(this IEmailService emailSender, Exception ex) =>
+            emailSender.SendEmailAsync(emailSender.Developers, DeveloperExceptionSubject, ex.ToHtmlString());
+
+        /// <summary>
+        /// Sends a developer notification email with exception details and additional parameters
+        /// </summary>
+        public static Task SendDeveloperAsync(this IEmailService emailSender, Exception ex, string[] parameters)
         {
-            return emailSender.SendEmailAsync(emailSender.Developers, "Developer info", body);
+            var formattedParameters = parameters.Select(param => $"<p>{param}</p>");
+            var parametersHtml = string.Join("", formattedParameters);
+            var body = $"{ex.ToHtmlString()}<br><p>Parameters:</p><br><br><br>{parametersHtml}";
+
+            return emailSender.SendEmailAsync(emailSender.Developers, DeveloperExceptionSubject, body);
         }
 
-        public static Task SendDeveloperAsync(this IEmailService emailSender, Exception ex)
-        {
-            return emailSender.SendEmailAsync(emailSender.Developers, "Developer info exception", ex.ToHtmlString());
-        }
-
-        public static Task SendDeveloperAsync(this IEmailService emailSender, Exception ex, string[] param)
-        {
-            param.ForEach(x => x = $@"<p>{x}</p>");
-            return emailSender.SendEmailAsync(emailSender.Developers, "Developer info exception", $@"{ex.ToHtmlString()}<br>parameters</p><br /><br /><br />{string.Concat(param)}");
-        }
-
+        //TODO: really old code, should be replcaced with templating engine
         public static string ToHtmlString(this Exception ex)
         {
             StringBuilder errormessage = new();

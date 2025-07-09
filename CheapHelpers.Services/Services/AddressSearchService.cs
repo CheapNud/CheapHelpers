@@ -1,65 +1,84 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using CheapHelpers.Models;
 using System.Diagnostics;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace CheapHelpers.Services
+namespace CheapHelpers.Services;
+
+public class AddressSearchService(string apiKey, string clientId, string endpoint, HttpClient? httpClient = null) : IDisposable
 {
-    public class AddressSearchService
+    private const string ApiVersion = "1.0";
+    private const string DefaultCountryCodes = "BE,NL";
+    private const bool DefaultTypeahead = true;
+    private const string ClientIdHeader = "x-ms-client-id";
+
+    private readonly HttpClient _httpClient = httpClient ?? new HttpClient();
+    private readonly bool _shouldDisposeHttpClient = httpClient is null;
+
+    public string ApiKey { get; } = apiKey;
+    public string ClientId { get; } = clientId;
+    public string Endpoint { get; } = endpoint;
+
+    /// <summary>
+    /// Performs fuzzy address search with default country codes (BE,NL) and typeahead enabled
+    /// </summary>
+    public async Task<List<Result>> FuzzyAddressSearchAsync(string searchText, CancellationToken cancellationToken = default) =>
+        await FuzzyAddressSearchAsync(searchText, DefaultCountryCodes, DefaultTypeahead, cancellationToken);
+
+    /// <summary>
+    /// Performs fuzzy address search with specified parameters
+    /// </summary>
+    public async Task<List<Result>> FuzzyAddressSearchAsync(
+        string searchText,
+        string countryCodes = DefaultCountryCodes,
+        bool typeahead = DefaultTypeahead,
+        CancellationToken cancellationToken = default)
     {
-        public AddressSearchService(string key, string clientid, string endpoint)
+        ArgumentException.ThrowIfNullOrWhiteSpace(searchText);
+
+        try
         {
-            _apikey = key;
-            _clientid = clientid;
-            _endpoint = endpoint;
+            var requestUri = BuildRequestUri(searchText, countryCodes, typeahead);
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+            request.Headers.Add(ClientIdHeader, ClientId);
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
+
+            var rawResult = await response.Content.ReadAsStringAsync(cancellationToken);
+            var resultObject = rawResult.FromJson<Root>();
+
+            Debug.WriteLine($"Address search completed successfully. Query: '{searchText}', Results: {resultObject.Results?.Count ?? 0}");
+
+            return resultObject.Results ?? [];
         }
-
-        private readonly string _apikey;
-        private readonly string _clientid;
-        private readonly string _endpoint;
-
-        public async Task<List<Result>> FuzzyAddressSearch(string searchtext, CancellationToken token = default)
+        catch (HttpRequestException ex)
         {
-            return await FuzzyAddressSearch(searchtext, default, default, token);
+            Debug.WriteLine($"HTTP error during address search: {ex.Message}");
+            throw;
         }
-
-        public async Task<List<Result>> FuzzyAddressSearch(string searchtext, string countrycodes = "BE,NL", bool typeahead = true, CancellationToken token = default)
+        catch (TaskCanceledException ex)
         {
-            if (string.IsNullOrWhiteSpace(searchtext))
-            {
-                throw new ArgumentException($"'{nameof(searchtext)}' cannot be null or whitespace.", nameof(searchtext));
-            }
+            Debug.WriteLine($"Address search request was cancelled: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Unexpected error during address search: {ex.Message}");
+            throw;
+        }
+    }
 
-            try
-            {
-                // Input and output languages are defined as parameters.
-                string route = $@"/fuzzy/json?api-version=1.0&query={searchtext}&countryset={countrycodes}&typeahead={typeahead}&subscription-key={_apikey}";
-                using (var client = new HttpClient())
-                {
-                    using (var request = new HttpRequestMessage())
-                    {
-                        // Build the request.
-                        request.Method = HttpMethod.Get;
-                        request.Headers.Add("x-ms-client-id", _clientid);
-                        request.RequestUri = new Uri(_endpoint + route);
-                        // Send the request and get response.
-                        using (HttpResponseMessage response = await client.SendAsync(request, token).ConfigureAwait(false))
-                        {
-                            // Read response as a string.
-                            string rawresult = await response.Content.ReadAsStringAsync(token);
-                            var resultobj = rawresult.FromJson<Root>();
-                            return resultobj.Results;
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-                throw;
-            }
+    private Uri BuildRequestUri(string searchText, string countryCodes, bool typeahead)
+    {
+        var query = $"api-version={ApiVersion}&query={Uri.EscapeDataString(searchText)}&countryset={countryCodes}&typeahead={typeahead.ToString().ToLowerInvariant()}&subscription-key={ApiKey}";
+        return new Uri($"{Endpoint}/fuzzy/json?{query}");
+    }
+
+    public void Dispose()
+    {
+        if (_shouldDisposeHttpClient)
+        {
+            _httpClient?.Dispose();
         }
     }
 }

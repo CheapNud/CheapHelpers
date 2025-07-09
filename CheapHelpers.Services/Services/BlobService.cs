@@ -4,269 +4,259 @@ using CheapHelpers.Models;
 using MimeMapping;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Threading.Tasks;
 
-namespace CheapHelpers.Services
+namespace CheapHelpers.Services;
+
+/// <summary>
+/// Service for managing files in Azure blob containers
+/// </summary>
+public class BlobService(BlobServiceClient blobServiceClient)
 {
+    private const string PlaceholderImageUrl = "https://www.mecamgroup.com/noimageplaceholder.jpg";
+    private const string PlaceholderImageFilename = "noimageplaceholder.jpg";
+    private const int DefaultSasExpiryMinutes = 10;
+
     /// <summary>
-    /// Service for retrieving images from Azure blob containers
-    /// BE CAREFULL: Get image returns an image string FOR BLAZOR, fix this.
-    /// Put this in the main lib, and make GetFileByteArray return the byte stream of that image, same for base64, make a method for this as well
-    /// Uri should repsond with a non available uri.
+    /// Gets the URI string for a file, returns placeholder if file doesn't exist
     /// </summary>
-    public class BlobService(BlobServiceClient blobServiceClient)
+    public string GetFile(string? filename, BlobContainers blobContainer) =>
+        string.IsNullOrWhiteSpace(filename) ? PlaceholderImageFilename : GetFileUri(filename, blobContainer).AbsoluteUri;
+
+    /// <summary>
+    /// Gets the URI string for a file attachment, returns placeholder if file doesn't exist
+    /// </summary>
+    public string GetFile(FileAttachment? file, BlobContainers container) =>
+        file?.FileName is null ? PlaceholderImageFilename : GetFileUri(file.FileName, container).AbsoluteUri;
+
+    /// <summary>
+    /// Gets a readable stream for a file from blob storage
+    /// </summary>
+    public async Task<Stream?> GetFileStreamAsync(string? filename, BlobContainers blobContainer)
     {
-        public string GetFile(string filename, BlobContainers blobcontainer)
-        {
-            if (string.IsNullOrWhiteSpace(filename))
-            {
-                return "noimageplaceholder.jpg";
-            }
+        if (string.IsNullOrWhiteSpace(filename))
+            return null;
 
-            return GetFileUri(filename, blobcontainer).AbsoluteUri;
+        try
+        {
+            var client = GetClient(filename, blobContainer);
+            // Using DownloadStreamingAsync instead of OpenReadAsync to avoid the "multiple calls" issue
+            // mentioned in the original comments. This approach is more reliable with the current Azure SDK.
+            var response = await client.DownloadStreamingAsync();
+            return response.Value.Content;
         }
-
-        public async Task<byte[]> GetFileByteArray(string filename, BlobContainers blobcontainer)
+        catch (Azure.RequestFailedException ex)
         {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(filename))
-                {
-                    return null;
-                }
-
-                var client = GetClient(filename, blobcontainer);
-
-                try
-                {
-                    var result = await client.DownloadContentAsync();
-                    return result.Value.Content.ToArray();
-                }
-                catch (Azure.RequestFailedException rfex)
-                {
-                    Debug.WriteLine(rfex.InnerException);
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-                throw;
-            }
+            Debug.WriteLine($"Failed to download blob stream '{filename}' from container '{blobContainer}': {ex.Message}");
+            return null;
         }
-
-        /// <summary>
-        /// Do not use anymore, worked only in old library
-        /// </summary>
-        /// <param name="filename"></param>
-        /// <param name="blobcontainer"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public async Task<Stream> GetFileStream(string filename, string blobcontainer)
+        catch (Exception ex)
         {
-            throw new NotImplementedException();
-
-            //windows.storage.common vs WindowsAZure.Storage (deprecated)
-            //deprecated library has a single working functional call, the new library always throws an error AFTER multiple calls, WTF microshit???? -> wait on fix, download content to ram for now.
-            //i used to use the derprecated package but they are deprecated for a reason.
-
-            //if (string.IsNullOrWhiteSpace(filename))
-            //{
-            //    return null;
-            //}
-
-
-            // This is one common way of creating a CloudStorageAccount object. You can get 
-            // your Storage Account Name and Key from the Azure Portal.
-            //StorageCredentials credentials = new StorageCredentials(, accountKey);
-            //CloudStorageAccount storageAccount = new CloudStorageAccount(credentials, useHttps: true);
-            //CloudStorageAccount storageAccount = CloudStorageAccount.Parse(CloudConfigurationManager.GetSetting("StorageConnectionString"));
-            //CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
-            // Another common way to create a CloudStorageAccount object is to use a connection string:
-            // CloudStorageAccount storageAccount = CloudStorageAccount.Parse(connectionString);
-            //CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
-            // This call creates a local CloudBlobContainer object, but does not make a network call
-            // to the Azure Storage Service. The container on the service that this object represents may
-            // or may not exist at this point. If it does exist, the properties will not yet have been
-            // popluated on this object.
-            // This makes an actual service call to the Azure Storage service. Unless this call fails,
-            // the container will have been created.
-            //await blobContainer.CreateAsync();
-            // This also does not make a service call, it only creates a local object.
-            //CloudBlockBlob blockblob = container.GetBlockBlobReference(new CloudBlockBlob(blobUri).Name);
-            // //return client.Uri.AbsoluteUri;
-            //var result = await client.DownloadContentAsync();
-            //return Convert.ToBase64String(result.Value.Content.ToArray());
-
-            //var client = GetClient(filename, blobcontainer);
-            //client.SetHttpHeaders(new BlobHttpHeaders { ContentType = "application/octet-stream" });
-            //return await client.OpenReadAsync();
-
-            //CloudBlobContainer blobContainer = _cloudBlobClient.GetContainerReference(blobcontainer);
-            //CloudBlockBlob blob = blobContainer.GetBlockBlobReference(filename);
-            //return await blob.OpenReadAsync();
+            Debug.WriteLine($"Unexpected error downloading blob stream '{filename}': {ex.Message}");
+            throw;
         }
+    }
 
-        public string GetFile(FileAttachment file, BlobContainers container)
+    /// <summary>
+    /// Downloads file content as byte array, returns null if file doesn't exist
+    /// </summary>
+    public async Task<byte[]?> GetFileByteArrayAsync(string? filename, BlobContainers blobContainer)
+    {
+        if (string.IsNullOrWhiteSpace(filename))
+            return null;
+
+        try
         {
-            if (file is null)
-            {
-                return "noimageplaceholder.jpg";
-            }
-
-            if (string.IsNullOrWhiteSpace(file.FileName))
-            {
-                return "noimageplaceholder.jpg";
-            }
-
-            return GetFileUri(file, container).AbsoluteUri;
+            var client = GetClient(filename, blobContainer);
+            var result = await client.DownloadContentAsync();
+            return result.Value.Content.ToArray();
         }
-
-        public async Task UploadFile(string filepath, string filename, BlobContainers container, bool overwrite = true)
+        catch (Azure.RequestFailedException ex)
         {
-            if (filepath is null)
-            {
-                throw new ArgumentNullException(nameof(filepath));
-            }
-
-            if (string.IsNullOrWhiteSpace(filename))
-            {
-                filename = Path.GetFileName(filepath);
-            }
-
-            using (var data = File.OpenRead(filepath))
-            {
-                await UploadFile(data, filename, container, overwrite);
-            }
+            Debug.WriteLine($"Failed to download blob '{filename}' from container '{blobContainer}': {ex.Message}");
+            return null;
         }
-
-        public async Task UploadFile(Stream stream, string filename, BlobContainers container, bool overwrite = true)
+        catch (Exception ex)
         {
-            if (stream is null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            Debug.WriteLine($"Unexpected error downloading blob '{filename}': {ex.Message}");
+            throw;
+        }
+    }
 
+    /// <summary>
+    /// Uploads a file from local filesystem to blob storage
+    /// </summary>
+    public async Task UploadFileAsync(string filepath, string? filename, BlobContainers container, bool overwrite = true)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filepath);
+
+        filename ??= Path.GetFileName(filepath);
+
+        using var data = File.OpenRead(filepath);
+        await UploadFileAsync(data, filename, container, overwrite);
+    }
+
+    /// <summary>
+    /// Uploads a file from stream to blob storage
+    /// </summary>
+    public async Task UploadFileAsync(Stream stream, string filename, BlobContainers container, bool overwrite = true)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentException.ThrowIfNullOrWhiteSpace(filename);
+
+        try
+        {
             var client = GetClient(filename, container);
             await client.UploadAsync(stream, overwrite);
+            Debug.WriteLine($"Successfully uploaded blob '{filename}' to container '{container}'");
         }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to upload blob '{filename}' to container '{container}': {ex.Message}");
+            throw;
+        }
+    }
 
-        public async Task DeleteFile(string filename, BlobContainers container)
+    /// <summary>
+    /// Deletes a file from blob storage
+    /// </summary>
+    public async Task DeleteFileAsync(string filename, BlobContainers container)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filename);
+
+        try
         {
             var client = GetClient(filename, container);
-            await client.DeleteIfExistsAsync(Azure.Storage.Blobs.Models.DeleteSnapshotsOption.IncludeSnapshots);
+            await client.DeleteIfExistsAsync(DeleteSnapshotsOption.IncludeSnapshots);
+            Debug.WriteLine($"Successfully deleted blob '{filename}' from container '{container}'");
         }
-
-        public async Task CopyFile(string filename, BlobContainers sourcecontainer, BlobContainers targetcontainer, string newfilename = null, bool deleteOriginal = true)
+        catch (Exception ex)
         {
-            var sourceclient = GetClient(filename, sourcecontainer);
+            Debug.WriteLine($"Failed to delete blob '{filename}' from container '{container}': {ex.Message}");
+            throw;
+        }
+    }
 
-            string targetfilename = newfilename ?? filename;
-            var targetclient = GetClient(targetfilename, targetcontainer);
+    /// <summary>
+    /// Copies a file between blob containers
+    /// </summary>
+    public async Task CopyFileAsync(string filename, BlobContainers sourceContainer, BlobContainers targetContainer,
+        string? newFilename = null, bool deleteOriginal = true)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filename);
 
-            await targetclient.StartCopyFromUriAsync(sourceclient.Uri);
+        try
+        {
+            var sourceClient = GetClient(filename, sourceContainer);
+            var targetFilename = newFilename ?? filename;
+            var targetClient = GetClient(targetFilename, targetContainer);
+
+            await targetClient.StartCopyFromUriAsync(sourceClient.Uri);
+
             if (deleteOriginal)
             {
-                await sourceclient.DeleteAsync(Azure.Storage.Blobs.Models.DeleteSnapshotsOption.IncludeSnapshots);
+                await sourceClient.DeleteAsync(DeleteSnapshotsOption.IncludeSnapshots);
             }
-        }
 
-        public Uri GetFileUri(FileAttachment fa, BlobContainers container)
+            Debug.WriteLine($"Successfully copied blob from '{sourceContainer}/{filename}' to '{targetContainer}/{targetFilename}'");
+        }
+        catch (Exception ex)
         {
-            return GetFileUri(fa?.FileName, container);
+            Debug.WriteLine($"Failed to copy blob '{filename}' from '{sourceContainer}' to '{targetContainer}': {ex.Message}");
+            throw;
         }
+    }
 
-        /// <summary>
-        /// will not throw but returns placeholder
-        /// </summary>
-        /// <param name="filename"></param>
-        /// <param name="container"></param>
-        /// <returns></returns>
-        public Uri GetFileUri(string filename, BlobContainers container, DateTimeOffset expires = default)
+    /// <summary>
+    /// Gets a SAS URI for a file, returns placeholder URI if file doesn't exist
+    /// </summary>
+    public Uri GetFileUri(FileAttachment? fileAttachment, BlobContainers container) =>
+        GetFileUri(fileAttachment?.FileName, container);
+
+    /// <summary>
+    /// Gets a SAS URI for a file, returns placeholder URI if file doesn't exist
+    /// </summary>
+    public Uri GetFileUri(string? filename, BlobContainers container, DateTimeOffset expires = default)
+    {
+        if (string.IsNullOrWhiteSpace(filename))
+            return new Uri(PlaceholderImageUrl);
+
+        if (expires == default)
+            expires = DateTimeOffset.UtcNow.AddMinutes(DefaultSasExpiryMinutes);
+
+        try
         {
-            if (string.IsNullOrWhiteSpace(filename))
-            {
-                return new Uri("https://www.mecamgroup.com/noimageplaceholder.jpg");
-            }
-
-            if (expires == default)
-            {
-                expires = DateTimeOffset.UtcNow.AddMinutes(10);
-            }
-
-            try
-            {
-                var mime = MimeUtility.GetMimeMapping(filename);
-                var client = GetClient(filename, container);
-                client.SetHttpHeaders(new BlobHttpHeaders { ContentType = mime });
-                return client.GenerateSasUri(Azure.Storage.Sas.BlobSasPermissions.Read, expires);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-                return new Uri("https://www.mecamgroup.com/noimageplaceholder.jpg");
-            }
+            var mimeType = MimeUtility.GetMimeMapping(filename);
+            var client = GetClient(filename, container);
+            client.SetHttpHeaders(new BlobHttpHeaders { ContentType = mimeType });
+            return client.GenerateSasUri(Azure.Storage.Sas.BlobSasPermissions.Read, expires);
         }
-
-        private BlobClient GetClient(string filename, BlobContainers container)
+        catch (Exception ex)
         {
-            if (string.IsNullOrWhiteSpace(filename))
+            Debug.WriteLine($"Failed to generate SAS URI for blob '{filename}': {ex.Message}");
+            return new Uri(PlaceholderImageUrl);
+        }
+    }
+
+    /// <summary>
+    /// Deletes a file attachment from blob storage
+    /// </summary>
+    public async Task DeleteAttachmentAsync(FileAttachment attachment, BlobContainers container)
+    {
+        ArgumentNullException.ThrowIfNull(attachment);
+        await DeleteFileAsync(attachment.FileName, container);
+    }
+
+    /// <summary>
+    /// Deletes multiple file attachments from blob storage
+    /// </summary>
+    public async Task DeleteAttachmentsAsync(IEnumerable<FileAttachment> attachments, BlobContainers container)
+    {
+        ArgumentNullException.ThrowIfNull(attachments);
+
+        foreach (var file in attachments)
+        {
+            await DeleteFileAsync(file.FileName, container);
+        }
+    }
+
+    /// <summary>
+    /// Downloads image, auto-orients it, and overwrites the existing image
+    /// </summary>
+    public async Task CorrectImageOrientationAsync(string filename, BlobContainers container)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filename);
+
+        try
+        {
+            var imageBytes = await GetFileByteArrayAsync(filename, container);
+            if (imageBytes is null)
             {
-                return null;
+                Debug.WriteLine($"Cannot correct orientation: blob '{filename}' not found in container '{container}'");
+                return;
             }
 
-            var blobcontainer = blobServiceClient.GetBlobContainerClient(container.StringValue());
-
-            //var validationOptions = new DownloadTransferValidationOptions
-            //{
-            //    AutoValidateChecksum = true,
-            //    ChecksumAlgorithm = StorageChecksumAlgorithm.Auto
-            //};
-
-            //BlobDownloadToOptions downloadOptions = new BlobDownloadToOptions()
-            //{
-            //    TransferValidation = validationOptions
-            //};
-
-            var client = blobcontainer.GetBlobClient(filename);
-            return client;
-        }
-
-        public async Task DeleteAttachment(FileAttachment attachment, BlobContainers container)
-        {
-            await DeleteFile(attachment.FileName, container);
-        }
-
-        public async Task DeleteAttachments(IEnumerable<FileAttachment> attachments, BlobContainers container)
-        {
-            foreach (var file in attachments)
+            using var outStream = new MemoryStream();
+            using (var image = SixLabors.ImageSharp.Image.Load(imageBytes))
             {
-                await DeleteFile(file.FileName, container);
+                image.Mutate(x => x.AutoOrient());
+                await image.SaveAsJpegAsync(outStream);
             }
-        }
 
-        /// <summary>
-        /// downloads, auto-orients image, overwrites existing image
-        /// </summary>
-        /// <param name="filename"></param>
-        /// <param name="blobcontainer"></param>
-        /// <returns></returns>
-        public async Task CorrectImageOrientation(string filename, BlobContainers container)
-        {
-            var img = await GetFileByteArray(filename, container);
-            using (MemoryStream outStream = new())
-            {
-                using (SixLabors.ImageSharp.Image image = SixLabors.ImageSharp.Image.Load(img))
-                {
-                    image.Mutate(x => x.AutoOrient());
-                    await image.SaveAsJpegAsync(outStream);
-                }
-                await UploadFile(outStream, filename, container);
-            }
+            outStream.Position = 0;
+            await UploadFileAsync(outStream, filename, container);
+            Debug.WriteLine($"Successfully corrected orientation for image '{filename}'");
         }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to correct image orientation for '{filename}': {ex.Message}");
+            throw;
+        }
+    }
+
+    private BlobClient GetClient(string filename, BlobContainers container)
+    {
+        var blobContainer = blobServiceClient.GetBlobContainerClient(container.StringValue());
+        return blobContainer.GetBlobClient(filename);
     }
 }

@@ -3,152 +3,144 @@ using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using Microsoft.Graph.Models.ODataErrors;
 using MoreLinq;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace CheapHelpers.Services
+namespace CheapHelpers.Services;
+
+public class GraphService(
+    string fromName,
+    string fromAddress,
+    string clientId,
+    string tenantId,
+    string clientSecret,
+    bool inDev,
+    string[] developers) : IEmailService
 {
-	public class GraphService : IEmailService
-	{
-		public GraphService(string fromName, string fromAddress, string clientid, string tenantid, string clientsecret, bool indev, string[] devs)
-		{
-			FromName = fromName;
-			FromAddress = fromAddress;
-			TenantId = tenantid;
-			ClientId = clientid;
-			ClientSecret = clientsecret;
-			InDev = indev;
-			Developers = devs;
-			_clientSecretCredential = new ClientSecretCredential(tenantId: TenantId, clientId: ClientId, clientSecret: ClientSecret);
-			_appClient = new GraphServiceClient(_clientSecretCredential, new[] { "https://graph.microsoft.com/.default" });
-		}
+    private const string DefaultScope = "https://graph.microsoft.com/.default";
+    private const string FileAttachmentType = "#microsoft.graph.fileAttachment";
 
-		private readonly ClientSecretCredential _clientSecretCredential;
-		private readonly GraphServiceClient _appClient;
+    private readonly ClientSecretCredential _clientSecretCredential = new(
+        tenantId: tenantId,
+        clientId: clientId,
+        clientSecret: clientSecret);
 
-		public string FromName { get; }
-		public string FromAddress { get; }
-		public string TenantId { get; }
-		public string ClientId { get; }
-		public string ClientSecret { get; }
-		public bool InDev { get; }
-		public string[] Developers { get; }
+    private readonly GraphServiceClient _appClient = new(
+        new ClientSecretCredential(tenantId, clientId, clientSecret),
+        [DefaultScope]);
 
-		public async Task SendEmailAsync(string recipient, string subject, string body, (string, byte[])[] attachments = null, string[] cc = null, string[] bcc = null)
-		{
-			await SendEmailAsAsync(FromAddress, new string[] { recipient }, subject, body, attachments, cc, bcc);
-		}
+    public string FromName { get; } = fromName;
+    public string FromAddress { get; } = fromAddress;
+    public string TenantId { get; } = tenantId;
+    public string ClientId { get; } = clientId;
+    public string ClientSecret { get; } = clientSecret;
+    public bool InDev { get; } = inDev;
+    public string[] Developers { get; } = developers;
 
-		public async Task SendEmailAsync(string[] recipients, string subject, string body, (string, byte[])[] attachments = null, string[] cc = null, string[] bcc = null)
-		{
-			await SendEmailAsAsync(FromAddress, recipients, subject, body, attachments, cc, bcc);
-		}
+    public async Task SendEmailAsync(string recipient, string subject, string body,
+        (string FileName, byte[] Content)[] attachments = null, string[]? cc = null, string[]? bcc = null)
+    {
+        await SendEmailAsAsync(FromAddress, [recipient], subject, body, attachments, cc, bcc);
+    }
 
-		public async Task SendEmailAsAsync(string from, string recipient, string subject, string body, (string, byte[])[] attachments = null, string[] cc = null, string[] bcc = null)
-		{
-			await SendEmailAsAsync(from, new string[] { recipient }, subject, body, attachments, cc, bcc);
-		}
+    public async Task SendEmailAsync(string[] recipients, string subject, string body,
+        (string FileName, byte[] Content)[] attachments = null, string[]? cc = null, string[]? bcc = null)
+    {
+        await SendEmailAsAsync(FromAddress, recipients, subject, body, attachments, cc, bcc);
+    }
 
-		public async Task SendEmailAsAsync(string from, string[] recipients, string subject, string body, (string, byte[])[] attachments = null, string[] cc = null, string[] bcc = null)
-		{
-            ArgumentNullException.ThrowIfNull(recipients);
-			ArgumentNullException.ThrowIfNullOrWhiteSpace(subject);
-            ArgumentNullException.ThrowIfNullOrWhiteSpace(body);
+    public async Task SendEmailAsAsync(string from, string recipient, string subject, string body,
+        (string FileName, byte[] Content)[] attachments = null, string[]? cc = null, string[]? bcc = null)
+    {
+        await SendEmailAsAsync(from, [recipient], subject, body, attachments, cc, bcc);
+    }
 
-			if (string.IsNullOrWhiteSpace(from))
-			{
-				from = FromAddress;
-			}
+    public async Task SendEmailAsAsync(string? from, string[] recipients, string subject, string body,
+        (string FileName, byte[] Content)[]? attachments = null, string[]? cc = null, string[]? bcc = null)
+    {
+        ArgumentNullException.ThrowIfNull(recipients);
+        ArgumentException.ThrowIfNullOrWhiteSpace(subject);
+        ArgumentException.ThrowIfNullOrWhiteSpace(body);
 
-			if (InDev)
-			{
-				Debug.WriteLine($@"overwriting recipients in mail with developers, original recipients: {recipients.ToDelimitedString(",")}, cc: {cc?.ToDelimitedString(",")}, bcc: {bcc?.ToDelimitedString(",")}");
-				recipients = Developers;
-				bcc = null;
-				cc = null;
-			}
+        from = string.IsNullOrWhiteSpace(from) ? FromAddress : from;
 
-			try
-			{
+        var (finalRecipients, finalCc, finalBcc) = ApplyDevOverrides(recipients, cc, bcc);
 
-				var requestBody = new Microsoft.Graph.Users.Item.SendMail.SendMailPostRequestBody
-				{
-					Message = new Message()
-					{
-						Subject = subject,
-						Body = new ItemBody
-						{
-							ContentType = Microsoft.Graph.Models.BodyType.Html,
-							Content = body
-						},
-						ToRecipients = recipients.Select(x => new Recipient
-						{
-							EmailAddress = new EmailAddress
-							{
-								Address = x
-							},
-						}).ToList(),
-						CreatedDateTime = DateTime.UtcNow,
-						//Sender = new Recipient { EmailAddress = new EmailAddress { Address = "info@mecam.be", Name = "Info" } },
-					},
-					SaveToSentItems = true
-				};
+        try
+        {
+            var requestBody = CreateSendMailRequest(subject, body, finalRecipients, finalCc, finalBcc, attachments);
+            await _appClient.Users[from].SendMail.PostAsync(requestBody);
 
-				if (bcc != null)
-				{
-					requestBody.Message.BccRecipients = bcc?.Select(x => new Recipient
-					{
-						EmailAddress = new EmailAddress
-						{
-							Address = x
-						}
-					}).ToList();
-				}
+            Debug.WriteLine($"Successfully sent mail from {from} to {finalRecipients.ToDelimitedString(",")} with subject '{subject}'");
+        }
+        catch (ODataError ex)
+        {
+            Debug.WriteLine($"Graph API Error - Code: {ex.Error?.Code}, Message: {ex.Error?.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Unexpected error sending email: {ex.Message}");
+            throw;
+        }
+    }
 
-				if (cc != null)
-				{
-					requestBody.Message.CcRecipients = cc?.Select(x => new Recipient
-					{
-						EmailAddress = new EmailAddress
-						{
-							Address = x
-						}
-					}).ToList();
-				}
+    private (string[] recipients, string[]? cc, string[]? bcc) ApplyDevOverrides(
+        string[] recipients, string[]? cc, string[]? bcc)
+    {
+        if (!InDev)
+            return (recipients, cc, bcc);
 
-				if (attachments != null)
-				{
-					requestBody.Message.Attachments = attachments.Select(x => new Microsoft.Graph.Models.Attachment
-					{
-						OdataType = "#microsoft.graph.fileAttachment",
-						Name = x.Item1,
-						AdditionalData = new Dictionary<string, object>()
-							{
-								{
-									"contentBytes", x.Item2
-								},
-							}
-					}).ToList();
-				}
+        Debug.WriteLine($"Development mode: Overriding recipients. Original - To: {recipients.ToDelimitedString(",")}, CC: {cc?.ToDelimitedString(",")}, BCC: {bcc?.ToDelimitedString(",")}");
+        return (Developers, null, null);
+    }
 
-				await _appClient.Users[from].SendMail.PostAsync(requestBody);
+    private static Microsoft.Graph.Users.Item.SendMail.SendMailPostRequestBody CreateSendMailRequest(
+        string subject, string body, string[] recipients, string[]? cc, string[]? bcc,
+        (string FileName, byte[] Content)[]? attachments)
+    {
+        var requestBody = new Microsoft.Graph.Users.Item.SendMail.SendMailPostRequestBody
+        {
+            Message = new Message
+            {
+                Subject = subject,
+                Body = new ItemBody
+                {
+                    ContentType = BodyType.Html,
+                    Content = body
+                },
+                ToRecipients = CreateRecipients(recipients),
+                CreatedDateTime = DateTime.UtcNow,
+            },
+            SaveToSentItems = true
+        };
 
-				Debug.WriteLine($@"Succesfully sent mail from {from} to {recipients.ToDelimitedString(",")} with subject {subject}");
-			}
-			catch (ODataError ex)
-			{
-				Debug.WriteLine(ex.Error.Code);
-				Debug.WriteLine(ex.Error.Message);
-				throw;
-			}
-			catch (Exception ex)
-			{
-				Debug.WriteLine(ex.Message);
-				throw;
-			}
-		}
-	}
+        if (cc?.Length > 0)
+            requestBody.Message.CcRecipients = CreateRecipients(cc);
+
+        if (bcc?.Length > 0)
+            requestBody.Message.BccRecipients = CreateRecipients(bcc);
+
+        if (attachments?.Length > 0)
+            requestBody.Message.Attachments = CreateAttachments(attachments);
+
+        return requestBody;
+    }
+
+    private static List<Recipient> CreateRecipients(string[] addresses) =>
+        addresses.Select(address => new Recipient
+        {
+            EmailAddress = new EmailAddress { Address = address }
+        }).ToList();
+
+    private static List<Microsoft.Graph.Models.Attachment> CreateAttachments(
+        (string FileName, byte[] Content)[] attachments) =>
+        attachments.Select(attachment => new Microsoft.Graph.Models.Attachment
+        {
+            OdataType = FileAttachmentType,
+            Name = attachment.FileName,
+            AdditionalData = new Dictionary<string, object>
+            {
+                { "contentBytes", attachment.Content }
+            }
+        }).ToList();
 }

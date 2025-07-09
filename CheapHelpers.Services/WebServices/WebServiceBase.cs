@@ -1,265 +1,431 @@
 ﻿using Duende.IdentityModel.Client;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
-using Newtonsoft.Json;
-using System;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
-using System.IO;
 using System.Net;
-using System.Net.Cache;
-using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json;
 
-namespace CheapHelpers.WebServices
+namespace CheapHelpers.WebServices;
+
+public abstract class WebServiceBase : IWebServiceBase, IAsyncDisposable
 {
-    public abstract class WebServiceBase : IWebServiceBase
+    // Configuration Constants
+    private const int DefaultTimeoutMinutes = 5;
+    private const int MaxRetryAttempts = 3;
+    private const int RetryDelayMs = 1000;
+    private const string JsonContentType = "application/json";
+    private const int TokenCacheExpiryMinutes = 55; // Cache tokens for 55 minutes (typical tokens are 60min)
+
+    // Cache Keys
+    private const string AccessTokenCacheKey = "AccessToken";
+
+    private readonly HttpClient _httpClient;
+    private readonly WebServiceOptions _options;
+    private readonly IMemoryCache _tokenCache;
+    private readonly ILogger<WebServiceBase>? _logger;
+    private readonly bool _shouldDisposeHttpClient;
+
+    public WebServiceBase(
+        string serviceName,
+        HttpClient? httpClient = null,
+        WebServiceOptions? options = null,
+        ILogger<WebServiceBase>? logger = null)
     {
-        public WebServiceBase(string servicename, HttpClient httpClient, bool createHub = false)
+        ArgumentException.ThrowIfNullOrWhiteSpace(serviceName);
+
+        ServiceName = serviceName;
+        _httpClient = httpClient ?? new HttpClient();
+        _shouldDisposeHttpClient = httpClient is null;
+        _options = options ?? new WebServiceOptions();
+        _logger = logger;
+        _tokenCache = new MemoryCache(new MemoryCacheOptions());
+
+        // Configure HttpClient timeout
+        _httpClient.Timeout = TimeSpan.FromMinutes(_options.TimeoutMinutes);
+
+        _logger?.LogInformation("Created WebService for '{ServiceName}'. API URL: {ApiUrl}", ServiceName, ApiUrl);
+
+        // Initialize SignalR if requested
+        if (_options.CreateHub)
+        {
+            InitializeSignalRHub();
+        }
+    }
+
+    public string ServiceName { get; }
+    public HubConnection? HubConnection { get; private set; }
+    public string Endpoint => _options.BaseEndpoint;
+    public string HubUrl => $"{Endpoint}hub/{ServiceName}/";
+    public string ApiEndpoint => $"{Endpoint}api/";
+    public string ApiUrl => $"{ApiEndpoint}{ServiceName}/";
+
+    #region SignalR Management
+
+    public async Task StartHubAsync(CancellationToken cancellationToken = default)
+    {
+        if (HubConnection is null)
+        {
+            _logger?.LogWarning("Cannot start hub - HubConnection not initialized");
+            return;
+        }
+
+        try
+        {
+            await HubConnection.StartAsync(cancellationToken);
+            _logger?.LogInformation("Started SignalR connection on hub: {HubUrl}", HubUrl);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to start SignalR connection on hub: {HubUrl}", HubUrl);
+            throw;
+        }
+    }
+
+    public async Task StopHubAsync(CancellationToken cancellationToken = default)
+    {
+        if (HubConnection is null) return;
+
+        try
+        {
+            await HubConnection.StopAsync(cancellationToken);
+            _logger?.LogInformation("Stopped SignalR connection on hub: {HubUrl}", HubUrl);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error stopping SignalR connection: {Error}", ex.Message);
+        }
+    }
+
+    #endregion
+
+    #region HTTP Methods with Retry Logic
+
+    public async Task<TResponse> GetAsync<TResponse>(
+        string endpoint = "",
+        CancellationToken cancellationToken = default) where TResponse : class
+    {
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            using var response = await _httpClient.GetAsync($"{ApiUrl}{endpoint}", cancellationToken);
+            return await ProcessResponseAsync<TResponse>(response, cancellationToken);
+        }, cancellationToken);
+    }
+
+    public async Task<TResponse> PostAsync<TResponse>(
+        object? content = null,
+        string endpoint = "",
+        CancellationToken cancellationToken = default) where TResponse : class
+    {
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            using var httpContent = CreateJsonContent(content);
+            using var response = await _httpClient.PostAsync($"{ApiUrl}{endpoint}", httpContent, cancellationToken);
+            return await ProcessResponseAsync<TResponse>(response, cancellationToken);
+        }, cancellationToken);
+    }
+
+    public async Task<TResponse> PutAsync<TResponse>(
+        object? content = null,
+        string endpoint = "",
+        CancellationToken cancellationToken = default) where TResponse : class
+    {
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            using var httpContent = CreateJsonContent(content);
+            using var response = await _httpClient.PutAsync($"{ApiUrl}{endpoint}", httpContent, cancellationToken);
+            return await ProcessResponseAsync<TResponse>(response, cancellationToken);
+        }, cancellationToken);
+    }
+
+    public async Task<TResponse> PatchAsync<TResponse>(
+        object? content = null,
+        string endpoint = "",
+        CancellationToken cancellationToken = default) where TResponse : class
+    {
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            using var httpContent = CreateJsonContent(content);
+            using var response = await _httpClient.PatchAsync($"{ApiUrl}{endpoint}", httpContent, cancellationToken);
+            return await ProcessResponseAsync<TResponse>(response, cancellationToken);
+        }, cancellationToken);
+    }
+
+    public async Task<TResponse> DeleteAsync<TResponse>(
+        string endpoint = "",
+        CancellationToken cancellationToken = default) where TResponse : class
+    {
+        return await ExecuteWithRetryAsync(async () =>
+        {
+            using var response = await _httpClient.DeleteAsync($"{ApiUrl}{endpoint}", cancellationToken);
+            return await ProcessResponseAsync<TResponse>(response, cancellationToken);
+        }, cancellationToken);
+    }
+
+    public async Task DeleteAsync(string endpoint = "", CancellationToken cancellationToken = default)
+    {
+        await ExecuteWithRetryAsync(async () =>
+        {
+            using var response = await _httpClient.DeleteAsync($"{ApiUrl}{endpoint}", cancellationToken);
+            response.EnsureSuccessStatusCode();
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    #endregion
+
+    #region Authentication
+
+    public async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken = default)
+    {
+        // Check cache first
+        if (_tokenCache.TryGetValue(AccessTokenCacheKey, out string? cachedToken) && !string.IsNullOrEmpty(cachedToken))
+        {
+            _logger?.LogDebug("Retrieved access token from cache");
+            return cachedToken;
+        }
+
+        return await RequestAccessTokenAsync(cancellationToken);
+    }
+
+    private async Task<string> RequestAccessTokenAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var tokenRequest = new ClientCredentialsTokenRequest
+            {
+                Address = _options.TokenEndpoint,
+                ClientId = _options.ClientId,
+                ClientSecret = _options.ClientSecret,
+                Scope = _options.Scope,
+            };
+
+            var tokenResponse = await _httpClient.RequestClientCredentialsTokenAsync(tokenRequest, cancellationToken);
+
+            if (tokenResponse.IsError)
+            {
+                var error = $"Token request failed: {tokenResponse.Error} - {tokenResponse.ErrorDescription}";
+                _logger?.LogError("Token request failed: {Error}", error);
+                throw new UnauthorizedAccessException(error);
+            }
+
+            // Cache the token (expires 5 minutes before actual expiry for safety)
+            var cacheExpiry = TimeSpan.FromMinutes(TokenCacheExpiryMinutes);
+            _tokenCache.Set(AccessTokenCacheKey, tokenResponse.AccessToken, cacheExpiry);
+
+            _logger?.LogInformation("Successfully obtained and cached access token (expires in {Minutes} minutes)", TokenCacheExpiryMinutes);
+            return tokenResponse.AccessToken!;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to obtain access token");
+            throw;
+        }
+    }
+
+    public async Task SetBearerTokenAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_options.UseAuthentication) return;
+
+        var token = await GetAccessTokenAsync(cancellationToken);
+        _httpClient.SetBearerToken(token);
+    }
+
+    #endregion
+
+    #region Private Helper Methods
+
+    private void InitializeSignalRHub()
+    {
+        try
+        {
+            var hubBuilder = new HubConnectionBuilder()
+                .WithUrl(HubUrl, _options.SignalRTransportType);
+
+            if (_options.EnableSignalRLogging)
+            {
+                hubBuilder.ConfigureLogging(builder =>
+                {
+                    // Use the same logging configuration as the injected logger
+                    // The consumer should configure logging in their DI container
+                    builder.SetMinimumLevel(LogLevel.Debug);
+                });
+            }
+
+            HubConnection = hubBuilder.Build();
+            _logger?.LogInformation("Initialized SignalR hub connection: {HubUrl}", HubUrl);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to initialize SignalR hub: {Error}", ex.Message);
+            throw;
+        }
+    }
+
+    private async Task<TResponse> ExecuteWithRetryAsync<TResponse>(
+        Func<Task<TResponse>> operation,
+        CancellationToken cancellationToken = default)
+    {
+        var attempt = 0;
+
+        while (attempt < MaxRetryAttempts)
         {
             try
             {
-                ServiceName = servicename;
-                _httpclient = httpClient;
+                // Set authentication if required
+                await SetBearerTokenAsync(cancellationToken);
 
-                Debug.WriteLine("Created Api Url: " + ApiUrl);
-                if (createHub)
-                {
-                    Debug.WriteLine("Created Hub Url: " + HubUrl);
-                    //as long as the server version < 2012 use longpolling! websockets is not implemented on server 2008R2 & IIS 7.5, yet signalr will try to use websockets (automatic fallback doesn work)
-                    HubConnection = new HubConnectionBuilder().WithUrl(HubUrl, HttpTransportType.WebSockets).Build();
-                }
+                return await operation();
             }
-            catch (Exception ex)
+            catch (HttpRequestException ex) when (attempt < MaxRetryAttempts - 1 && IsRetryableError(ex))
             {
-                Debug.WriteLine(ex.Message);
+                attempt++;
+                var delay = RetryDelayMs * attempt;
+                _logger?.LogWarning("HTTP request attempt {Attempt} failed, retrying in {Delay}ms. Error: {Error}",
+                    attempt, delay, ex.Message);
+                await Task.Delay(delay, cancellationToken);
+            }
+            catch (TaskCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                _logger?.LogWarning("HTTP request was cancelled by user");
                 throw;
             }
-        }
-
-        private HttpClient _httpclient;
-        public HubConnection HubConnection { get; private set; }
-        public string ServiceName { get; private set; }
-        //public string HubUrl => $@"{Endpoint}{ServiceName}/";
-        public string Endpoint => $@"https://mecamgroup.com/"; //TODO: no more mecam
-        public string HubUrl => $@"{Endpoint}hub/{ServiceName}/";
-        public string ApiEndpoint => $@"{Endpoint}api/";
-        public string ApiUrl => $@"{ApiEndpoint}{ServiceName}/";
-
-
-        public async Task StartAsync()
-        {
-            try
+            catch (TaskCanceledException ex)
             {
-                await HubConnection.StartAsync();
-                Debug.WriteLine("Started Connection on Hub: " + HubUrl);
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
+                _logger?.LogError("HTTP request timed out after {Timeout} minutes: {Error}",
+                    _options.TimeoutMinutes, ex.Message);
+                throw new TimeoutException($"Request timed out after {_options.TimeoutMinutes} minutes", ex);
             }
         }
 
-        public async Task StopAsync()
+        throw new InvalidOperationException($"Request failed after {MaxRetryAttempts} attempts");
+    }
+
+    private static bool IsRetryableError(HttpRequestException ex)
+    {
+        // Retry on network errors, but not on client errors (4xx)
+        return ex.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase) ||
+               ex.Message.Contains("connection", StringComparison.OrdinalIgnoreCase) ||
+               ex.Message.Contains("network", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task<TResponse> ProcessResponseAsync<TResponse>(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken = default) where TResponse : class
+    {
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        _logger?.LogDebug("HTTP {Method} {Url} responded with {StatusCode} ({ContentLength} chars)",
+            response.RequestMessage?.Method, response.RequestMessage?.RequestUri,
+            response.StatusCode, content.Length);
+
+        if (!response.IsSuccessStatusCode)
         {
-            await HubConnection.StopAsync();
-            Debug.WriteLine("Stopped Connection on Hub: " + HubUrl);
+            var error = CreateDetailedErrorMessage(response, content);
+            _logger?.LogError("HTTP request failed: {Error}", error);
+
+            throw response.StatusCode switch
+            {
+                HttpStatusCode.Unauthorized => new UnauthorizedAccessException(error),
+                HttpStatusCode.Forbidden => new UnauthorizedAccessException(error),
+                HttpStatusCode.NotFound => new InvalidOperationException($"Resource not found: {error}"),
+                HttpStatusCode.BadRequest => new ArgumentException($"Bad request: {error}"),
+                _ => new HttpRequestException(error)
+            };
         }
 
-        public async Task DisposeAsync()
+        // Handle string responses directly
+        if (typeof(TResponse) == typeof(string))
         {
-            if (HubConnection != null)
+            return (content as TResponse)!;
+        }
+
+        // Deserialize JSON response
+        try
+        {
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            return JsonSerializer.Deserialize<TResponse>(content, options)
+                   ?? throw new InvalidOperationException("Deserialization returned null");
+        }
+        catch (JsonException ex)
+        {
+            _logger?.LogError(ex, "Failed to deserialize response content: {Content}", content);
+            throw new InvalidOperationException($"Failed to deserialize response: {ex.Message}", ex);
+        }
+    }
+
+    private static string CreateDetailedErrorMessage(HttpResponseMessage response, string content)
+    {
+        return $"Status: {(int)response.StatusCode} {response.StatusCode}, " +
+               $"URL: {response.RequestMessage?.RequestUri}, " +
+               $"Content: {content}";
+    }
+
+    private static StringContent? CreateJsonContent(object? content)
+    {
+        if (content is null) return null;
+
+        var json = JsonSerializer.Serialize(content, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
+
+        return new StringContent(json, Encoding.UTF8, JsonContentType);
+    }
+
+    #endregion
+
+    #region Disposal
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (HubConnection is not null)
             {
                 await HubConnection.DisposeAsync();
             }
+
+            _tokenCache?.Dispose();
+
+            if (_shouldDisposeHttpClient)
+            {
+                _httpClient?.Dispose();
+            }
+
+            _logger?.LogInformation("WebService '{ServiceName}' disposed successfully", ServiceName);
         }
-
-        internal async Task Request(string method, object input = null, string endpoint = "")
+        catch (Exception ex)
         {
-            string result = await Request<string>(method, input, endpoint);
-            Debug.WriteLine($"Request result: \n {result}");
-        }
-
-        /// <summary>
-        /// uses access token
-        /// </summary>
-        /// <param name="content"></param>
-        /// <returns></returns>
-        internal async Task<TClass> PutRequest<TClass>(object content, string endpoint = "") where TClass : class
-        {
-            try
-            {
-                // call api
-                using (var apiClient = new HttpClient())
-                {
-                    apiClient.Timeout = TimeSpan.FromMinutes(5);
-                    //apiClient.SetBearerToken(await RequestAccessToken());
-
-                    using (HttpResponseMessage response = await apiClient.PutAsync($@"{ApiUrl}{endpoint}", new StringContent(content.ToJson(), Encoding.UTF8, MimeTypes.Application.Json)))
-                    {
-                        if (!response.IsSuccessStatusCode)
-                        {
-                            throw new Exception(response.StatusCode.ToString());
-                        }
-                        else
-                        {
-                            return (await response.Content.ReadAsStringAsync()).FromJson<TClass>();
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-                throw;
-            }
-        }
-        /// <summary>
-        /// uses access token
-        /// </summary>
-        /// <returns></returns>
-        internal async Task<TClass> GetRequest<TClass>(string endpoint = "") where TClass : class
-        {
-            try
-            {
-                Debug.WriteLine($"Starting GET request to: {ApiUrl}{endpoint}");
-
-                Debug.WriteLine("Sending request...");
-                using (HttpResponseMessage response = await _httpclient.GetAsync($@"{ApiUrl}{endpoint}"))
-                {
-                    Debug.WriteLine($"Response status code: {response.StatusCode}");
-
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        string errorContent = await response.Content.ReadAsStringAsync();
-                        Debug.WriteLine($"Error response content: {errorContent}");
-                        throw new Exception($"Status: {response.StatusCode}, Content: {errorContent}");
-                    }
-                    else
-                    {
-                        string content = await response.Content.ReadAsStringAsync();
-                        Debug.WriteLine($"Response content length: {content.Length}");
-                        return content.FromJson<TClass>();
-                    }
-                }
-            }
-            catch (HttpRequestException hre)
-            {
-                Debug.WriteLine($"HTTP Request error: {hre.Message}");
-                if (hre.InnerException != null)
-                    Debug.WriteLine($"Inner exception: {hre.InnerException.Message}");
-                throw;
-            }
-            catch (TaskCanceledException tce)
-            {
-                Debug.WriteLine($"Request timed out: {tce.Message}");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error in GetRequest: {ex.GetType().Name}: {ex.Message}");
-                throw;
-            }
-        }
-
-        private async Task<string> RequestAccessToken()
-        {
-            try
-            {
-                using (var client = new HttpClient())
-                {
-                    //var disco = await client.GetDiscoveryDocumentAsync(ApiEndpoint);
-                    //if (disco.IsError)
-                    //{
-                    //    throw new Exception(disco.Error);
-                    //}
-
-                    var tokenResponse = await client.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
-                    {
-                        Address = @"https://login.microsoftonline.com/11d6a2ed-37dc-4c0e-9dcc-295dab323ff7/oauth2/v2.0/token",
-                        ClientId = "clientid",
-                        ClientSecret = "clientsecret",
-                        Scope = "api://3918aa93-577f-4602-9ec3-76ebe4d13515/.default",
-                    });
-
-                    if (tokenResponse.IsError)
-                    {
-                        throw new Exception(tokenResponse.ErrorDescription);
-                    }
-
-                    Debug.WriteLine(tokenResponse.Json.ToString());
-
-                    return tokenResponse.AccessToken;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.Message);
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// doesn not use an access token
-        /// </summary>
-        /// <typeparam name="TClass"></typeparam>
-        /// <param name="method"></param>
-        /// <param name="input"></param>
-        /// <param name="endpoint"></param>
-        /// <param name="apiUrl"></param>
-        /// <returns></returns>
-        internal async Task<TClass> Request<TClass>(string method, object input = null, string endpoint = "", bool apiUrl = true) where TClass : class
-        {
-            try
-            {
-                string prefix = Endpoint;
-                if (apiUrl)
-                {
-                    prefix = ApiUrl;
-                }
-
-                WebRequest req = WebRequest.Create($@"{prefix}{endpoint}");
-                req.Method = method;
-                req.ContentType = MimeTypes.Application.Json;
-                req.CachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
-
-                if (input != null)
-                {
-                    using (Stream stream = await req.GetRequestStreamAsync())
-                    {
-                        using (StreamWriter writer = new StreamWriter(stream))
-                        {
-                            writer.Write(input.ToJson());
-                        }
-                    }
-                }
-
-                using (WebResponse rep = await req.GetResponseAsync())
-                {
-                    using (Stream responseStream = rep.GetResponseStream())
-                    {
-                        using (StreamReader streamReader = new StreamReader(responseStream))
-                        {
-                            string result = await streamReader.ReadToEndAsync();
-                            if (typeof(TClass) == typeof(string) || typeof(TClass).IsValueType)
-                            {
-                                return result as TClass;
-                            }
-
-                            return JsonConvert.DeserializeObject<TClass>(result, new JsonSerializerSettings
-                            {
-                                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
-                            });
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("Webservicebase request failed");
-                Debug.WriteLine(ex.Message);
-                throw;
-            }
+            _logger?.LogError(ex, "Error during WebService disposal: {Error}", ex.Message);
         }
     }
+
+    #endregion
+}
+
+/// <summary>
+/// Configuration options for WebServiceBase
+/// </summary>
+public record WebServiceOptions
+{
+    public string BaseEndpoint { get; init; } = "https://mysite.com/";
+    public int TimeoutMinutes { get; init; } = 5;
+    public bool CreateHub { get; init; } = false;
+    public HttpTransportType SignalRTransportType { get; init; } = HttpTransportType.WebSockets;
+    public bool EnableSignalRLogging { get; init; } = false;
+
+    // Authentication settings
+    public bool UseAuthentication { get; init; } = false;
+    public string TokenEndpoint { get; init; } = "https://login.microsoftonline.com/<TOKEN>/oauth2/v2.0/token";
+    public string ClientId { get; init; } = "";
+    public string ClientSecret { get; init; } = "";
+    public string Scope { get; init; } = "api://<TOKEN>/.default";
 }

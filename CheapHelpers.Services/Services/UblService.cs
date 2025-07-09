@@ -1,758 +1,494 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using CheapHelpers.Models.Ubl;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 using UblSharp;
 using UblSharp.CommonAggregateComponents;
 using UblSharp.UnqualifiedDataTypes;
 
+namespace CheapHelpers.Services;
 
-namespace CheapHelpers.Services
+public class UblService
 {
-    public class UblService
+    // Namespace Constants
+    private const string CacNamespace = "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2";
+    private const string CbcNamespace = "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2";
+
+    // Scheme Constants
+    private const string BiiSchemeAgency = "BII";
+    private const string ProfileScheme = "Profile";
+    private const string GlnSchemeAgency = "9";
+    private const string GlnScheme = "GLN";
+    private const string VatScheme = "VAT";
+    private const string VatSchemeId = "UN/ECE 5153";
+    private const string VatSchemeAgency = "6";
+    private const string GtinSchemeAgency = "6";
+    private const string GtinScheme = "GTIN";
+    private const string OrgNrScheme = "SE:ORGNR";
+
+    private readonly UblDocumentOptions _defaultOptions;
+
+    public UblService(UblDocumentOptions? options = null)
     {
-        public async Task Create(dynamic order)
+        _defaultOptions = options ?? new UblDocumentOptions();
+    }
+
+    /// <summary>
+    /// Creates a UBL Order document from simplified order model and saves to file
+    /// </summary>
+    public async Task CreateOrderAsync(UblOrder order, string outputFilePath, UblDocumentOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(order);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputFilePath);
+
+        try
         {
-            try
-            {
-                UblSharp.OrderType doc = new UblSharp.OrderType
-                {
-                    UBLVersionID = "2.1",
-                    CustomizationID = "urn:www.cenbii.eu:transaction:biicoretrdm001:ver1.0",
-                    ProfileID = new IdentifierType
-                    {
-                        schemeAgencyID = "BII",
-                        schemeID = "Profile",
-                        Value = "urn:www.cenbii.eu:profile:BII01:ver1.0"
-                    },
-                    ID = "34",
-                    IssueDate = "2010-01-20",
-                    IssueTime = "12:30:00",
-                    Note = new List<TextType>()
-                    {
-                        new TextType
-                        {
-                            Value = "Information text for the whole order"
-                        }
-                    },
-                    DocumentCurrencyCode = "SEK",
-                    AccountingCostCode = "Project123",
-                    ValidityPeriod = new List<PeriodType>()
-                {
-                    new PeriodType
-                    {
-                        EndDate = "2010-01-31"
-                    }
-                },
-                    QuotationDocumentReference = new DocumentReferenceType
-                    {
-                        ID = "QuoteID123"
-                    },
-                    OrderDocumentReference = new List<DocumentReferenceType>()
-                {
-                    new DocumentReferenceType
-                    {
-                        ID = "RjectedOrderID123"
-                    }
-                },
-                    OriginatorDocumentReference = new DocumentReferenceType
-                    {
-                        ID = "MAFO"
-                    },
-                    AdditionalDocumentReference = new List<DocumentReferenceType>()
-                {
-                    new DocumentReferenceType
-                    {
-                        ID = "Doc1",
-                        DocumentType = "Timesheet",
-                        Attachment = new AttachmentType
-                        {
-                            ExternalReference = new ExternalReferenceType
-                            {
-                                URI = "http://www.suppliersite.eu/sheet001.html"
-                            }
-                        }
-                    },
-                    new DocumentReferenceType
-                    {
-                        ID = "Doc2",
-                        DocumentType = "Drawing",
-                        Attachment = new AttachmentType
-                        {
-                            EmbeddedDocumentBinaryObject = new BinaryObjectType
-                            {
-                                mimeCode = "application/pdf",
-                                Value = Convert.FromBase64String("UjBsR09EbGhjZ0dTQUxNQUFBUUNBRU1tQ1p0dU1GUXhEUzhi")
-                            }
-                        }
-                    }
-                },
-                    Contract = new List<ContractType>()
-                {
-                    new ContractType
-                    {
-                        ID = "34322",
-                        ContractType1 = "FrameworkAgreementID123"
-                    }
-                },
-                    BuyerCustomerParty = new CustomerPartyType
-                    {
-                        Party = new PartyType
-                        {
-                            EndpointID = new IdentifierType
-                            {
-                                schemeAgencyID = "9",
-                                schemeID = "GLN",
-                                Value = "7300072311115"
-                            },
-                            PartyIdentification = new List<PartyIdentificationType>()
-                            {
-                                new PartyIdentificationType
-                                {
-                                    ID = new IdentifierType
-                                    {
-                                        schemeAgencyID = "9",
-                                        schemeID = "GLN",
-                                        Value = "7300070011115"
-                                    }
-                                },
-                            new PartyIdentificationType
-                            {
-                                ID = "PartyID123"
-                            }
-                        },
-                            PartyName = new List<PartyNameType>()
-                        {
-                            new PartyNameType
-                            {
-                                Name = "Johnssons byggvaror"
-                            }
-                        },
-                            PostalAddress = new AddressType
-                            {
-                                ID = new IdentifierType
-                                {
-                                    schemeAgencyID = "9",
-                                    schemeID = "GLN",
-                                    Value = "1234567890123"
-                                },
-                                Postbox = "PoBox123",
-                                StreetName = "Rådhusgatan",
-                                AdditionalStreetName = "2nd floor",
-                                BuildingNumber = "5",
-                                Department = "Purchasing department",
-                                CityName = "Stockholm",
-                                PostalZone = "11000",
-                                CountrySubentity = "RegionX",
-                                Country = new CountryType
-                                {
-                                    IdentificationCode = "SE"
-                                }
-                            },
-                            PartyTaxScheme = new List<PartyTaxSchemeType>()
-                        {
-                            new PartyTaxSchemeType
-                            {
-                                RegistrationName = "Herra Johnssons byggvaror AS",
-                                CompanyID = "SE1234567801",
-                                RegistrationAddress = new AddressType
-                                {
-                                    CityName = "Stockholm",
-                                    Country = new CountryType
-                                    {
-                                        IdentificationCode = "SE"
-                                    }
-                                },
-                                TaxScheme = new TaxSchemeType
-                                {
-                                    ID = new IdentifierType
-                                    {
-                                        schemeID = "UN/ECE 5153",
-                                        schemeAgencyID = "6",
-                                        Value = "VAT"
-                                    }
-                                }
-                            }
-                        },
-                            PartyLegalEntity = new List<PartyLegalEntityType>()
-                        {
-                            new PartyLegalEntityType
-                            {
-                                RegistrationName = "Johnssons Byggvaror AB",
-                                CompanyID = new IdentifierType
-                                {
-                                    schemeID = "SE:ORGNR",
-                                    Value = "5532331183"
-                                },
-                                RegistrationAddress = new AddressType
-                                {
-                                    CityName = "Stockholm",
-                                    CountrySubentity = "RegionX",
-                                    Country = new CountryType
-                                    {
-                                        IdentificationCode = "SE"
-                                    }
-                                }
-                            }
-                        },
-                            Contact = new ContactType
-                            {
-                                Telephone = "123456",
-                                Telefax = "123456",
-                                ElectronicMail = "pelle@johnsson.se"
-                            },
-                            Person = new List<PersonType>()
-                            {
-                                new PersonType
-                                {
-                                    FirstName = "Pelle",
-                                    FamilyName = "Svensson",
-                                    MiddleName = "X",
-                                    JobTitle = "Boss"
-                                }
-                            },
-                        },
-                        DeliveryContact = new ContactType
-                        {
-                            Name = "Eva Johnsson",
-                            Telephone = "1234356",
-                            Telefax = "123455",
-                            ElectronicMail = "eva@johnsson.se"
-                        }
-                    },
-                    SellerSupplierParty = new SupplierPartyType
-                    {
-                        Party = new PartyType
-                        {
-                            EndpointID = new IdentifierType
-                            {
-                                schemeAgencyID = "9",
-                                schemeID = "GLN",
-                                Value = "7302347231111"
-                            },
-                            PartyIdentification = new List<PartyIdentificationType>()
-                        {
-                            new PartyIdentificationType
-                            {
-                                ID = "SellerPartyID123"
-                            }
-                        },
-                            PartyName = new List<PartyNameType>()
-                        {
-                            new PartyNameType
-                            {
-                                Name = "Moderna Produkter AB"
-                            }
-                        },
-                            PostalAddress = new AddressType
-                            {
-                                ID = new IdentifierType
-                                {
-                                    schemeAgencyID = "9",
-                                    schemeID = "GLN",
-                                    Value = "0987654321123"
-                                },
-                                Postbox = "321",
-                                StreetName = "Kungsgatan",
-                                AdditionalStreetName = "suite12",
-                                BuildingNumber = "22",
-                                Department = "Sales department",
-                                CityName = "Stockholm",
-                                PostalZone = "11000",
-                                CountrySubentity = "RegionX",
-                                Country = new CountryType
-                                {
-                                    IdentificationCode = "SE"
-                                }
-                            },
-                            PartyLegalEntity = new List<PartyLegalEntityType>()
-                        {
-                            new PartyLegalEntityType
-                            {
-                                RegistrationName = "Moderna Produkter AB",
-                                CompanyID = new IdentifierType
-                                {
-                                    schemeID = "SE:ORGNR",
-                                    Value = "5532332283"
-                                },
-                                RegistrationAddress = new AddressType
-                                {
-                                    CityName = "Stockholm",
-                                    CountrySubentity = "RegionX",
-                                    Country = new CountryType
-                                    {
-                                        IdentificationCode = "SE"
-                                    }
-                                }
-                            }
-                        },
-                            Contact = new ContactType
-                            {
-                                Telephone = "34557",
-                                Telefax = "3456767",
-                                ElectronicMail = "lars@moderna.se"
-                            },
-                            Person = new List<PersonType>()
-                        {
-                            new PersonType
-                            {
-                                FirstName = "Lars",
-                                FamilyName = "Petersen",
-                                MiddleName = "M",
-                                JobTitle = "Sales manager"
-                            }
-                        },
-                        }
-                    },
-                    OriginatorCustomerParty = new CustomerPartyType
-                    {
-                        Party = new PartyType
-                        {
-                            PartyIdentification = new List<PartyIdentificationType>()
-                        {
-                            new PartyIdentificationType
-                            {
-                                ID = new IdentifierType
-                                {
-                                    schemeAgencyID = "9",
-                                    schemeID = "GLN",
-                                    Value = "0987678321123"
-                                }
-                            }
-                        },
-                            PartyName = new List<PartyNameType>()
-                        {
-                            new PartyNameType
-                            {
-                                Name = "Moderna Produkter AB"
-                            }
-                        },
-                            Contact = new ContactType
-                            {
-                                Telephone = "346788",
-                                Telefax = "8567443",
-                                ElectronicMail = "sven@moderna.se"
-                            },
-                            Person = new List<PersonType>()
-                        {
-                            new PersonType
-                            {
-                                FirstName = "Sven",
-                                FamilyName = "Pereson",
-                                MiddleName = "N",
-                                JobTitle = "Stuffuser"
-                            }
-                        },
-                        }
-                    },
-                    Delivery = new List<DeliveryType>()
-                {
-                    new DeliveryType
-                    {
-                        DeliveryLocation = new LocationType
-                        {
-                            Address = new AddressType
-                            {
-                                ID = new IdentifierType
-                                {
-                                    schemeAgencyID = "9",
-                                    schemeID = "GLN",
-                                    Value = "1234567890123"
-                                },
-                                Postbox = "123",
-                                StreetName = "Rådhusgatan",
-                                AdditionalStreetName = "2nd floor",
-                                BuildingNumber = "5",
-                                Department = "Purchasing department",
-                                CityName = "Stockholm",
-                                PostalZone = "11000",
-                                CountrySubentity = "RegionX",
-                                Country = new CountryType
-                                {
-                                    IdentificationCode = "SE"
-                                }
-                            }
-                        },
-                        RequestedDeliveryPeriod = new PeriodType
-                        {
-                            StartDate = "2010-02-10",
-                            EndDate = "2010-02-25"
-                        },
-                        DeliveryParty = new PartyType
-                        {
-                            PartyIdentification = new List<PartyIdentificationType>()
-                            {
-                                new PartyIdentificationType
-                                {
-                                    ID = new IdentifierType
-                                    {
-                                        schemeAgencyID = "9",
-                                        schemeID = "GLN",
-                                        Value = "67654328394567"
-                                    }
-                                }
-                            },
-                            PartyName = new List<PartyNameType>()
-                            {
-                                new PartyNameType
-                                {
-                                    Name = "Swedish trucking"
-                                }
-                            },
-                            Contact = new ContactType
-                            {
-                                Name = "Per",
-                                Telephone = "987098709",
-                                Telefax = "34673435",
-                                ElectronicMail = "bill@svetruck.se"
-                            }
-                        }
-                    }
-                },
-                    DeliveryTerms = new List<DeliveryTermsType>()
-                {
-                    new DeliveryTermsType
-                    {
-                        ID = new IdentifierType
-                        {
-                            schemeAgencyID = "6",
-                            schemeID = "IMCOTERM",
-                            Value = "FOT"
-                        },
-                        SpecialTerms = new List<TextType>()
-                        {
-                            new TextType
-                            {
-                                Value = "CAD"
-                            }
-                        },
-                        DeliveryLocation = new LocationType
-                        {
-                            ID = "STO"
-                        }
-                    }
-                },
-                    AllowanceCharge = new List<AllowanceChargeType>()
-                {
-                    new AllowanceChargeType
-                    {
-                        ChargeIndicator = true,
-                        AllowanceChargeReason = new List<TextType>()
-                        {
-                            new TextType
-                            {
-                                Value = "Transport documents"
-                            }
-                        },
-                        Amount = new AmountType
-                        {
-                            currencyID = "SEK",
-                            Value = 100M
-                        }
-                    },
-                    new AllowanceChargeType
-                    {
-                        ChargeIndicator = false,
-                        AllowanceChargeReason = new List<TextType>()
-                        {
-                            new TextType
-                            {
-                                Value = "Total order value discount"
-                            }
-                        },
-                        Amount = new AmountType
-                        {
-                            currencyID = "SEK",
-                            Value = 100M
-                        }
-                    }
-                },
-                    TaxTotal = new List<TaxTotalType>()
-                {
-                    new TaxTotalType
-                    {
-                        TaxAmount = new AmountType
-                        {
-                            currencyID = "SEK",
-                            Value = 100M
-                        }
-                    }
-                },
-                    AnticipatedMonetaryTotal = new MonetaryTotalType
-                    {
-                        LineExtensionAmount = new AmountType
-                        {
-                            currencyID = "SEK",
-                            Value = 6225M
-                        },
-                        AllowanceTotalAmount = new AmountType
-                        {
-                            currencyID = "SEK",
-                            Value = 100M
-                        },
-                        ChargeTotalAmount = new AmountType
-                        {
-                            currencyID = "SEK",
-                            Value = 100M
-                        },
-                        PayableAmount = new AmountType
-                        {
-                            currencyID = "SEK",
-                            Value = 6225M
-                        }
-                    },
-                    OrderLine = new List<OrderLineType>()
-                {
-                    new OrderLineType
-                    {
-                        Note = new List<TextType>()
-                        {
-                            new TextType
-                            {
-                                Value = "Freetext note on line 1"
-                            }
-                        },
-                        LineItem = new LineItemType
-                        {
-                            ID = "1",
-                            Quantity = new QuantityType
-                            {
-                                unitCode = "LTR",
-                                Value = 120M
-                            },
-                            LineExtensionAmount = new AmountType
-                            {
-                                currencyID = "SEK",
-                                Value = 6000M
-                            },
-                            TotalTaxAmount = new AmountType
-                            {
-                                currencyID = "SEK",
-                                Value = 10M
-                            },
-                            PartialDeliveryIndicator = false,
-                            AccountingCostCode = "ProjectID123",
-                            Delivery = new List<DeliveryType>()
-                            {
-                                new DeliveryType
-                                {
-                                    RequestedDeliveryPeriod = new PeriodType
-                                    {
-                                        StartDate = "2010-02-10",
-                                        EndDate = "2010-02-25"
-                                    }
-                                }
-                            },
-                            OriginatorParty = new PartyType
-                            {
-                                PartyIdentification = new List<PartyIdentificationType>()
-                                {
-                                    new PartyIdentificationType
-                                    {
-                                        ID = new IdentifierType
-                                        {
-                                            schemeAgencyID = "ZZZ",
-                                            schemeID = "ZZZ",
-                                            Value = "EmployeeXXX"
-                                        }
-                                    }
-                                },
-                                PartyName = new List<PartyNameType>()
-                                {
-                                    new PartyNameType
-                                    {
-                                        Name = "Josef K."
-                                    }
-                                },
-                            },
-                            Price = new PriceType
-                            {
-                                PriceAmount = new AmountType
-                                {
-                                    currencyID = "SEK",
-                                    Value = 50M
-                                },
-                                BaseQuantity = new QuantityType
-                                {
-                                    unitCode = "LTR",
-                                    Value = 1M
-                                }
-                            },
-                            Item = new ItemType
-                            {
-                                Description = new List<TextType>()
-                                {
-                                    new TextType
-                                    {
-                                        Value = "Red paint"
-                                    }
-                                },
-                                Name = "Falu Rödfärg",
-                                SellersItemIdentification = new ItemIdentificationType
-                                {
-                                    ID = "SItemNo001"
-                                },
-                                StandardItemIdentification = new ItemIdentificationType
-                                {
-                                    ID = new IdentifierType
-                                    {
-                                        schemeAgencyID = "6",
-                                        schemeID = "GTIN",
-                                        Value = "1234567890123"
-                                    }
-                                },
-                                AdditionalItemProperty = new List<ItemPropertyType>()
-                                {
-                                    new ItemPropertyType
-                                    {
-                                        Name = "Paint type",
-                                        Value = "Acrylic"
-                                    },
-                                    new ItemPropertyType
-                                    {
-                                        Name = "Solvant",
-                                        Value = "Water"
-                                    }
-                                },
-                            }
-                        }
-                    },
-                    new OrderLineType
-                    {
-                        Note = new List<TextType>()
-                        {
-                            new TextType
-                            {
-                                Value = "Freetext note on line 2"
-                            }
-                        },
-                        LineItem = new LineItemType
-                        {
-                            ID = "2",
-                            Quantity = new QuantityType
-                            {
-                                unitCode = "C62",
-                                Value = 15M
-                            },
-                            LineExtensionAmount = new AmountType
-                            {
-                                currencyID = "SEK",
-                                Value = 225M
-                            },
-                            TotalTaxAmount = new AmountType
-                            {
-                                currencyID = "SEK",
-                                Value = 10M
-                            },
-                            PartialDeliveryIndicator = false,
-                            AccountingCostCode = "ProjectID123",
-                            Delivery = new List<DeliveryType>()
-                            {
-                                new DeliveryType
-                                {
-                                    RequestedDeliveryPeriod = new PeriodType
-                                    {
-                                        StartDate = "2010-02-10",
-                                        EndDate = "2010-02-25"
-                                    }
-                                }
-                            },
-                            OriginatorParty = new PartyType
-                            {
-                                PartyIdentification = new List<PartyIdentificationType>()
-                                {
-                                    new PartyIdentificationType
-                                    {
-                                        ID = new IdentifierType
-                                        {
-                                            schemeAgencyID = "ZZZ",
-                                            schemeID = "ZZZ",
-                                            Value = "EmployeeXXX"
-                                        }
-                                    }
-                                },
-                                PartyName = new List<PartyNameType>()
-                                {
-                                    new PartyNameType
-                                    {
-                                        Name = "Josef K."
-                                    }
-                                },
-                            },
-                            Price = new PriceType
-                            {
-                                PriceAmount = new AmountType
-                                {
-                                    currencyID = "SEK",
-                                    Value = 15M
-                                },
-                                BaseQuantity = new QuantityType
-                                {
-                                    unitCode = "C62",
-                                    Value = 1M
-                                }
-                            },
-                            Item = new ItemType
-                            {
-                                Description = new List<TextType>()
-                                {
-                                    new TextType
-                                    {
-                                        Value = "Very good pencils for red paint."
-                                    }
-                                },
-                                Name = "Pensel 20 mm",
-                                SellersItemIdentification = new ItemIdentificationType
-                                {
-                                    ID = "SItemNo011"
-                                },
-                                StandardItemIdentification = new ItemIdentificationType
-                                {
-                                    ID = new IdentifierType
-                                    {
-                                        schemeAgencyID = "6",
-                                        schemeID = "GTIN",
-                                        Value = "123452340123"
-                                    }
-                                },
-                                AdditionalItemProperty = new List<ItemPropertyType>()
-                                {
-                                    new ItemPropertyType
-                                    {
-                                        Name = "Hair color",
-                                        Value = "Black"
-                                    },
-                                    new ItemPropertyType
-                                    {
-                                        Name = "Width",
-                                        Value = "20mm"
-                                    }
-                                },
-                            }
-                        }
-                    }
-                }
-                };
+            var doc = await Task.Run(() => BuildUblOrder(order, options ?? _defaultOptions));
 
-                doc.Xmlns = new System.Xml.Serialization.XmlSerializerNamespaces(new[]
-                {
-                    new XmlQualifiedName("cac","urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"),
-                    new XmlQualifiedName("cbc","urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"),
-                });
-
-                //return doc;
-                doc.Save(@$"C:\Users\BrechtVandeninden\Downloads\ubl.xml");
-            }
-            catch (Exception ex)
+            // Ensure output directory exists
+            var directory = Path.GetDirectoryName(outputFilePath);
+            if (!string.IsNullOrEmpty(directory))
             {
-                Debug.WriteLine(ex);
+                Directory.CreateDirectory(directory);
             }
+
+            doc.Save(outputFilePath);
+            Debug.WriteLine($"Successfully created UBL order document: {outputFilePath}");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to create UBL order document: {ex.Message}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Creates a UBL Order document from simplified order model and returns as XML string
+    /// </summary>
+    public async Task<string> CreateOrderXmlAsync(UblOrder order, UblDocumentOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(order);
+
+        try
+        {
+            var doc = await Task.Run(() => BuildUblOrder(order, options ?? _defaultOptions));
+
+            using var stream = new MemoryStream();
+            var serializer = doc.GetSerializer();
+            serializer.Serialize(stream, doc);
+
+            stream.Position = 0;
+            using var reader = new StreamReader(stream);
+            return await reader.ReadToEndAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to create UBL order XML: {ex.Message}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Creates a UBL Order document and returns the UblSharp OrderType for further manipulation
+    /// </summary>
+    public async Task<OrderType> CreateOrderDocumentAsync(UblOrder order, UblDocumentOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(order);
+
+        try
+        {
+            return await Task.Run(() => BuildUblOrder(order, options ?? _defaultOptions));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to create UBL order document: {ex.Message}");
+            throw;
+        }
+    }
+
+    private OrderType BuildUblOrder(UblOrder order, UblDocumentOptions options)
+    {
+        var doc = new OrderType
+        {
+            UBLVersionID = options.UblVersion,
+            CustomizationID = options.CustomizationId,
+            ProfileID = CreateProfileId(options.ProfileId),
+            ID = order.Id,
+            IssueDate = order.IssueDate.ToString("yyyy-MM-dd"),
+            IssueTime = order.IssueDate.ToString("HH:mm:ss"),
+            DocumentCurrencyCode = order.Currency,
+            AccountingCostCode = order.AccountingCostCode,
+        };
+
+        // Add note if provided
+        if (!string.IsNullOrWhiteSpace(order.Note))
+        {
+            doc.Note = [new TextType { Value = order.Note }];
         }
 
+        // Add validity period if provided
+        if (order.ValidityEndDate.HasValue)
+        {
+            doc.ValidityPeriod = [new PeriodType { EndDate = order.ValidityEndDate.Value.ToString("yyyy-MM-dd") }];
+        }
 
+        // Add document references
+        if (!string.IsNullOrWhiteSpace(order.QuotationId))
+        {
+            doc.QuotationDocumentReference = new DocumentReferenceType { ID = order.QuotationId };
+        }
 
+        // Convert parties
+        doc.BuyerCustomerParty = ConvertToCustomerParty(order.Buyer);
+        doc.SellerSupplierParty = ConvertToSupplierParty(order.Seller);
+
+        // Add delivery information
+        if (order.Delivery is not null)
+        {
+            doc.Delivery = [ConvertToDelivery(order.Delivery)];
+        }
+
+        // Add allowances and charges
+        if (order.AllowancesCharges.Count > 0)
+        {
+            doc.AllowanceCharge = order.AllowancesCharges.Select(ConvertToAllowanceCharge).ToList();
+        }
+
+        // Add monetary totals
+        if (order.Totals is not null)
+        {
+            doc.AnticipatedMonetaryTotal = ConvertToMonetaryTotal(order.Totals, order.Currency);
+        }
+
+        // Add order lines
+        if (order.Lines.Count > 0)
+        {
+            doc.OrderLine = order.Lines.Select(ConvertToOrderLine).ToList();
+        }
+
+        // Set namespaces if requested
+        if (options.IncludeNamespaces)
+        {
+            doc.Xmlns = new System.Xml.Serialization.XmlSerializerNamespaces([
+                new XmlQualifiedName("cac", CacNamespace),
+                new XmlQualifiedName("cbc", CbcNamespace),
+            ]);
+        }
+
+        return doc;
+    }
+
+    private static IdentifierType CreateProfileId(string profileId)
+    {
+        return new IdentifierType
+        {
+            schemeAgencyID = BiiSchemeAgency,
+            schemeID = ProfileScheme,
+            Value = profileId
+        };
+    }
+
+    private CustomerPartyType ConvertToCustomerParty(UblParty party)
+    {
+        return new CustomerPartyType
+        {
+            Party = ConvertToParty(party)
+        };
+    }
+
+    private SupplierPartyType ConvertToSupplierParty(UblParty party)
+    {
+        return new SupplierPartyType
+        {
+            Party = ConvertToParty(party)
+        };
+    }
+
+    private static PartyType ConvertToParty(UblParty party)
+    {
+        var partyType = new PartyType();
+
+        // Add endpoint ID if provided
+        if (!string.IsNullOrWhiteSpace(party.EndpointId))
+        {
+            partyType.EndpointID = new IdentifierType
+            {
+                schemeAgencyID = GlnSchemeAgency,
+                schemeID = GlnScheme,
+                Value = party.EndpointId
+            };
+        }
+
+        // Add party identification
+        if (!string.IsNullOrWhiteSpace(party.Id))
+        {
+            partyType.PartyIdentification = [new PartyIdentificationType { ID = party.Id }];
+        }
+
+        // Add party name
+        if (!string.IsNullOrWhiteSpace(party.Name))
+        {
+            partyType.PartyName = [new PartyNameType { Name = party.Name }];
+        }
+
+        // Add address
+        if (party.Address is not null)
+        {
+            partyType.PostalAddress = ConvertToAddress(party.Address);
+        }
+
+        // Add contact
+        if (party.Contact is not null)
+        {
+            partyType.Contact = ConvertToContact(party.Contact);
+        }
+
+        // Add main person
+        if (party.MainPerson is not null)
+        {
+            partyType.Person = [ConvertToPerson(party.MainPerson)];
+        }
+
+        // Add legal entity if company ID is provided
+        if (!string.IsNullOrWhiteSpace(party.CompanyId))
+        {
+            partyType.PartyLegalEntity = [new PartyLegalEntityType
+            {
+                RegistrationName = party.Name,
+                CompanyID = new IdentifierType
+                {
+                    schemeID = OrgNrScheme,
+                    Value = party.CompanyId
+                }
+            }];
+        }
+
+        // Add tax scheme if tax ID is provided
+        if (!string.IsNullOrWhiteSpace(party.TaxId))
+        {
+            partyType.PartyTaxScheme = [new PartyTaxSchemeType
+            {
+                RegistrationName = party.Name,
+                CompanyID = party.TaxId,
+                TaxScheme = new TaxSchemeType
+                {
+                    ID = new IdentifierType
+                    {
+                        schemeID = VatSchemeId,
+                        schemeAgencyID = VatSchemeAgency,
+                        Value = VatScheme
+                    }
+                }
+            }];
+        }
+
+        return partyType;
+    }
+
+    private static AddressType ConvertToAddress(UblAddress address)
+    {
+        var addressType = new AddressType
+        {
+            CityName = address.CityName,
+            Country = new CountryType { IdentificationCode = address.CountryCode }
+        };
+
+        if (!string.IsNullOrWhiteSpace(address.AddressId))
+        {
+            addressType.ID = new IdentifierType
+            {
+                schemeAgencyID = GlnSchemeAgency,
+                schemeID = GlnScheme,
+                Value = address.AddressId
+            };
+        }
+
+        if (!string.IsNullOrWhiteSpace(address.PostBox)) addressType.Postbox = address.PostBox;
+        if (!string.IsNullOrWhiteSpace(address.StreetName)) addressType.StreetName = address.StreetName;
+        if (!string.IsNullOrWhiteSpace(address.AdditionalStreetName)) addressType.AdditionalStreetName = address.AdditionalStreetName;
+        if (!string.IsNullOrWhiteSpace(address.BuildingNumber)) addressType.BuildingNumber = address.BuildingNumber;
+        if (!string.IsNullOrWhiteSpace(address.Department)) addressType.Department = address.Department;
+        if (!string.IsNullOrWhiteSpace(address.PostalZone)) addressType.PostalZone = address.PostalZone;
+        if (!string.IsNullOrWhiteSpace(address.CountrySubentity)) addressType.CountrySubentity = address.CountrySubentity;
+
+        return addressType;
+    }
+
+    private static ContactType ConvertToContact(UblContact contact)
+    {
+        var contactType = new ContactType();
+
+        if (!string.IsNullOrWhiteSpace(contact.Name)) contactType.Name = contact.Name;
+        if (!string.IsNullOrWhiteSpace(contact.Telephone)) contactType.Telephone = contact.Telephone;
+        if (!string.IsNullOrWhiteSpace(contact.Fax)) contactType.Telefax = contact.Fax;
+        if (!string.IsNullOrWhiteSpace(contact.Email)) contactType.ElectronicMail = contact.Email;
+
+        return contactType;
+    }
+
+    private static PersonType ConvertToPerson(UblPerson person)
+    {
+        var personType = new PersonType
+        {
+            FirstName = person.FirstName,
+            FamilyName = person.LastName
+        };
+
+        if (!string.IsNullOrWhiteSpace(person.MiddleName)) personType.MiddleName = person.MiddleName;
+        if (!string.IsNullOrWhiteSpace(person.JobTitle)) personType.JobTitle = person.JobTitle;
+
+        return personType;
+    }
+
+    private static DeliveryType ConvertToDelivery(UblDelivery delivery)
+    {
+        var deliveryType = new DeliveryType();
+
+        if (delivery.DeliveryAddress is not null)
+        {
+            deliveryType.DeliveryLocation = new LocationType
+            {
+                Address = ConvertToAddress(delivery.DeliveryAddress)
+            };
+        }
+
+        if (delivery.RequestedStartDate.HasValue || delivery.RequestedEndDate.HasValue)
+        {
+            deliveryType.RequestedDeliveryPeriod = new PeriodType();
+            if (delivery.RequestedStartDate.HasValue)
+                deliveryType.RequestedDeliveryPeriod.StartDate = delivery.RequestedStartDate.Value.ToString("yyyy-MM-dd");
+            if (delivery.RequestedEndDate.HasValue)
+                deliveryType.RequestedDeliveryPeriod.EndDate = delivery.RequestedEndDate.Value.ToString("yyyy-MM-dd");
+        }
+
+        if (delivery.DeliveryParty is not null)
+        {
+            deliveryType.DeliveryParty = ConvertToParty(delivery.DeliveryParty);
+        }
+
+        return deliveryType;
+    }
+
+    private static AllowanceChargeType ConvertToAllowanceCharge(UblAllowanceCharge allowanceCharge)
+    {
+        return new AllowanceChargeType
+        {
+            ChargeIndicator = allowanceCharge.IsCharge,
+            AllowanceChargeReason = [new TextType { Value = allowanceCharge.Reason }],
+            Amount = new AmountType
+            {
+                currencyID = allowanceCharge.Currency,
+                Value = allowanceCharge.Amount
+            }
+        };
+    }
+
+    private static MonetaryTotalType ConvertToMonetaryTotal(UblMonetaryTotals totals, string currency)
+    {
+        var monetaryTotal = new MonetaryTotalType
+        {
+            LineExtensionAmount = new AmountType { currencyID = currency, Value = totals.LineExtensionAmount },
+            PayableAmount = new AmountType { currencyID = currency, Value = totals.PayableAmount }
+        };
+
+        if (totals.AllowanceTotalAmount.HasValue)
+        {
+            monetaryTotal.AllowanceTotalAmount = new AmountType { currencyID = currency, Value = totals.AllowanceTotalAmount.Value };
+        }
+
+        if (totals.ChargeTotalAmount.HasValue)
+        {
+            monetaryTotal.ChargeTotalAmount = new AmountType { currencyID = currency, Value = totals.ChargeTotalAmount.Value };
+        }
+
+        return monetaryTotal;
+    }
+
+    private OrderLineType ConvertToOrderLine(UblOrderLine line)
+    {
+        var orderLine = new OrderLineType
+        {
+            LineItem = new LineItemType
+            {
+                ID = line.Id,
+                Quantity = new QuantityType { unitCode = line.QuantityUnit, Value = line.Quantity },
+                LineExtensionAmount = new AmountType { currencyID = _defaultOptions.DefaultCurrency, Value = line.LineTotal },
+                PartialDeliveryIndicator = line.AllowPartialDelivery,
+                Price = new PriceType
+                {
+                    PriceAmount = new AmountType { currencyID = _defaultOptions.DefaultCurrency, Value = line.UnitPrice },
+                    BaseQuantity = new QuantityType { unitCode = line.QuantityUnit, Value = 1M }
+                },
+                Item = ConvertToItem(line.Item)
+            }
+        };
+
+        if (!string.IsNullOrWhiteSpace(line.Note))
+        {
+            orderLine.Note = [new TextType { Value = line.Note }];
+        }
+
+        if (line.TaxAmount.HasValue)
+        {
+            orderLine.LineItem.TotalTaxAmount = new AmountType { currencyID = _defaultOptions.DefaultCurrency, Value = line.TaxAmount.Value };
+        }
+
+        if (!string.IsNullOrWhiteSpace(line.AccountingCostCode))
+        {
+            orderLine.LineItem.AccountingCostCode = line.AccountingCostCode;
+        }
+
+        if (line.SpecificDelivery is not null)
+        {
+            orderLine.LineItem.Delivery = [ConvertToDelivery(line.SpecificDelivery)];
+        }
+
+        return orderLine;
+    }
+
+    private static ItemType ConvertToItem(UblItem item)
+    {
+        var itemType = new ItemType
+        {
+            Name = item.Name
+        };
+
+        if (!string.IsNullOrWhiteSpace(item.Description))
+        {
+            itemType.Description = [new TextType { Value = item.Description }];
+        }
+
+        if (!string.IsNullOrWhiteSpace(item.SellerItemId))
+        {
+            itemType.SellersItemIdentification = new ItemIdentificationType { ID = item.SellerItemId };
+        }
+
+        if (!string.IsNullOrWhiteSpace(item.BuyerItemId))
+        {
+            itemType.BuyersItemIdentification = new ItemIdentificationType { ID = item.BuyerItemId };
+        }
+
+        if (!string.IsNullOrWhiteSpace(item.Gtin))
+        {
+            itemType.StandardItemIdentification = new ItemIdentificationType
+            {
+                ID = new IdentifierType
+                {
+                    schemeAgencyID = GtinSchemeAgency,
+                    schemeID = GtinScheme,
+                    Value = item.Gtin
+                }
+            };
+        }
+
+        if (item.Properties.Count > 0)
+        {
+            itemType.AdditionalItemProperty = item.Properties.Select(p => new ItemPropertyType
+            {
+                Name = p.Name,
+                Value = p.Value
+            }).ToList();
+        }
+
+        return itemType;
     }
 }

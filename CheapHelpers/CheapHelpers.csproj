@@ -13,7 +13,6 @@
 
   <ItemGroup>
     <Folder Include="Helpers\Security\" />
-    <Folder Include="Models\" />
   </ItemGroup>
 
 </Project>

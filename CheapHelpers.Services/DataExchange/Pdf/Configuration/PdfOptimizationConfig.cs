@@ -1,6 +1,6 @@
-﻿using CheapHelpers.Services.Pdf.Optimization;
+﻿using CheapHelpers.Services.DataExchange.Pdf.Optimization;
 
-namespace CheapHelpers.Services.Pdf.Configuration
+namespace CheapHelpers.Services.DataExchange.Pdf.Configuration
 {
     // PDF Optimization Configuration
     public record PdfOptimizationConfig

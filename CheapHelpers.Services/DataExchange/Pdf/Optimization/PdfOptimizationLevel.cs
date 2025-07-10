@@ -1,4 +1,4 @@
-﻿namespace CheapHelpers.Services.Pdf.Optimization
+﻿namespace CheapHelpers.Services.DataExchange.Pdf.Optimization
 {
     public enum PdfOptimizationLevel
     {

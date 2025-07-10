@@ -1,11 +1,11 @@
-﻿using CheapHelpers.Services.Pdf.Configuration;
-using CheapHelpers.Services.Pdf.Results;
+﻿using CheapHelpers.Services.DataExchange.Pdf.Configuration;
+using CheapHelpers.Services.DataExchange.Pdf.Results;
 using iText.Pdfoptimizer;
 using iText.Pdfoptimizer.Handlers;
 using iText.Pdfoptimizer.Handlers.Imagequality.Processors;
 using System.Diagnostics;
 
-namespace CheapHelpers.Services.Pdf.Optimization
+namespace CheapHelpers.Services.DataExchange.Pdf.Optimization
 {
     // PDF Optimization Service Implementation - iText only for now
     public class PdfOptimizationService : IPdfOptimizationService

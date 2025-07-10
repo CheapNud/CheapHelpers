@@ -1,9 +1,9 @@
-﻿using CheapHelpers.Services.Pdf.Export;
+﻿using CheapHelpers.Services.DataExchange.Pdf.Export;
 using iText.Commons.Actions;
 using iText.Kernel.Pdf;
 using iText.Layout;
 
-namespace CheapHelpers.Services.Pdf.Templates
+namespace CheapHelpers.Services.DataExchange.Pdf.Templates
 {
     // Template service interfaces
     public interface IPdfTemplateService

@@ -1,6 +1,6 @@
 ﻿using iText.Layout.Properties;
 
-namespace CheapHelpers.Services.Pdf.Configuration
+namespace CheapHelpers.Services.DataExchange.Pdf.Configuration
 {
     public record PdfColumnConfig
     {

@@ -1,11 +1,11 @@
-﻿using CheapHelpers.Services.Pdf.Export;
-using CheapHelpers.Services.Pdf.Optimization;
-using CheapHelpers.Services.Pdf.Results;
-using CheapHelpers.Services.Pdf.Templates;
+﻿using CheapHelpers.Services.DataExchange.Pdf.Export;
+using CheapHelpers.Services.DataExchange.Pdf.Optimization;
+using CheapHelpers.Services.DataExchange.Pdf.Results;
+using CheapHelpers.Services.DataExchange.Pdf.Templates;
 using System.Diagnostics;
 using SystemPath = System.IO.Path; // Resolve ambiguity
 
-namespace CheapHelpers.Services.Pdf
+namespace CheapHelpers.Services.DataExchange.Pdf
 {
     public class PdfTextService : IPdfService
     {

@@ -1,6 +1,6 @@
-﻿using CheapHelpers.Services.Pdf.Templates;
+﻿using CheapHelpers.Services.DataExchange.Pdf.Templates;
 
-namespace CheapHelpers.Services.Pdf.Export
+namespace CheapHelpers.Services.DataExchange.Pdf.Export
 {
     public interface IPdfExportService
     {

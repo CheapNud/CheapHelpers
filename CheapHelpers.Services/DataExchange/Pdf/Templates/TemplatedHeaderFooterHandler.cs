@@ -1,4 +1,4 @@
-﻿using CheapHelpers.Services.Pdf.Export;
+﻿using CheapHelpers.Services.DataExchange.Pdf.Export;
 using iText.IO.Font.Constants;
 using iText.Kernel.Font;
 using iText.Kernel.Pdf.Canvas;
@@ -6,7 +6,7 @@ using iText.Kernel.Pdf.Event;
 using System.Diagnostics;
 using iTextRectangle = iText.Kernel.Geom.Rectangle; // Resolve ambiguity
 
-namespace CheapHelpers.Services.Pdf.Templates
+namespace CheapHelpers.Services.DataExchange.Pdf.Templates
 {
     // Enhanced event handler for templated headers/footers  
     public class TemplatedHeaderFooterHandler : AbstractPdfDocumentEventHandler

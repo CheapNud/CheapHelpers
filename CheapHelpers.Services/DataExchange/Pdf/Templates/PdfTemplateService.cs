@@ -1,4 +1,5 @@
-﻿using CheapHelpers.Services.Pdf.Export;
+﻿using CheapHelpers.Services.DataExchange.Pdf.Export;
+using CheapHelpers.Services.Pdf.Templates;
 using iText.Commons.Actions;
 using iText.IO.Font.Constants;
 using iText.Kernel.Font;
@@ -11,7 +12,7 @@ using iText.Layout.Properties;
 using iTextParagraph = iText.Layout.Element.Paragraph; // Resolve ambiguity
 using iTextTable = iText.Layout.Element.Table; // Resolve ambiguity
 
-namespace CheapHelpers.Services.Pdf.Templates
+namespace CheapHelpers.Services.DataExchange.Pdf.Templates
 {
     // Template service implementation
     public class PdfTemplateService : IPdfTemplateService

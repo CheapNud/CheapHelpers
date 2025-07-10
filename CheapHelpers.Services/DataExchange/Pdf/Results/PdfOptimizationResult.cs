@@ -1,4 +1,4 @@
-﻿namespace CheapHelpers.Services.Pdf.Results
+﻿namespace CheapHelpers.Services.DataExchange.Pdf.Results
 {
     public record PdfOptimizationResult
     {

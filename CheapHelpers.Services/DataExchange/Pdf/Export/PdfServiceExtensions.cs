@@ -1,7 +1,7 @@
-﻿using CheapHelpers.Services.Pdf.Configuration;
-using CheapHelpers.Services.Pdf.Optimization;
+﻿using CheapHelpers.Services.DataExchange.Pdf.Configuration;
+using CheapHelpers.Services.DataExchange.Pdf.Optimization;
 
-namespace CheapHelpers.Services.Pdf.Export
+namespace CheapHelpers.Services.DataExchange.Pdf.Export
 {
     // Configuration helper
     public static class PdfServiceExtensions

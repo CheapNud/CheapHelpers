@@ -1,4 +1,4 @@
-﻿namespace CheapHelpers.Services.Pdf.Configuration
+﻿namespace CheapHelpers.Services.DataExchange.Pdf.Configuration
 {
     public record PdfSectionConfig
     {

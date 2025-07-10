@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Primitives;
 using System.Collections.Concurrent;
 
-namespace CheapHelpers.Services.Email.Templates
+namespace CheapHelpers.Services.Email.Infrastructure
 {
     /// <summary>
     /// Custom file provider for Fluid templates that serves partials from memory

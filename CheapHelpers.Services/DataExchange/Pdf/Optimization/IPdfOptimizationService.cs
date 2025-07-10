@@ -1,6 +1,6 @@
-﻿using CheapHelpers.Services.Pdf.Results;
+﻿using CheapHelpers.Services.DataExchange.Pdf.Results;
 
-namespace CheapHelpers.Services.Pdf.Optimization
+namespace CheapHelpers.Services.DataExchange.Pdf.Optimization
 {
     public interface IPdfOptimizationService
     {

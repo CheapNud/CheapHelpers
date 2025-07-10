@@ -1,8 +1,8 @@
-﻿using CheapHelpers.Services.Pdf.Configuration;
-using CheapHelpers.Services.Pdf.Export;
+﻿using CheapHelpers.Services.DataExchange.Pdf.Export;
+using CheapHelpers.Services.Pdf.Configuration;
 using iText.Kernel.Geom;
 
-namespace CheapHelpers.Services.Pdf.Templates
+namespace CheapHelpers.Services.DataExchange.Pdf.Templates
 {
     // Template builder for easy configuration
     public static class PdfTemplateBuilder

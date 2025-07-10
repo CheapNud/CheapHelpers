@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using CheapHelpers.Helpers.Encryption;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 
-namespace CheapHelpers.Blazor
+namespace CheapHelpers.Blazor.Helpers
 {
     public class CustomNavigationService(NavigationManager navigationManager, AuthenticationStateProvider authenticationStateProvider)
     {

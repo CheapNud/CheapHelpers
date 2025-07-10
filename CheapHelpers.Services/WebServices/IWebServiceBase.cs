@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 
-namespace CheapHelpers.WebServices;
+namespace CheapHelpers.Services.WebServices;
 
 public interface IWebServiceBase : IAsyncDisposable
 {

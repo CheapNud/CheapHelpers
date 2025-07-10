@@ -16,6 +16,7 @@ namespace CheapHelpers.EF.Extensions
 
         /// <summary>
         /// Do not use.
+        /// I warned you.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>
@@ -23,6 +24,7 @@ namespace CheapHelpers.EF.Extensions
         public static Task EnableIdentityInsert<T>(this DbContext context) => SetIdentityInsert<T>(context, enable: true);
         /// <summary>
         /// Do not use.
+        /// I warned you.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>
@@ -31,6 +33,7 @@ namespace CheapHelpers.EF.Extensions
 
         /// <summary>
         /// Do not use.
+        /// I warned you.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>
@@ -45,6 +48,7 @@ namespace CheapHelpers.EF.Extensions
 
         /// <summary>
         /// Do not use.
+        /// I warned you.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>

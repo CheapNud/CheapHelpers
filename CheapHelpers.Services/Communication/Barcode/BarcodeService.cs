@@ -3,7 +3,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using ZXing.Common;
 
 //TODO: fix and cleanup
-namespace CheapHelpers.Services
+namespace CheapHelpers.Services.Communication.Barcode
 {
     public class BarcodeService : IBarcodeService
     {

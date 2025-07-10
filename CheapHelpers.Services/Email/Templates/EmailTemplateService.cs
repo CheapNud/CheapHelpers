@@ -5,7 +5,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using FluidStringValue = Fluid.Values.StringValue;
 
-namespace CheapHelpers.Services
+namespace CheapHelpers.Services.Email.Templates
 {
     /// <summary>
     /// Minimal template service with all fixes integrated
@@ -462,7 +462,7 @@ namespace CheapHelpers.Services
         {
             return Environment.MachineName.Contains("DEV") ||
                    Environment.MachineName.Contains("TEST") ||
-                   System.Diagnostics.Debugger.IsAttached;
+                   Debugger.IsAttached;
         }
 
         /// <summary>

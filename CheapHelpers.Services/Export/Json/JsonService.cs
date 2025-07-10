@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 
 //TODO: fix and cleanup
-namespace CheapHelpers.Services.Services
+namespace CheapHelpers.Services.Export.Json
 {
     internal class JsonService : IJsonService
     {

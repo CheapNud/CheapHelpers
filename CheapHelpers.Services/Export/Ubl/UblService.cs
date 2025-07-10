@@ -1,11 +1,12 @@
-﻿using CheapHelpers.Models.Ubl;
+﻿using CheapHelpers;
+using CheapHelpers.Models.Ubl;
 using System.Diagnostics;
 using System.Xml;
 using UblSharp;
 using UblSharp.CommonAggregateComponents;
 using UblSharp.UnqualifiedDataTypes;
 
-namespace CheapHelpers.Services;
+namespace CheapHelpers.Services.Export.Ubl;
 
 public class UblService
 {

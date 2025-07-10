@@ -1,5 +1,6 @@
 ﻿using Azure;
 using Azure.AI.Translation.Document;
+using CheapHelpers;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
@@ -8,7 +9,7 @@ using System.Security.Cryptography;
 using System.Text;
 
 
-namespace CheapHelpers.Services;
+namespace CheapHelpers.Services.Translation;
 
 public class TranslatorService(
     string apiKey,

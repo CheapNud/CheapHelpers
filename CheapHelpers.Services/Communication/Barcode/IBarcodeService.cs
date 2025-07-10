@@ -1,4 +1,4 @@
-﻿namespace CheapHelpers.Services
+﻿namespace CheapHelpers.Services.Communication.Barcode
 {
     public interface IBarcodeService
     {

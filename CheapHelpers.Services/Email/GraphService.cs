@@ -1,11 +1,12 @@
 ﻿using Azure.Identity;
+using CheapHelpers;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using Microsoft.Graph.Models.ODataErrors;
 using MoreLinq;
 using System.Diagnostics;
 
-namespace CheapHelpers.Services;
+namespace CheapHelpers.Services.Email;
 
 public class GraphService(
     string fromName,
@@ -132,9 +133,9 @@ public class GraphService(
             EmailAddress = new EmailAddress { Address = address }
         }).ToList();
 
-    private static List<Microsoft.Graph.Models.Attachment> CreateAttachments(
+    private static List<Attachment> CreateAttachments(
         (string FileName, byte[] Content)[] attachments) =>
-        attachments.Select(attachment => new Microsoft.Graph.Models.Attachment
+        attachments.Select(attachment => new Attachment
         {
             OdataType = FileAttachmentType,
             Name = attachment.FileName,

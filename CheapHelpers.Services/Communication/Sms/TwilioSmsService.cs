@@ -2,7 +2,7 @@
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 
-namespace CheapHelpers.Services
+namespace CheapHelpers.Services.Communication.Sms
 {
     //TODO: expand
     public class TwilioSmsService : ISmsService

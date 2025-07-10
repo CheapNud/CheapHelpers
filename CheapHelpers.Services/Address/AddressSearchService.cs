@@ -1,7 +1,7 @@
 ﻿using CheapHelpers.Models.DTOs.AddressSearch;
 using System.Diagnostics;
 
-namespace CheapHelpers.Services;
+namespace CheapHelpers.Services.Address;
 
 public class AddressSearchService(string apiKey, string clientId, string endpoint, HttpClient? httpClient = null) : IDisposable
 {

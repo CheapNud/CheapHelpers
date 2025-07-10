@@ -1,4 +1,4 @@
-﻿namespace CheapHelpers.Services
+﻿namespace CheapHelpers.Services.Export.Json
 {
     public interface IJsonService
     {

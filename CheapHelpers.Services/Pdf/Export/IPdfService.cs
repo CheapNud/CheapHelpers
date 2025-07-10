@@ -1,4 +1,4 @@
-﻿namespace CheapHelpers.Services
+﻿namespace CheapHelpers.Services.Pdf.Export
 {
     public interface IPdfService
     {

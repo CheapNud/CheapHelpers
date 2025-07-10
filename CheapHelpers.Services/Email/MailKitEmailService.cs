@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Net;
 
-namespace CheapHelpers.Services;
+namespace CheapHelpers.Services.Email;
 
 public class MailKitEmailService(
     string host,

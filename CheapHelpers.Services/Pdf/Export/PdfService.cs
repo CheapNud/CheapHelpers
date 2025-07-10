@@ -20,18 +20,9 @@ using iTextRectangle = iText.Kernel.Geom.Rectangle; // Resolve ambiguity
 using iTextTable = iText.Layout.Element.Table; // Resolve ambiguity
 using SystemPath = System.IO.Path; // Resolve ambiguity
 
-namespace CheapHelpers.Services
+namespace CheapHelpers.Services.Pdf.Export
 {
-    // PDF Optimization Configuration
-    public record PdfOptimizationConfig
-    {
-        public string? ILovePdfApiKey { get; init; }
-        public string? ILovePdfProjectId { get; init; }
-        public bool UseILovePdfPrimary { get; init; } = true;
-        public bool EnableITextFallback { get; init; } = true;
-        public int MaxFileSizeMB { get; init; } = 50;
-        public PdfOptimizationLevel DefaultLevel { get; init; } = PdfOptimizationLevel.Balanced;
-    }
+
 
     public enum PdfOptimizationLevel
     {

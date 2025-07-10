@@ -2,7 +2,7 @@
 using ClosedXML.Excel;
 using System.Diagnostics;
 
-namespace CheapHelpers.Services;
+namespace CheapHelpers.Services.Export.Excel;
 
 public class XlsxService : IXlsxService
 {

@@ -3,7 +3,7 @@ using System.Dynamic;
 using System.Text;
 using System.Xml.Linq;
 
-namespace CheapHelpers.Services;
+namespace CheapHelpers.Services.Export.Xml;
 
 public class XmlService : IXmlService
 {

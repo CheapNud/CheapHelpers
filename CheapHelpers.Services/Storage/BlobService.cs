@@ -6,7 +6,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using System.Diagnostics;
 
-namespace CheapHelpers.Services;
+namespace CheapHelpers.Services.Storage;
 
 /// <summary>
 /// Service for managing files in Azure blob containers
@@ -235,7 +235,7 @@ public class BlobService(BlobServiceClient blobServiceClient)
             }
 
             using var outStream = new MemoryStream();
-            using (var image = SixLabors.ImageSharp.Image.Load(imageBytes))
+            using (var image = Image.Load(imageBytes))
             {
                 image.Mutate(x => x.AutoOrient());
                 await image.SaveAsJpegAsync(outStream);

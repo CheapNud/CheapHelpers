@@ -3,7 +3,7 @@ using CsvHelper.Configuration;
 using System.Diagnostics;
 using System.Globalization;
 
-namespace CheapHelpers.Services;
+namespace CheapHelpers.Services.Export.Csv;
 
 public class CsvService : ICsvService
 {

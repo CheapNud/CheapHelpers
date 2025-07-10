@@ -1,6 +1,6 @@
 ﻿using iText.Kernel.Colors;
 
-namespace CheapHelpers.Services.DataExchange.Pdf.Export
+namespace CheapHelpers.Services.DataExchange.Pdf.Templates
 {
     public record PdfColorScheme
     {

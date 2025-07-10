@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="PDF\**" />
+    <EmbeddedResource Remove="PDF\**" />
+    <None Remove="PDF\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Azure.AI.Translation.Document" Version="2.0.0" />
     <PackageReference Include="Azure.Identity" Version="1.14.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.24.0" />
@@ -38,7 +44,6 @@
 
   <ItemGroup>
     <Folder Include="Email\Extensions\" />
-    <Folder Include="Helpers\" />
     <Folder Include="DataExchange\Pdf\EventHandlers\" />
     <Folder Include="Storage\Configuration\" />
     <Folder Include="Translation\Models\" />

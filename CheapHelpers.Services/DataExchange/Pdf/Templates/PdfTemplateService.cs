@@ -1,6 +1,4 @@
-﻿using CheapHelpers.Services.DataExchange.Pdf.Export;
-using CheapHelpers.Services.Pdf.Templates;
-using iText.Commons.Actions;
+﻿using iText.Commons.Actions;
 using iText.IO.Font.Constants;
 using iText.Kernel.Font;
 using iText.Kernel.Pdf;

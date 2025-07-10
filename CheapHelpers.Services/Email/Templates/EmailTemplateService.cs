@@ -1,4 +1,5 @@
 ﻿using CheapHelpers.Models.Contracts;
+using CheapHelpers.Services.Email.Infrastructure;
 using CheapHelpers.Services.Email.Templates.Helpers;
 using Fluid;
 using System.Collections.Concurrent;

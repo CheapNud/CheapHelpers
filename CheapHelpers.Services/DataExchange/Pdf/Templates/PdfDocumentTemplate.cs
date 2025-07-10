@@ -1,5 +1,4 @@
 ﻿using CheapHelpers.Services.DataExchange.Pdf.Configuration;
-using CheapHelpers.Services.DataExchange.Pdf.Export;
 using iText.Kernel.Geom;
 
 namespace CheapHelpers.Services.DataExchange.Pdf.Templates

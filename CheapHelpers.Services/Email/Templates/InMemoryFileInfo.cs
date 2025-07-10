@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.FileProviders;
 using System.Text;
 
-namespace CheapHelpers.Models.Contracts
+namespace CheapHelpers.Services.Email.Templates
 {
     /// <summary>
     /// File info for in-memory template content

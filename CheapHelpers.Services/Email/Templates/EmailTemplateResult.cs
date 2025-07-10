@@ -1,4 +1,4 @@
-﻿namespace CheapHelpers.Models.Contracts
+﻿namespace CheapHelpers.Services.Email.Templates
 {
     /// <summary>
     /// Result of template rendering

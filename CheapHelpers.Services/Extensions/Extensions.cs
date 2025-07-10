@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using System.Text.Encodings.Web;
-using System.Threading.Tasks;
-using MoreLinq;
 
 namespace CheapHelpers.Services
 {

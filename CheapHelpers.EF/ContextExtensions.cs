@@ -1,11 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
+﻿using CheapHelpers.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using CheapHelpers.Models;
 
 namespace CheapHelpers.EF
 {

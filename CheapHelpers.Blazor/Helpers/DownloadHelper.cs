@@ -3,10 +3,7 @@ using Microsoft.Extensions.Localization;
 using Microsoft.JSInterop;
 using MimeMapping;
 using MudBlazor;
-using System;
 using System.Diagnostics;
-using System.IO;
-using System.Threading.Tasks;
 
 namespace CheapHelpers.Blazor
 {

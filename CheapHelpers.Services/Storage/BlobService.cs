@@ -2,6 +2,7 @@
 using Azure.Storage.Blobs.Models;
 using CheapHelpers.Extensions;
 using CheapHelpers.Models.Entities;
+using CheapHelpers.Services.Storage.Configuration;
 using MimeMapping;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;

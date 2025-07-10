@@ -1,5 +1,5 @@
 ﻿using CheapHelpers.Extensions;
-using CheapHelpers.Models.DTOs.AddressSearch;
+using CheapHelpers.Models.Dtos.AddressSearch;
 using System.Diagnostics;
 
 namespace CheapHelpers.Services.Address;

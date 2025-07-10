@@ -1,6 +1,5 @@
-﻿using CheapHelpers.Services.DataExchange.Pdf.Export;
-using CheapHelpers.Services.DataExchange.Pdf.Optimization;
-using CheapHelpers.Services.DataExchange.Pdf.Results;
+﻿using CheapHelpers.Models.Dtos.Pdf;
+using CheapHelpers.Services.DataExchange.Pdf.Infrastructure;
 using CheapHelpers.Services.DataExchange.Pdf.Templates;
 using System.Diagnostics;
 using SystemPath = System.IO.Path; // Resolve ambiguity

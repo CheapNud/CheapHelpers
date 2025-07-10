@@ -1,3 +1,3 @@
-﻿namespace CheapHelpers.Models.DTOs.AddressSearch;
+﻿namespace CheapHelpers.Models.Dtos.AddressSearch;
 
 public record TopLeftPoint(double Lat, double Lon);

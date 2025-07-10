@@ -12,11 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Helpers\Files\" />
-    <Folder Include="Helpers\Web\" />
-    <Folder Include="Helpers\Enums\" />
     <Folder Include="Helpers\Security\" />
-    <Folder Include="Helpers\Encryption\" />
     <Folder Include="Models\" />
   </ItemGroup>
 

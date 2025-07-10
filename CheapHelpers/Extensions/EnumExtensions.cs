@@ -1,4 +1,5 @@
 ﻿using CheapHelpers.Extensions;
+using CheapHelpers.Helpers.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,4 +1,4 @@
-﻿using CheapHelpers.Services.DataExchange.Pdf.Optimization;
+﻿using CheapHelpers.Services.DataExchange.Pdf.Infrastructure;
 
 namespace CheapHelpers.Services.DataExchange.Pdf.Configuration
 {

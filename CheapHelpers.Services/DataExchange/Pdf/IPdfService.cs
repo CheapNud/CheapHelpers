@@ -1,5 +1,5 @@
-﻿using CheapHelpers.Services.DataExchange.Pdf.Optimization;
-using CheapHelpers.Services.DataExchange.Pdf.Results;
+﻿using CheapHelpers.Models.Dtos.Pdf;
+using CheapHelpers.Services.DataExchange.Pdf.Infrastructure;
 
 namespace CheapHelpers.Services.DataExchange.Pdf
 {

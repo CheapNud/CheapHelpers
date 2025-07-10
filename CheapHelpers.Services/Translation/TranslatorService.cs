@@ -1,7 +1,7 @@
 ﻿using Azure;
 using Azure.AI.Translation.Document;
 using CheapHelpers.Extensions;
-using CheapHelpers.Helpers;
+using CheapHelpers.Models.Dtos.Translation;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;

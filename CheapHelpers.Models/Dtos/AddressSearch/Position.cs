@@ -1,3 +1,3 @@
-﻿namespace CheapHelpers.Models.DTOs.AddressSearch;
+﻿namespace CheapHelpers.Models.Dtos.AddressSearch;
 
 public record Position(double Lat, double Lon);

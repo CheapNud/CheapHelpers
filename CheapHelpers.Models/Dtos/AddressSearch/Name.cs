@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace CheapHelpers.Models.DTOs.AddressSearch;
+namespace CheapHelpers.Models.Dtos.AddressSearch;
 
 public class Name
 {

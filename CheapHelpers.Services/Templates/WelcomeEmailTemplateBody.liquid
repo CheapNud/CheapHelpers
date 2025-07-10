@@ -1,0 +1,15 @@
+<p style='font-size: 14pt; margin: 15px 0;'>
+    Hello {{ Data.UserName }}!<br><br>
+    
+    Welcome to {{ Data.BrandName }}! We're excited to have you join us.<br><br>
+    
+    Your account was created on {{ Data.RegistrationDate | date: "MMMM d, yyyy" }}.<br><br>
+    
+    To get started, please activate your account by clicking 
+    <a href='{{ Data.ActivationLink }}' style='color: {{ Theme.Primary | default: "#007bff" }}; text-decoration: none;'>this link</a>.<br><br>
+    
+    Happy to have you!<br><br>
+    
+    Kind regards,<br>
+    Team {{ Data.BrandName }}
+</p>

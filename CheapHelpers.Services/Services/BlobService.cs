@@ -40,8 +40,6 @@ public class BlobService(BlobServiceClient blobServiceClient)
         try
         {
             var client = GetClient(filename, blobContainer);
-            // Using DownloadStreamingAsync instead of OpenReadAsync to avoid the "multiple calls" issue
-            // mentioned in the original comments. This approach is more reliable with the current Azure SDK.
             var response = await client.DownloadStreamingAsync();
             return response.Value.Content;
         }

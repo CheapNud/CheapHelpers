@@ -1,16 +1,8 @@
-﻿using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Advanced;
-using SixLabors.ImageSharp.Formats;
-using SixLabors.ImageSharp.Formats.Jpeg;
+﻿using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.PixelFormats;
-using System;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using ZXing.Common;
-using ZXing.ImageSharp;
 
+//TODO: fix and cleanup
 namespace CheapHelpers.Services
 {
     public class BarcodeService : IBarcodeService

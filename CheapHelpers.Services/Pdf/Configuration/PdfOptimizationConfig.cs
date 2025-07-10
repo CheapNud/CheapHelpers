@@ -1,4 +1,4 @@
-﻿using CheapHelpers.Services.Pdf.Export;
+﻿using CheapHelpers.Services.Pdf.Optimization;
 
 namespace CheapHelpers.Services.Pdf.Configuration
 {

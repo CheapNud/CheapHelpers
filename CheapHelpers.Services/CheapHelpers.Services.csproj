@@ -43,8 +43,6 @@
     <Folder Include="Pdf\EventHandlers\" />
     <Folder Include="Storage\Configuration\" />
     <Folder Include="Translation\Models\" />
-    <Folder Include="Pdf\Results\" />
-    <Folder Include="Pdf\Optimization\" />
   </ItemGroup>
 
 </Project>

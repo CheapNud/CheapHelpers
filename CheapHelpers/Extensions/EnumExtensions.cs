@@ -1,9 +1,10 @@
-﻿using System;
+﻿using CheapHelpers.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace CheapHelpers
+namespace CheapHelpers.Extensions
 {
     public static class EnumExtensions
     {

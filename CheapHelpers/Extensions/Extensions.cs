@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 
-namespace CheapHelpers
+namespace CheapHelpers.Extensions
 {
     public static class Extensions
     {
@@ -218,7 +218,7 @@ namespace CheapHelpers
 
         public static string ToString(this SecureString ss)
         {
-            IntPtr unmanagedString = IntPtr.Zero;
+            nint unmanagedString = nint.Zero;
             try
             {
                 unmanagedString = Marshal.SecureStringToGlobalAllocUnicode(ss);
@@ -256,13 +256,13 @@ namespace CheapHelpers
                 var isNonWorkingDay =
                     currentDate.DayOfWeek == DayOfWeek.Saturday ||
                     currentDate.DayOfWeek == DayOfWeek.Sunday ||
-                    (excludedDates != null && excludedDates.Exists(excludedDate => excludedDate.Date.Equals(currentDate.Date)));
+                    excludedDates != null && excludedDates.Exists(excludedDate => excludedDate.Date.Equals(currentDate.Date));
                 return !isNonWorkingDay;
             };
 
             return Enumerable.Range(0, (finishDateExclusive - current).Days).Count(isWorkingDay);
         }
 
-        public static bool IsNullOrEmpty<T>(this IEnumerable<T>? enumerable) => enumerable == null || !enumerable.Any();
+        public static bool IsNullOrEmpty<T>(this IEnumerable<T> enumerable) => enumerable == null || !enumerable.Any();
     }
 }

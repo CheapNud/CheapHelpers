@@ -5,16 +5,10 @@ namespace CheapHelpers.Models.Contracts
     /// <summary>
     /// Represents a source for loading email templates
     /// </summary>
-    public class TemplateSource
+    public class TemplateSource(Assembly assembly, string @namespace)
     {
-        public Assembly Assembly { get; }
-        public string Namespace { get; }
-
-        public TemplateSource(Assembly assembly, string @namespace)
-        {
-            Assembly = assembly ?? throw new ArgumentNullException(nameof(assembly));
-            Namespace = @namespace ?? throw new ArgumentNullException(nameof(@namespace));
-        }
+        public Assembly Assembly { get; } = assembly ?? throw new ArgumentNullException(nameof(assembly));
+        public string Namespace { get; } = @namespace ?? throw new ArgumentNullException(nameof(@namespace));
 
         public override string ToString()
         {

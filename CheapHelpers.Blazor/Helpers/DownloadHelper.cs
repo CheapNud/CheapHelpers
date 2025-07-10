@@ -5,7 +5,7 @@ using MimeMapping;
 using MudBlazor;
 using System.Diagnostics;
 
-namespace CheapHelpers.Blazor
+namespace CheapHelpers.Blazor.Helpers
 {
     public class DownloadHelper(IBlazorDownloadFileService download, ISnackbar toast, IStringLocalizer loc, IJSRuntime js)
     {
@@ -70,7 +70,7 @@ namespace CheapHelpers.Blazor
             try
             {
                 //present as download
-                if (!System.IO.File.Exists(filePath))
+                if (!File.Exists(filePath))
                 {
                     toast.Add(loc["Error"], Severity.Error);
                     return;
@@ -104,7 +104,7 @@ namespace CheapHelpers.Blazor
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 Debug.WriteLine(ex.Message);
                 throw;

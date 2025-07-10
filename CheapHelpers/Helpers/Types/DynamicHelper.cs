@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 
-namespace CheapHelpers;
+namespace CheapHelpers.Helpers.Types;
 
 public static class DynamicHelper
 {
@@ -56,7 +56,7 @@ public static class DynamicHelper
     /// <summary>
     /// Gets the value of a specific property from a dynamic object
     /// </summary>
-    public static object? GetPropertyValue(dynamic obj, string propertyName)
+    public static object GetPropertyValue(dynamic obj, string propertyName)
     {
         ArgumentNullException.ThrowIfNull(obj);
         ArgumentException.ThrowIfNullOrWhiteSpace(propertyName);
@@ -81,12 +81,12 @@ public static class DynamicHelper
     /// <summary>
     /// Gets all property names and values from a dynamic object as key-value pairs
     /// </summary>
-    public static Dictionary<string, object?> GetPropertiesAsDictionary(dynamic obj)
+    public static Dictionary<string, object> GetPropertiesAsDictionary(dynamic obj)
     {
         ArgumentNullException.ThrowIfNull(obj);
 
         var properties = GetPropertyNames(obj);
-        var result = new Dictionary<string, object?>();
+        var result = new Dictionary<string, object>();
 
         foreach (var propertyName in properties)
         {

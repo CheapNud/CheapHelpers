@@ -37,7 +37,24 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Templates\" />
+    <Folder Include="Address\" />
+    <Folder Include="Communication\Barcode\" />
+    <Folder Include="Communication\Sms\" />
+    <Folder Include="Email\Extensions\" />
+    <Folder Include="Email\Templates\Configuration\" />
+    <Folder Include="Email\Templates\Helpers\" />
+    <Folder Include="Export\Xml\" />
+    <Folder Include="Export\Excel\" />
+    <Folder Include="Export\Csv\" />
+    <Folder Include="Storage\Configuration\" />
+    <Folder Include="Translation\Models\" />
+    <Folder Include="Ubl\" />
+    <Folder Include="Pdf\Configuration\" />
+    <Folder Include="Pdf\EventHandlers\" />
+    <Folder Include="Pdf\Export\" />
+    <Folder Include="Pdf\Results\" />
+    <Folder Include="Pdf\Optimization\" />
+    <Folder Include="Pdf\Templates\" />
   </ItemGroup>
 
 </Project>

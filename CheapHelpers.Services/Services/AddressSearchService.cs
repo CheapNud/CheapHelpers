@@ -1,4 +1,4 @@
-﻿using CheapHelpers.Models;
+﻿using CheapHelpers.Models.DTOs.AddressSearch;
 using System.Diagnostics;
 
 namespace CheapHelpers.Services;

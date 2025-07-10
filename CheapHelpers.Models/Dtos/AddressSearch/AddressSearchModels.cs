@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace CheapHelpers.Models;
+namespace CheapHelpers.Models.DTOs.AddressSearch;
 
 public class Root
 {

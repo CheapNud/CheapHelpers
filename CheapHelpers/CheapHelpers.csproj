@@ -11,4 +11,13 @@
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Helpers\Files\" />
+    <Folder Include="Helpers\Web\" />
+    <Folder Include="Helpers\Enums\" />
+    <Folder Include="Helpers\Security\" />
+    <Folder Include="Helpers\Encryption\" />
+    <Folder Include="Models\" />
+  </ItemGroup>
+
 </Project>

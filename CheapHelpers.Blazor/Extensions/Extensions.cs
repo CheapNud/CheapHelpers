@@ -5,7 +5,7 @@ using MudBlazor;
 using System.Diagnostics;
 
 
-namespace CheapHelpers.Blazor
+namespace CheapHelpers.Blazor.Extensions
 {
     public static class Extensions
     {

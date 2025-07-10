@@ -1,4 +1,4 @@
-﻿namespace CheapHelpers.Models
+﻿namespace CheapHelpers.Models.Dtos
 {
     public abstract class FileAttachment : IEntityId
     {

@@ -1,9 +1,10 @@
-﻿using System;
+﻿using CheapHelpers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace CheapHelpers
+namespace CheapHelpers.Helpers.Types
 {
     public static class TypeHelper
     {

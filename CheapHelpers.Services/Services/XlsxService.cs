@@ -1,4 +1,5 @@
-﻿using ClosedXML.Excel;
+﻿using CheapHelpers.Helpers.Types;
+using ClosedXML.Excel;
 using System.Diagnostics;
 
 namespace CheapHelpers.Services;

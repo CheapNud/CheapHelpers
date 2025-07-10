@@ -22,7 +22,7 @@ public class TranslatorService(
     private const string ApiVersion = "3.0";
     private const string DefaultTargetLanguage = "en";
     private const string SubscriptionKeyHeader = "Ocp-Apim-Subscription-Key";
-    private const string JsonContentType = "application/json";
+    private const string JsonContentType = MimeMapping.KnownMimeTypes.Json;
     private const int CacheExpiryMinutes = 60;
     private const int MaxRetryAttempts = 3;
     private const int RetryDelayMs = 1000;

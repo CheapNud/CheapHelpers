@@ -1,4 +1,5 @@
-﻿using CheapHelpers.Services.Pdf.Results;
+﻿using CheapHelpers.Services.Pdf.Configuration;
+using CheapHelpers.Services.Pdf.Results;
 using iText.Pdfoptimizer;
 using iText.Pdfoptimizer.Handlers;
 using iText.Pdfoptimizer.Handlers.Imagequality.Processors;

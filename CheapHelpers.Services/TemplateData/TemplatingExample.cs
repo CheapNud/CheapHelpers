@@ -1,4 +1,5 @@
-﻿using CheapHelpers.Services.Helpers;
+﻿using CheapHelpers.Services.Email.Templates;
+using CheapHelpers.Services.Helpers;
 
 namespace CheapHelpers.Services.TemplateData
 {

@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using CheapHelpers.Helpers.Encryption;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 
-namespace CheapHelpers.Blazor
+namespace CheapHelpers.Blazor.Helpers
 {
     public class EncryptedRouteConstraint : IRouteConstraint
     {

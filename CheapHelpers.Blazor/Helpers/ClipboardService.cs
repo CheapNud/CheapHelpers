@@ -1,6 +1,6 @@
 ﻿using Microsoft.JSInterop;
 
-namespace CheapHelpers.Blazor
+namespace CheapHelpers.Blazor.Helpers
 {
     public sealed class ClipboardService(IJSRuntime jsRuntime)
     {

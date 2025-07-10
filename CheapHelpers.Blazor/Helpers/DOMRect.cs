@@ -1,4 +1,4 @@
-﻿namespace CheapHelpers.Blazor
+﻿namespace CheapHelpers.Blazor.Helpers
 {
     public class DOMRect
     {

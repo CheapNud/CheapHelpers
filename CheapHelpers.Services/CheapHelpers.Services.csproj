@@ -7,6 +7,34 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="PDF\**" />
+    <EmbeddedResource Remove="PDF\**" />
+    <None Remove="PDF\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Email\Templates\Footer.liquid" />
+    <None Remove="Email\Templates\Header.liquid" />
+    <None Remove="Email\Templates\Master.liquid" />
+    <None Remove="Email\Templates\WelcomeEmailTemplateBody.liquid" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Email\Templates\Footer.liquid">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Email\Templates\Header.liquid">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Email\Templates\Master.liquid">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Email\Templates\WelcomeEmailTemplateBody.liquid">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Azure.AI.Translation.Document" Version="2.0.0" />
     <PackageReference Include="Azure.Identity" Version="1.14.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.24.0" />
@@ -34,10 +62,6 @@
   <ItemGroup>
     <ProjectReference Include="..\CheapHelpers.Models\CheapHelpers.Models.csproj" />
     <ProjectReference Include="..\CheapHelpers\CheapHelpers.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Templates\" />
   </ItemGroup>
 
 </Project>

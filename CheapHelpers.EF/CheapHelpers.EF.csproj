@@ -17,10 +17,4 @@
     <ProjectReference Include="..\CheapHelpers\CheapHelpers.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Extensions\" />
-    <Folder Include="Models\" />
-    <Folder Include="Repositories\" />
-  </ItemGroup>
-
 </Project>

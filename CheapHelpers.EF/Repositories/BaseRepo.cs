@@ -1,9 +1,11 @@
-﻿using CheapHelpers.Models.Contracts;
+﻿using CheapHelpers.EF.Extensions;
+using CheapHelpers.EF.Models;
+using CheapHelpers.Models.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Diagnostics;
 
-namespace CheapHelpers.EF
+namespace CheapHelpers.EF.Repositories
 {
     public class BaseRepo : IDisposable
     {

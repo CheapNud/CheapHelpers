@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 
-namespace CheapHelpers.EF
+namespace CheapHelpers.EF.Models
 {
     public class PaginatedList<T> : List<T>
     {
@@ -25,7 +25,7 @@ namespace CheapHelpers.EF
             PageIndex = pageIndex;
             ResultCount = count;
             TotalPages = (int)Math.Ceiling(ResultCount / (double)pageSize);
-            this.AddRange(source);
+            AddRange(source);
         }
 
         /// <summary>

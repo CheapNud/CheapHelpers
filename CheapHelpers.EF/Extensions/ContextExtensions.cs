@@ -1,8 +1,10 @@
-﻿using CheapHelpers.Models.Contracts;
+﻿using CheapHelpers.EF.Models;
+using CheapHelpers.EF.Repositories;
+using CheapHelpers.Models.Contracts;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 
-namespace CheapHelpers.EF
+namespace CheapHelpers.EF.Extensions
 {
     public static class ContextExtensions
     {

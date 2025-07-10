@@ -48,12 +48,14 @@ namespace CheapHelpers.Services.Email
         /// <summary>
         /// Sends a developer notification email with exception details
         /// </summary>
+        ///         [Obsolete("Templating is still in the works")]
         public static Task SendDeveloperAsync(this IEmailService emailSender, Exception ex) =>
             emailSender.SendEmailAsync(emailSender.Developers, DeveloperExceptionSubject, ex.ToHtmlString());
 
         /// <summary>
         /// Sends a developer notification email with exception details and additional parameters
         /// </summary>
+        [Obsolete("Templating is still in the works")]
         public static Task SendDeveloperAsync(this IEmailService emailSender, Exception ex, string[] parameters)
         {
             var formattedParameters = parameters.Select(param => $"<p>{param}</p>");
@@ -63,13 +65,14 @@ namespace CheapHelpers.Services.Email
             return emailSender.SendEmailAsync(emailSender.Developers, DeveloperExceptionSubject, body);
         }
 
-        //TODO: really old code, should be replaced with templating engine
+        //TODO: really old code, should be replaced with templating engine, it is here for backward compatibility
+        [Obsolete("Templating is still in the works")]
         public static string ToHtmlString(this Exception ex)
         {
             var report = ex.ExtractExceptionData();
             return FormatExceptionReportAsHtml(report);
         }
-
+        [Obsolete("Templating is still in the works")]
         private static string FormatExceptionReportAsHtml(ExceptionReport report)
         {
             var errormessage = new StringBuilder();
@@ -86,7 +89,7 @@ namespace CheapHelpers.Services.Email
 
             return errormessage.ToString();
         }
-
+        [Obsolete("Templating is still in the works")]
         private static void AppendExceptionAsHtml(StringBuilder sb, ExceptionDetails details)
         {
             sb.AppendLine($@"<p>Assembly: {details.AssemblyName}</p><br>");

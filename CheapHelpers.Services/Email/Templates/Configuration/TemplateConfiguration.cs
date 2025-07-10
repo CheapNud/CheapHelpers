@@ -6,7 +6,7 @@ namespace CheapHelpers.Services.Email.Templates.Configuration
     /// <summary>
     /// Helper class to provide core infrastructure types for template registration
     /// </summary>
-    public static class TemplateTypes
+    public static class TemplateConfiguration
     {
         /// <summary>
         /// Gets the core infrastructure types needed for all email templates

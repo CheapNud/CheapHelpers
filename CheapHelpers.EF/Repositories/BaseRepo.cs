@@ -1,5 +1,5 @@
 ﻿using CheapHelpers.EF.Extensions;
-using CheapHelpers.EF.Models;
+using CheapHelpers.EF.Infrastructure;
 using CheapHelpers.Models.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;

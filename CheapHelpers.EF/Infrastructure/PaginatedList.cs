@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 
-namespace CheapHelpers.EF.Models
+namespace CheapHelpers.EF.Infrastructure
 {
     public class PaginatedList<T> : List<T>
     {

@@ -10,7 +10,7 @@ namespace CheapHelpers.Services.TemplateData
         {
             // 1. Create template service with your template data types
             var templateService = new EmailTemplateService(
-                TemplateTypes.WithTemplateDataTypes(
+                TemplateConfiguration.WithTemplateDataTypes(
                     typeof(WelcomeEmailTemplateData)
                 )
             );

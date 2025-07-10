@@ -1,5 +1,5 @@
 ﻿using CheapHelpers.Models.Contracts;
-using CheapHelpers.Services.Helpers;
+using CheapHelpers.Services.Email.Templates.Helpers;
 using Fluid;
 using System.Collections.Concurrent;
 using System.Diagnostics;

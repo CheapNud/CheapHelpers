@@ -1,5 +1,5 @@
 ﻿using CheapHelpers.EF;
-using CheapHelpers.Models;
+using CheapHelpers.Models.Contracts;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using System.Diagnostics;

@@ -38,8 +38,7 @@
 
   <ItemGroup>
     <Folder Include="Email\Extensions\" />
-    <Folder Include="Email\Templates\Configuration\" />
-    <Folder Include="Email\Templates\Helpers\" />
+    <Folder Include="Helpers\" />
     <Folder Include="Pdf\EventHandlers\" />
     <Folder Include="Storage\Configuration\" />
     <Folder Include="Translation\Models\" />

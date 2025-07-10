@@ -1,4 +1,4 @@
-﻿using CheapHelpers.Models;
+﻿using CheapHelpers.Models.Contracts;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-
-namespace CheapHelpers.Services
+﻿namespace CheapHelpers.Services
 {
     public interface IBarcodeService
     {

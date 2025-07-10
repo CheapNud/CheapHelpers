@@ -1,9 +1,7 @@
-﻿using System.Threading.Tasks;
-
-namespace CheapHelpers.Services
+﻿namespace CheapHelpers.Services
 {
-	public interface IXmlService
-	{
-		Task Export(string filePath, dynamic data);
-	}
+    public interface IXmlService
+    {
+        Task Export(string filePath, dynamic data);
+    }
 }

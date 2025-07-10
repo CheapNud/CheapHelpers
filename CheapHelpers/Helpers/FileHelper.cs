@@ -40,13 +40,13 @@ namespace CheapHelpers
             return FileHelper.GetTrustedFileNameFromPath(Path.Combine(Path.GetTempPath(), filename));
         }
 
-        public static string ChangeFileNameId(string filename) 
+        public static string ChangeFileNameId(string filename)
         {
             var arr = Path.GetFileNameWithoutExtension(filename).Split('_');
 
             var filenamewoid = filename.Replace(@$"_{arr.Last()}", "");
 
-            var a =  @$"{filenamewoid}{Path.GetExtension(filename)}";
+            var a = @$"{filenamewoid}{Path.GetExtension(filename)}";
             return GetTrustedFileName(a);
         }
     }

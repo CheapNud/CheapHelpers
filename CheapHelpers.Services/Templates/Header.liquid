@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv='Content-Type' content='text/html' />
+    <title>{{ Theme.BrandName | default: 'Default Brand' }}</title>
+</head>
+<body>
+    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+        {% if Urls.BrandImage %}
+        <div style='text-align: center; margin: 20px 0;'>
+            <img src='{{ Urls.BrandImage }}' style='width: {{ Theme.BrandLogoSize | default: "200px" }};' alt='{{ Theme.BrandName }}' />
+        </div>
+        {% endif %}
+        <div style='text-align: center; margin: 20px 0;'>
+            <h2 style='color: #444; margin: 0;'>{{ Data.Subject }}</h2>
+        </div>
+        <div style='color: #444; line-height: 1.6;'>

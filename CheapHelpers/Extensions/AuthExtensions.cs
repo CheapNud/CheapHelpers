@@ -13,7 +13,7 @@ namespace CheapHelpers.Extensions
         }
         public static (string username, string password) GetAuthorizationCredentials(this string encodedstring)
         {
-            var token = encodedstring.Substring("Basic ".Length).Trim();
+            var token = encodedstring["Basic ".Length..].Trim();
             var credentialstring = Encoding.UTF8.GetString(Convert.FromBase64String(token));
             var credentials = credentialstring.Split(':');
             return (credentials[0], credentials[1]);

@@ -1,13 +1,18 @@
-﻿using CheapHelpers.Services.Email;
+﻿using CheapHelpers.Helpers.Logs;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using System.Text.Encodings.Web;
 
-namespace CheapHelpers.Services
+namespace CheapHelpers.Services.Email
 {
-    public static class Extensions
+    public static class EmailExtensions
     {
+
+        private const string DeveloperInfoSubject = "Developer info";
+        private const string DeveloperExceptionSubject = "Developer info exception";
+
+
         public static Task SendEmailConfirmationAsync(this IEmailService emailSender, string email, string link)
         {
             try
@@ -34,9 +39,6 @@ namespace CheapHelpers.Services
             }
         }
 
-        private const string DeveloperInfoSubject = "Developer info";
-        private const string DeveloperExceptionSubject = "Developer info exception";
-
         /// <summary>
         /// Sends a developer notification email with custom body content
         /// </summary>
@@ -61,29 +63,39 @@ namespace CheapHelpers.Services
             return emailSender.SendEmailAsync(emailSender.Developers, DeveloperExceptionSubject, body);
         }
 
-        //TODO: really old code, should be replcaced with templating engine
+        //TODO: really old code, should be replaced with templating engine
         public static string ToHtmlString(this Exception ex)
         {
-            StringBuilder errormessage = new();
+            var report = ex.ExtractExceptionData();
+            return FormatExceptionReportAsHtml(report);
+        }
 
-            errormessage.AppendLine($@"<p>Assembly: {Assembly.GetExecutingAssembly()}</p><br>");
-            errormessage.AppendLine($@"<p>Source: {ex.Source}</p><br>");
-            errormessage.AppendLine($@"<p>Time: {DateTime.Now:MM/dd/yyyy HH:mm}</p><br>");
-            errormessage.AppendLine($@"<p>Exception Type: {ex.GetType().Name}</p><br>");
-            errormessage.AppendLine($@"<p>Message: {ex.Message}</p><br>");
-            errormessage.AppendLine($@"<p>StackTrace: {ex.StackTrace}</p><br>");
+        private static string FormatExceptionReportAsHtml(ExceptionReport report)
+        {
+            var errormessage = new StringBuilder();
 
-            while ((ex = ex.InnerException) != null)
+            // Format main exception
+            AppendExceptionAsHtml(errormessage, report.MainException);
+
+            // Format inner exceptions
+            foreach (var inner in report.InnerExceptions)
             {
-                errormessage.AppendLine($@"<br><p><b>InnerException<b></p><br>");
-                errormessage.AppendLine($@"<p>Source: {ex.Source}</p><br>");
-                errormessage.AppendLine($@"<p>Time: {DateTime.Now:MM/dd/yyyy HH:mm}</p><br>");
-                errormessage.AppendLine($@"<p>Exception Type: {ex.GetType().Name}</p><br>");
-                errormessage.AppendLine($@"<p>Message: {ex.Message}</p><br>");
-                errormessage.AppendLine($@"<p>StackTrace: {ex.StackTrace}</p><br>");
+                errormessage.AppendLine($@"<br><p><b>InnerException</b></p><br>");
+                AppendExceptionAsHtml(errormessage, inner);
             }
 
             return errormessage.ToString();
         }
+
+        private static void AppendExceptionAsHtml(StringBuilder sb, ExceptionDetails details)
+        {
+            sb.AppendLine($@"<p>Assembly: {details.AssemblyName}</p><br>");
+            sb.AppendLine($@"<p>Source: {details.Source}</p><br>");
+            sb.AppendLine($@"<p>Time: {details.Timestamp:MM/dd/yyyy HH:mm}</p><br>");
+            sb.AppendLine($@"<p>Exception Type: {details.ExceptionType}</p><br>");
+            sb.AppendLine($@"<p>Message: {details.Message}</p><br>");
+            sb.AppendLine($@"<p>StackTrace: {details.StackTrace}</p><br>");
+        }
     }
+}
 }

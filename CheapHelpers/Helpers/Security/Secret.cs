@@ -3,7 +3,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace CheapHelpers.Helpers.Encryption
+namespace CheapHelpers.Helpers.Security
 {
     //Use networkcredential securestring implementation
     public class Secret

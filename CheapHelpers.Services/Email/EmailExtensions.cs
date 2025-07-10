@@ -98,4 +98,3 @@ namespace CheapHelpers.Services.Email
         }
     }
 }
-}

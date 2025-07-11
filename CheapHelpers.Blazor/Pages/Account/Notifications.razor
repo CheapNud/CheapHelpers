@@ -1,0 +1,72 @@
+﻿@using MoreLinq
+
+<MudGrid>
+    <AuthorizeView Policy="@Policies.ServiceExternal">
+        <MudItem xs="6">
+            <MudText Typo="Typo.h6">Nieuw</MudText>
+            @if (UnreadServiceChatsNew != null && UnreadServiceChatsNew?.Count > 0)
+            {
+                <Notification UnreadServiceChats="UnreadServiceChatsNew.Select(y => y as ServiceChat).ToList()"></Notification>
+            }
+            <MudText Class="mt-3" Typo="Typo.h6">Lopend</MudText>
+            @if (UnreadServiceChats != null && UnreadServiceChats?.Count > 0)
+            {
+                <Notification UnreadServiceChats="UnreadServiceChats.Select(y => y as ServiceChat).ToList()"></Notification>
+            }
+        </MudItem>
+    </AuthorizeView>
+    <AuthorizeView Policy="@Policies.ServiceSupplier">
+        <MudItem xs="6">
+            <MudText Typo="Typo.h6">Nieuw (Leverancier)</MudText>
+            @if (UnreadServiceSupplierChatsNew != null && UnreadServiceSupplierChatsNew?.Count > 0)
+            {
+                <Notification UnreadServiceChats="UnreadServiceSupplierChatsNew.Select(y => y as ServiceChat).ToList()"></Notification>
+            }
+            <MudText Class="mt-3" Typo="Typo.h6">Lopend (Leverancier)</MudText>
+            @if (UnreadServiceSupplierChats != null && UnreadServiceSupplierChats?.Count > 0)
+            {
+                <Notification UnreadServiceChats="UnreadServiceSupplierChats.Select(y => y as ServiceChat).ToList()"></Notification>
+            }
+        </MudItem>
+    </AuthorizeView>
+</MudGrid>
+
+@code {
+    public ApplicationUser User { get; set; }
+    public List<ServiceUserChat> UnreadServiceChats { get; set; }
+    public List<ServiceUserChat> UnreadServiceChatsNew { get; set; }
+    public List<ServiceSupplierChat> UnreadServiceSupplierChats { get; set; }
+    public List<ServiceSupplierChat> UnreadServiceSupplierChatsNew { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationState { get; set; }
+
+    [Inject]
+    private ServiceRepo Serviceservice { get; set; }
+
+    [Inject]
+    private IAuthorizationService AuthorizationService { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthenticationState;
+        var user = auth.User;
+        User = await UserService.GetUserAsync(auth.User);
+        await RefreshNotifiations();
+        UserService.RefreshNotifications += (async () => await RefreshNotifiations());
+    }
+
+    private async Task RefreshNotifiations()
+    {
+        var customers = User.Customers.Select(x => x.Customer.Id).ToArray();
+
+        UnreadServiceChatsNew = await Serviceservice.GetNotifications(User.Id, customers, true);
+        UnreadServiceChats = await Serviceservice.GetNotifications(User.Id, customers, false);
+
+        UnreadServiceSupplierChatsNew = await Serviceservice.GetSupplierNotifications(User.Id, customers, true);
+        UnreadServiceSupplierChats = await Serviceservice.GetSupplierNotifications(User.Id, customers, false);
+        Debug.WriteLine(@$"{UnreadServiceSupplierChats} {UnreadServiceSupplierChatsNew}");
+
+        StateHasChanged();
+    }
+}

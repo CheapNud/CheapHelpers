@@ -1,0 +1,183 @@
+﻿<MudPaper Class="pa-4 mx-auto mt-8" MaxWidth="650px">
+    <MudText Typo="Typo.h5" Class="mb-4">Set Your PIN</MudText>
+
+    <MudStack AlignItems="AlignItems.Center" Spacing="4">
+        <MudTextField @ref="_newPinField"
+                      @bind-Value="_newPin"
+                      OnKeyDown="HandleNewPinKeyDown"
+                      Variant="Variant.Outlined"
+                      InputType="InputType.Password"
+                      MaxLength="4"
+                      Placeholder="••••"
+                      Label="New PIN (4 digits)"
+                      HelperText="Enter your new 4-digit PIN" />
+
+        <MudTextField @ref="_confirmPinField"
+                      @bind-Value="_confirmPin"
+                      OnKeyDown="HandleConfirmPinKeyDown"
+                      Variant="Variant.Outlined"
+                      InputType="InputType.Password"
+                      MaxLength="4"
+                      Placeholder="••••"
+                      Label="Confirm PIN (4 digits)"
+                      HelperText="Re-enter your PIN to confirm"
+                      Disabled="@(_newPin.Length != 4)" />
+    </MudStack>
+
+    @if (!string.IsNullOrEmpty(_pinSetupError))
+    {
+        <MudAlert Severity="Severity.Error" Class="mt-3">@_pinSetupError</MudAlert>
+    }
+
+    @if (!string.IsNullOrEmpty(_successMessage))
+    {
+        <MudAlert Severity="Severity.Success" Class="mt-3">@_successMessage</MudAlert>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] 
+    public ApplicationUser CurrentUser { get; set; }
+
+    [Parameter] 
+    public EventCallback OnPinSet { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationState { get; set; }
+
+    private string _newPin = "";
+    private string _confirmPin = "";
+    private string _pinSetupError = "";
+    private string _successMessage = "";
+
+    private MudTextField<string> _newPinField;
+    private MudTextField<string> _confirmPinField;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await _newPinField.FocusAsync();
+        }
+    }
+
+    private async Task HandleNewPinKeyDown(KeyboardEventArgs e)
+    {
+        _pinSetupError = "";
+        _successMessage = "";
+
+        // Only allow digits
+        if (e.Key.Length == 1 && !char.IsDigit(e.Key[0]))
+        {
+            return;
+        }
+
+        // Auto-advance to confirm field when 4 digits are entered
+        if (_newPin.Length == 3 && e.Key.Length == 1 && char.IsDigit(e.Key[0]))
+        {
+            await Task.Delay(200); // Let the 4th digit register
+            if (_newPin.Length == 4)
+            {
+                await _confirmPinField.FocusAsync();
+            }
+        }
+    }
+
+    private async Task HandleConfirmPinKeyDown(KeyboardEventArgs e)
+    {
+        _pinSetupError = "";
+        _successMessage = "";
+
+        // Only allow digits
+        if (e.Key.Length == 1 && !char.IsDigit(e.Key[0]))
+        {
+            return;
+        }
+
+        // Auto-submit when Enter is pressed or when 4 digits are entered
+        if (e.Key == "Enter" && _confirmPin.Length == 4)
+        {
+            await SetPin();
+        }
+
+        // Auto-submit after a short delay when 4th digit is typed
+        if (_confirmPin.Length == 3 && e.Key.Length == 1 && char.IsDigit(e.Key[0]))
+        {
+            await Task.Delay(200);
+            if (_confirmPin.Length == 4)
+            {
+                await SetPin();
+            }
+        }
+    }
+
+    private async Task SetPin()
+    {
+        _pinSetupError = "";
+        _successMessage = "";
+
+        if (_newPin.Length != 4)
+        {
+            //too much constant text here
+            _pinSetupError = "New PIN must be 4 digits.";
+            await _newPinField.FocusAsync();
+            return;
+        }
+
+        if (_confirmPin.Length != 4)
+        {
+            _pinSetupError = "Please confirm your PIN with 4 digits.";
+            await _confirmPinField.FocusAsync();
+            return;
+        }
+
+        if (!_newPin.All(char.IsDigit))
+        {
+            _pinSetupError = "PIN must contain only numbers.";
+            _newPin = "";
+            await _newPinField.FocusAsync();
+            return;
+        }
+
+        if (!_confirmPin.All(char.IsDigit))
+        {
+            _pinSetupError = "PIN confirmation must contain only numbers.";
+            _confirmPin = "";
+            await _confirmPinField.FocusAsync();
+            return;
+        }
+
+        if (_newPin != _confirmPin)
+        {
+            _pinSetupError = "PINs do not match.";
+            _confirmPin = "";
+            await _confirmPinField.FocusAsync();
+            return;
+        }
+
+        try
+        {
+            if (CurrentUser != null)
+            {
+                var hasher = new PasswordHasher<ApplicationUser>();
+                CurrentUser.PinCodeHash = hasher.HashPassword(CurrentUser, _newPin);
+                await UserService.UpdateUser(CurrentUser);
+
+                _newPin = "";
+                _confirmPin = "";
+
+                _successMessage = "PIN has been set successfully!";
+                ToastService.Add("PIN has been set successfully!", Severity.Success);
+
+                await OnPinSet.InvokeAsync();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+            _pinSetupError = "An error occurred while setting your PIN.";
+            ToastService.Add("Error setting PIN", Severity.Error);
+        }
+    }
+}

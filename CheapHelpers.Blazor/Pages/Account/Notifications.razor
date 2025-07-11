@@ -1,6 +1,7 @@
-﻿@using MoreLinq
+﻿@using Microsoft.AspNetCore.Identity
+@using MoreLinq
 
-<MudGrid>
+@* <MudGrid>
     <AuthorizeView Policy="@Policies.ServiceExternal">
         <MudItem xs="6">
             <MudText Typo="Typo.h6">Nieuw</MudText>
@@ -29,44 +30,44 @@
             }
         </MudItem>
     </AuthorizeView>
-</MudGrid>
+</MudGrid> *@
 
 @code {
-    public ApplicationUser User { get; set; }
-    public List<ServiceUserChat> UnreadServiceChats { get; set; }
-    public List<ServiceUserChat> UnreadServiceChatsNew { get; set; }
-    public List<ServiceSupplierChat> UnreadServiceSupplierChats { get; set; }
-    public List<ServiceSupplierChat> UnreadServiceSupplierChatsNew { get; set; }
+    // public IdentityUser User { get; set; }
+    // public List<ServiceUserChat> UnreadServiceChats { get; set; }
+    // public List<ServiceUserChat> UnreadServiceChatsNew { get; set; }
+    // public List<ServiceSupplierChat> UnreadServiceSupplierChats { get; set; }
+    // public List<ServiceSupplierChat> UnreadServiceSupplierChatsNew { get; set; }
 
-    [CascadingParameter]
-    private Task<AuthenticationState> AuthenticationState { get; set; }
+    // [CascadingParameter]
+    // private Task<AuthenticationState> AuthenticationState { get; set; }
 
-    [Inject]
-    private ServiceRepo Serviceservice { get; set; }
+    // [Inject]
+    // private ServiceRepo Serviceservice { get; set; }
 
-    [Inject]
-    private IAuthorizationService AuthorizationService { get; set; }
+    // [Inject]
+    // private IAuthorizationService AuthorizationService { get; set; }
 
-    protected override async Task OnInitializedAsync()
-    {
-        var auth = await AuthenticationState;
-        var user = auth.User;
-        User = await UserService.GetUserAsync(auth.User);
-        await RefreshNotifiations();
-        UserService.RefreshNotifications += (async () => await RefreshNotifiations());
-    }
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     var auth = await AuthenticationState;
+    //     var user = auth.User;
+    //     User = await UserService.GetUserAsync(auth.User);
+    //     await RefreshNotifiations();
+    //     UserService.RefreshNotifications += (async () => await RefreshNotifiations());
+    // }
 
-    private async Task RefreshNotifiations()
-    {
-        var customers = User.Customers.Select(x => x.Customer.Id).ToArray();
+    // private async Task RefreshNotifiations()
+    // {
+    //     var customers = User.Customers.Select(x => x.Customer.Id).ToArray();
 
-        UnreadServiceChatsNew = await Serviceservice.GetNotifications(User.Id, customers, true);
-        UnreadServiceChats = await Serviceservice.GetNotifications(User.Id, customers, false);
+    //     UnreadServiceChatsNew = await Serviceservice.GetNotifications(User.Id, customers, true);
+    //     UnreadServiceChats = await Serviceservice.GetNotifications(User.Id, customers, false);
 
-        UnreadServiceSupplierChatsNew = await Serviceservice.GetSupplierNotifications(User.Id, customers, true);
-        UnreadServiceSupplierChats = await Serviceservice.GetSupplierNotifications(User.Id, customers, false);
-        Debug.WriteLine(@$"{UnreadServiceSupplierChats} {UnreadServiceSupplierChatsNew}");
+    //     UnreadServiceSupplierChatsNew = await Serviceservice.GetSupplierNotifications(User.Id, customers, true);
+    //     UnreadServiceSupplierChats = await Serviceservice.GetSupplierNotifications(User.Id, customers, false);
+    //     Debug.WriteLine(@$"{UnreadServiceSupplierChats} {UnreadServiceSupplierChatsNew}");
 
-        StateHasChanged();
-    }
+    //     StateHasChanged();
+    // }
 }

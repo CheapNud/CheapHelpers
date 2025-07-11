@@ -1,8 +1,11 @@
 ﻿@page "/Account/Register"
-@using MecamApplication.CoreStandard.Services;
+@using CheapHelpers.Blazor.Shared
+@using CheapHelpers.Services;
+@using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities;
 @using System.Text
 @using MoreLinq;
+@using MudBlazor
 
 <MudForm @ref="form" Model="@model" Validation="@(validator.ValidateValue)">
     <MudTextField Class="mt-3" Label="First name" Variant="Variant.Outlined" @bind-Value=model.FirstName For="(() => model.FirstName)"></MudTextField>
@@ -27,7 +30,7 @@
     public bool sendMail = false;
 
     [Inject]
-    public UserManager<ApplicationUser> UserManager { get; set; }
+    public UserManager<IdentityUser> UserManager { get; set; }
 
     public RegisterViewModel model = new();
     public MudForm form;
@@ -38,7 +41,7 @@
         validator = new RegisterValidator(Factory);
     }
 
-    private async Task SendConfirmationMail(ApplicationUser user)
+    private async Task SendConfirmationMail(IdentityUser user)
     {
         try
         {
@@ -64,15 +67,12 @@
                 return;
             }
 
-            ApplicationUser user = new ApplicationUser
+            IdentityUser user = new IdentityUser
                 {
-                    FirstName = model.FirstName,
-                    LastName = model.LastName,
+                    // FirstName = model.FirstName,
+                    // LastName = model.LastName,
                     Email = model.Email,
                     UserName = model.Email,
-                    ReceiveMailServiceStatus = false,
-                    ReceiveMailWrongSupply = false,
-                    SendMailServiceRequest = true
                 };
 
             var result = await UserManager.CreateAsync(user, model.Password);

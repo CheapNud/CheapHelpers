@@ -1,7 +1,9 @@
 ﻿@page "/Account"
 @page "/Account/{TabIndex:int}"
 
-@using MecamApplication.CoreStandard.Services;
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities;
 @using System.Text;
 @attribute [Authorize]
@@ -139,7 +141,7 @@
 
     public string NewEmail { get; set; }
 
-    public ApplicationUser CurrentUser { get; set; }
+    public IdentityUser CurrentUser { get; set; }
     private bool wasDarkMode;
     private bool pinValidated = false;
 

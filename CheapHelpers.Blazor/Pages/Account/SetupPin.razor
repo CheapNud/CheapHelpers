@@ -1,4 +1,9 @@
-﻿<MudPaper Class="pa-4 mx-auto mt-8" MaxWidth="650px">
+﻿@using CheapHelpers.Blazor.Data
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Identity
+@using MudBlazor
+<MudPaper Class="pa-4 mx-auto mt-8" MaxWidth="650px">
     <MudText Typo="Typo.h5" Class="mb-4">Set Your PIN</MudText>
 
     <MudStack AlignItems="AlignItems.Center" Spacing="4">
@@ -37,7 +42,7 @@
 
 @code {
     [Parameter] 
-    public ApplicationUser CurrentUser { get; set; }
+    public IdentityUser CurrentUser { get; set; }
 
     [Parameter] 
     public EventCallback OnPinSet { get; set; }
@@ -155,29 +160,29 @@
             return;
         }
 
-        try
-        {
-            if (CurrentUser != null)
-            {
-                var hasher = new PasswordHasher<ApplicationUser>();
-                CurrentUser.PinCodeHash = hasher.HashPassword(CurrentUser, _newPin);
-                await UserService.UpdateUser(CurrentUser);
+        // try
+        // {
+        //     if (CurrentUser != null)
+        //     {
+        //         var hasher = new PasswordHasher<IdentityUser>();
+        //         CurrentUser.PinCodeHash = hasher.HashPassword(CurrentUser, _newPin);
+        //         await UserService.UpdateUser(CurrentUser);
 
-                _newPin = "";
-                _confirmPin = "";
+        //         _newPin = "";
+        //         _confirmPin = "";
 
-                _successMessage = "PIN has been set successfully!";
-                ToastService.Add("PIN has been set successfully!", Severity.Success);
+        //         _successMessage = "PIN has been set successfully!";
+        //         ToastService.Add("PIN has been set successfully!", Severity.Success);
 
-                await OnPinSet.InvokeAsync();
-                StateHasChanged();
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex.Message);
-            _pinSetupError = "An error occurred while setting your PIN.";
-            ToastService.Add("Error setting PIN", Severity.Error);
-        }
+        //         await OnPinSet.InvokeAsync();
+        //         StateHasChanged();
+        //     }
+        // }
+        // catch (Exception ex)
+        // {
+        //     Debug.WriteLine(ex.Message);
+        //     _pinSetupError = "An error occurred while setting your PIN.";
+        //     ToastService.Add("Error setting PIN", Severity.Error);
+        // }
     }
 }

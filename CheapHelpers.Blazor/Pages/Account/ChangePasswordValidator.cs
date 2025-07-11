@@ -1,39 +1,42 @@
-﻿using FluentValidation;
-using MecamApplication.Blazor.Shared;
-using MecamApplication.Context;
-using Microsoft.EntityFrameworkCore;
+﻿//using FluentValidation;
+//using CheapHelpers.Blazor.Shared;
+//using CheapHelpers.Context;
+//using Microsoft.EntityFrameworkCore;
+//using CheapHelpers.EF;
 
-namespace MecamApplication.Blazor.Pages.Account
-{
-    public class ChangePasswordValidator : BaseValidator<ChangePassword.ChangePasswordViewModel>
-    {
-        public ChangePasswordValidator(IDbContextFactory<MecamContext> f)
-        {
-            RuleFor(x => x.NewPassword)
-                .NotEmpty()
-                .WithMessage("Password is empty!")
-                .MinimumLength(8)
-                .WithMessage("minimum 8 characters");
+//TODO: find a better way then fluent validation, it looks good until you get in complex situations
 
-            RuleFor(x => x.OldPassword)
-                .NotEmpty()
-                .WithMessage("Password is empty!");
+//namespace CheapHelpers.Blazor.Pages.Account
+//{
+//    public class ChangePasswordValidator : BaseValidator<ChangePassword.ChangePasswordViewModel>
+//    {
+//        public ChangePasswordValidator(IDbContextFactory<MecamContext> f)
+//        {
+//            RuleFor(x => x.NewPassword)
+//                .NotEmpty()
+//                .WithMessage("Password is empty!")
+//                .MinimumLength(8)
+//                .WithMessage("minimum 8 characters");
 
-            RuleFor(x => x.ConfirmPassword)
-                .NotEmpty()
-                .WithMessage("Password is empty!")
-                .Must((a, b) => CheckEqual(a, b, f))
-                .WithMessage("The password and confirmation password do not match");
-        }
-        public bool CheckEqual(ChangePassword.ChangePasswordViewModel a, string pw, IDbContextFactory<MecamContext> f)
-        {
-            if (a.NewPassword == pw)
-            {
-                return true;
-            }
-            return false;
-        }
+//            RuleFor(x => x.OldPassword)
+//                .NotEmpty()
+//                .WithMessage("Password is empty!");
+
+//            RuleFor(x => x.ConfirmPassword)
+//                .NotEmpty()
+//                .WithMessage("Password is empty!")
+//                .Must((a, b) => CheckEqual(a, b, f))
+//                .WithMessage("The password and confirmation password do not match");
+//        }
+//        public bool CheckEqual(ChangePassword.ChangePasswordViewModel a, string pw, IDbContextFactory<CheapContext> f)
+//        {
+//            if (a.NewPassword == pw)
+//            {
+//                return true;
+//            }
+//            return false;
+//        }
 
 
-    }
-}
+//    }
+//}

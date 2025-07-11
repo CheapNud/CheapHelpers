@@ -15,7 +15,7 @@ namespace CheapHelpers.Services.Storage;
 /// </summary>
 public class BlobService(BlobServiceClient blobServiceClient)
 {
-    private const string PlaceholderImageUrl = "https://www.mecamgroup.com/noimageplaceholder.jpg";
+    private const string PlaceholderImageUrl = "https://i.sstatic.net/y9DpT.jpg";
     private const string PlaceholderImageFilename = "noimageplaceholder.jpg";
     private const int DefaultSasExpiryMinutes = 10;
 

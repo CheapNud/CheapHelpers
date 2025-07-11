@@ -1,0 +1,69 @@
+﻿@using CheapHelpers.Blazor.Data
+@using CheapHelpers.Blazor.Helpers
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using MudBlazor
+
+<MudNavMenu Style="height:100%" Color="Color.Tertiary" Rounded="true" Bordered=true Dense=false Class="pa-2" onclick="@Save()">
+    <MudNavLink Href="" Match="NavLinkMatch.All">Home</MudNavLink>
+    <AuthorizeView Context="LoggedInContext">
+        @if (User != null)
+        {
+            <AuthorizeView Context="contextcontrolpanel" Roles="@Roles.Admin">
+                <MudNavGroup Title="Settings" @bind-Expanded=User.ExpandControlPanel>
+                    <MudNavLink Href="ControlPanel" Match="NavLinkMatch.All">General</MudNavLink>
+                    <MudNavLink Href="ControlPanel/Users" Match="NavLinkMatch.All">Users</MudNavLink>
+                    <MudNavLink Href="ControlPanel/Logs" Match="NavLinkMatch.All">Logs</MudNavLink>
+                    <MudNavLink Href="ControlPanel/TempFiles" Match="NavLinkMatch.All">Temp files</MudNavLink>
+                </MudNavGroup>
+            </AuthorizeView>
+        }
+    </AuthorizeView>
+</MudNavMenu>
+
+@code {
+    public IdentityUser User { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationState { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await UserService.IsAuthenticated(AuthenticationState);
+
+        if (auth)
+        {
+            User = await UserService.GetUserAsync(AuthenticationState);
+        }
+
+    }
+
+    private async Task Save()
+    {
+        try
+        {
+            if (User == null)
+            {
+                return;
+            }
+            //TODO: Implement a CheapUser class that contains all the properties we need for generic basic user functionality, like a firstname, lastname, fullname, etc.
+            //this remembers the state of the menu, find a generic implementation for this
+            // var context = Factory.CreateDbContext();
+            // await context.Users.Where(x => x.Id == User.Id).ExecuteUpdateAsync(x => x
+            //     .SetProperty(y => y.ExpandService, User.ExpandService)
+            //     .SetProperty(y => y.ExpandProduction, User.ExpandProduction)
+            //     .SetProperty(y => y.ExpandPurchase, User.ExpandPurchase)
+            //     .SetProperty(y => y.ExpandControlPanel, User.ExpandControlPanel)
+            //     .SetProperty(y => y.ExpandSales, User.ExpandSales)
+            //     .SetProperty(y => y.ExpandModels, User.ExpandModels)
+            //     .SetProperty(y => y.ExpandServiceRequest, User.ExpandServiceRequest)
+            //     .SetProperty(y => y.ExpandXcalibur, User.ExpandXcalibur)
+            //     .SetProperty(y => y.ExpandAccountancy, User.ExpandAccountancy)
+            //     );
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+    }
+}

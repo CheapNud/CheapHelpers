@@ -1,9 +1,9 @@
 ﻿using FluentValidation;
-using MecamApplication.Blazor.Shared;
-using MecamApplication.Context;
+using CheapHelpers.Blazor.Shared;
+using CheapHelpers.Context;
 using Microsoft.EntityFrameworkCore;
 
-namespace MecamApplication.Blazor.Pages.Account
+namespace CheapHelpers.Blazor.Pages.Account
 {
 	public class RegisterValidator : BaseValidator<Register.RegisterViewModel>
 	{

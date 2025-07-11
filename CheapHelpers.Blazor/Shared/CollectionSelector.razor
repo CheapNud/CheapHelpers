@@ -1,0 +1,57 @@
+﻿<MudGrid>
+    <MudItem xs=4>
+        <Selector Label=@(Loc["Firm"]) C="Firm" OnlyDBValues="true" UseSelect="true" DisplayProp="@(x => x.FirmName)" Variant="Variant.Outlined" ValueChanged="FirmChanged" Value="SelectedFirm"></Selector>
+    </MudItem>
+    <MudItem xs=8>
+        @if (Collections != null)
+        {
+            <MudSelect ValueChanged=ValueChanged Value="@Value" Variant="Variant.Outlined" Label="@Loc["Collection"]" ToStringFunc="@(e=> e==null?null : $"{e.CollectionName}")">
+                @foreach (var item in Collections)
+                {
+                    <MudSelectItem Value="item">@item.CollectionName</MudSelectItem>
+                }
+            </MudSelect>
+        }
+    </MudItem>
+</MudGrid>
+
+@code {
+    public Firm SelectedFirm { get; set; }
+    public List<Collection> Collections { get; set; }
+
+    [Parameter]
+    public Collection Value { get; set; }
+
+    [Parameter]
+    public EventCallback<Collection> ValueChanged { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+            ToastService.Add("Fout", Severity.Error);
+        }
+    }
+
+    private async Task FirmChanged(Firm f)
+    {
+        SelectedFirm = f;
+        if (f != null)
+        {
+            using var context = Factory.CreateDbContext();
+            Collections = await context.Collections.AsNoTracking().Where(x => x.Firm.Id == f.Id).ToListAsync();
+            await CollectionChanged(Collections.FirstOrDefault());
+        }
+    }
+
+    private async Task CollectionChanged(Collection c)
+    {
+        Value = c;
+        await ValueChanged.InvokeAsync(Value);
+    }
+}

@@ -1,0 +1,92 @@
+﻿<AuthorizeView>
+    <Authorized>
+        @if (User != null)
+        {
+            <MudGrid Justify=Justify.FlexEnd>
+                <MudItem>
+                    @*  Class="pa-1 sticky object-bottom" *@
+                    <MudPaper>
+                        <CultureSelector />
+                    </MudPaper>
+                </MudItem>
+                <MudItem>
+                    <MudMenu Class="mr-1">
+                        <ActivatorContent>
+                            @if (UnreadServiceChats > 0)
+                            {
+                                <MudBadge Content=@UnreadServiceChats Color="Color.Success" Overlap="true" Bordered="true">
+                                    <MudAvatar Size="Size.Medium" Color="Color.Info">@(@$"{(!string.IsNullOrWhiteSpace(User.FirstName) ? char.ToUpper(User.FirstName.First()) : char.ToUpper(User.UserName.First()))}{(!string.IsNullOrWhiteSpace(User.LastName) ? char.ToUpper(User.LastName.First()) : string.Empty)}")</MudAvatar>
+                                </MudBadge>
+                            }
+                            else
+                            {
+                                <MudAvatar Size="Size.Medium" Color="Color.Info">@(@$"{(!string.IsNullOrWhiteSpace(User.FirstName) ? char.ToUpper(User.FirstName.First()) : char.ToUpper(User.UserName.First()))}{(!string.IsNullOrWhiteSpace(User.LastName) ? char.ToUpper(User.LastName.First()) : string.Empty)}")</MudAvatar>
+                            }
+                        </ActivatorContent>
+                        <ChildContent>
+                            <MudMenuItem Href="Account/1">
+                                @(UnreadServiceChats > 99 ? "99+" : UnreadServiceChats.ToString()) Berichten
+                            </MudMenuItem>
+                            <MudMenuItem Href="Account">
+                                @Loc["Profile"]
+                            </MudMenuItem>
+                            <MudDivider />
+                            <MudMenuItem>
+                                <MudForm method="post" action="/Account/SignOut">
+                                    <MudButton ButtonType="ButtonType.Submit" IconSize=Size.Small Color="Color.Secondary" Size=Size.Medium Variant="Variant.Filled">Log out</MudButton>
+                                </MudForm>
+                            </MudMenuItem>
+                        </ChildContent>
+                    </MudMenu>
+                </MudItem>
+            </MudGrid>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <MudLink Color="Color.Tertiary" Href="/Account/Login">Log in</MudLink>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+@code {
+    public IdentityUser User { get; set; }
+    public int UnreadServiceChats { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationState { get; set; }
+
+    [Inject]
+    private IAuthorizationService AuthorizationService { get; set; }
+
+    // [Inject]
+    // private ReceiverRepo Receiverservice { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthenticationState;
+        if (auth.User.Identity.IsAuthenticated)
+        {
+            User = await UserService.GetUserAsync(auth.User);
+            await RefreshNotifiations();
+            UserService.RefreshNotifications += (async () => await RefreshNotifiations());
+        }
+    }
+
+    private async Task RefreshNotifiations()
+    {
+        // var customers = User.Customers.Select(x => x.Customer.Id).ToArray();
+        // UnreadServiceChats = 0;
+        // var auth = await AuthenticationState;
+
+        // if ((await AuthorizationService.AuthorizeAsync(auth.User, Policies.ServiceExternal)).Succeeded)
+        // { 
+        //     UnreadServiceChats += await Receiverservice.GetNotificationCount(User.Id, customers);
+        // }
+
+        // if ((await AuthorizationService.AuthorizeAsync(auth.User, Policies.ServiceSupplier)).Succeeded)
+        // {
+        //     UnreadServiceChats += await Recevierservice.GetSupplierNotificationCount(User.Id, customers);
+        // }
+    }
+}

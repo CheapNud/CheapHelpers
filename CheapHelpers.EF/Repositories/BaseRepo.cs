@@ -7,9 +7,9 @@ using System.Diagnostics;
 
 namespace CheapHelpers.EF.Repositories
 {
-    public class BaseRepo(IDbContextFactory<DbContext> factory) : IDisposable
+    public class BaseRepo(IDbContextFactory<CheapContext> factory) : IDisposable
     {
-        protected readonly IDbContextFactory<DbContext> _factory = factory;
+        protected readonly IDbContextFactory<CheapContext> _factory = factory;
 
         public void Dispose()
         {

@@ -1,0 +1,21 @@
+﻿
+<AuthorizeView>
+    <MudDialog>
+        <DialogContent>
+            <MudGrid Justify="Justify.Center">
+                <MudItem>
+                    <MudImage Src="@SourceUrl" ObjectPosition="ObjectPosition.Center" ObjectFit="ObjectFit.Contain"
+                    Style="max-width: 95%; max-height: 85%; bottom: 0; left: 0; margin: auto; overflow: auto; position: fixed; right: 0; top: 0;"/>
+                </MudItem>
+            </MudGrid>
+        </DialogContent>
+    </MudDialog>
+</AuthorizeView>
+
+
+@code {
+    [EditorRequired]
+    [Parameter]
+    public string SourceUrl { get; set; }
+
+}

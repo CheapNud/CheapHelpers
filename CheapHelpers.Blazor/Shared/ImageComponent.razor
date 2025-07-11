@@ -1,0 +1,135 @@
+﻿@using CheapHelpers.Models.Entities
+@using CheapHelpers.Services.Storage
+@using CheapHelpers.Services.Storage.Configuration
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+
+<div class="@Class">
+    @if (!string.IsNullOrWhiteSpace(ext) && !string.IsNullOrWhiteSpace(url))
+    {
+        <MudTooltip Text="Click to open full screen">
+            @if (ext.Contains(".mp4", StringComparison.OrdinalIgnoreCase)
+                   || ext.Contains(".mov", StringComparison.OrdinalIgnoreCase))
+            {
+                <video style="@Style" width="400" height="@Height" controls>
+                    <source src="@url" type="video/mp4">
+                </video>
+            }
+            else if (ext.Contains(".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                <a href=@url target="_blank">
+                    <MudImage Style="@Style" ObjectPosition="@ObjectPosition" ObjectFit="@ObjectFit" Src="pdfpreview.png" Alt="@Image.FileName" Height="@Height" Fluid="false" />
+                </a>
+            }
+            else
+            {
+                <MudImage Class="rounded " Style="@Style" ObjectPosition="@ObjectPosition" ObjectFit="@ObjectFit" Src="@url" @onclick="@OnClick" Height="@Height" Fluid="false" />
+            }
+        </MudTooltip>
+    }
+    else
+    {
+        <MudProgressCircular Color="Color.Info" Indeterminate=true />
+    }
+</div>
+
+@code {
+    string url;
+    string ext;
+
+    [Parameter]
+    public FileAttachment Image { get; set; }
+
+    [Parameter]
+    public Uri Uri { get; set; }
+
+    [Parameter]
+    public string Class { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    [Parameter]
+    public string Style { get; set; }
+
+    [Parameter]
+    public int? Height { get; set; } = 200;
+
+    [Parameter]
+    public bool Fluid { get; set; } = false;
+
+    [Parameter]
+    public ObjectFit ObjectFit { get; set; } = ObjectFit.Fill;
+
+    [Parameter]
+    public ObjectPosition ObjectPosition { get; set; } = ObjectPosition.Center;
+
+    [Parameter]
+    public BlobContainers BlobContainer { get; set; }
+
+    [Inject]
+    private BlobService BlobService { get; set; }
+
+    [Inject]
+    private ProtectedLocalStorage ProtectedLocalStorage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check if the image is cached
+        // var cachedImage = await ProtectedLocalStorage.GetAsync<string>(Image.FileName);
+        // if (cachedImage.Success && cachedImage.Value != null)
+        // {
+        //     //image returned here would always be base64 unless indexedDB is used, would thumbnails in blobcontainer be enough?
+        //     //   return cachedImage.Value;
+        // }
+
+        if (Image != null)
+        {
+            url = BlobService.GetFile(Image.FileName, BlobContainer);
+        }
+        else
+        {
+            if (Uri != null)
+            {
+                url = Uri.AbsoluteUri;
+            }else
+            {
+                url = "noimageplaceholder.jpg";
+            }
+
+        }
+
+        ext = Path.GetExtension(url);
+
+        if (!OnClick.HasDelegate)
+        {
+            OnClick = EventCallback.Factory.Create<MouseEventArgs>(this, () => ShowImage(url));
+        }
+    }
+
+    protected override Task OnParametersSetAsync()
+    {
+        url = null;
+        ext = null;
+
+        if (Image != null)
+        {
+            url = BlobService.GetFile(Image.FileName, BlobContainer);
+        }
+        else
+        {
+            url = "noimageplaceholder.jpg";
+        }
+
+        ext = Path.GetExtension(url);
+        OnClick = EventCallback.Factory.Create<MouseEventArgs>(this, () => ShowImage(url));
+
+        return base.OnParametersSetAsync();
+    }
+
+    private async Task ShowImage(string uri)
+    {
+        //await Dialog.ShowAsync<Image_Dialog>("Afbeelding", new DialogParameters { ["SourceUrl"] = uri }, new DialogOptions { MaxWidth = MaxWidth.False, FullScreen = true });
+    }
+}

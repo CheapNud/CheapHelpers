@@ -1,0 +1,78 @@
+﻿@using BlazorZXingJs
+@using MoreLinq
+
+@if (showScanner)
+{
+    <MultiFormatReader Format="@_formatList"
+                   VideoWidth="500"
+                   VideoHeight="400"
+                   VideoProperties="@_videoProperties"
+                   OnStartVideo="StartVideo"
+                   OnBarcodeRead="BarcodeRead">
+    </MultiFormatReader>
+}
+else
+{
+    <MudText Typo="Typo.h6">@Loc["NoDevicesFound"]</MudText>
+}
+<MudTextField Class="mt-3" Label="Barcode" @bind-Value=manualBarcode></MudTextField>
+<MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" OnClick="async () => await BarcodeRead(manualBarcode)">@Loc["Search"]</MudButton>
+
+@code {
+    private BarcodeFormat[] _formatList = new BarcodeFormat[] { BarcodeFormat.CODE_39 };
+    private MediaTrackConstraints _videoProperties = new MediaTrackConstraints() { Torch = true };
+    private string _domException;
+    private List<MediaDeviceInfo> _devices;
+    private string _inputDevice;
+    private bool showScanner = true;
+    private string manualBarcode;
+
+    [Parameter]
+    public EventCallback<string> OnBarcodeRead { get; set; }
+
+    private void StartVideo(MultiFormatReaderStartEventArgs args)
+    {
+        if (args.DeviceList == null || args.DeviceList.Count < 1)
+        {
+            showScanner = false;
+            return;
+        }
+
+        try
+        {
+            _domException = args.DOMExceptionName;
+            _devices = args.DeviceList;
+
+            if (args.DeviceId != null)
+            {
+                _inputDevice = args.DeviceId;
+            }
+
+            Debug.WriteLine($"Devices: {args.DeviceList.Select(x => x.Label).ToDelimitedString(",")}");
+            Debug.WriteLine($"SelectedDevice: {_inputDevice}");
+            Debug.WriteLine($"DomException: {_domException}");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+    }
+
+    private async Task BarcodeRead(string code)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            ToastService.Add("Vul iets in", Severity.Warning);
+            return;
+        }
+
+        Debug.WriteLine($"BarcodeScanner: {code}");
+        showScanner = false;
+        await OnBarcodeRead.InvokeAsync(code);
+    }
+
+    public void Reset()
+    {
+        showScanner = true;
+    }
+}

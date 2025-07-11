@@ -1,0 +1,75 @@
+﻿<AuthorizeView>
+    <MudGrid>
+        <MudItem xs="12">
+            @if (!string.IsNullOrWhiteSpace(Destination))
+            {
+                <MudText Class="d-inline">@Destination</MudText>
+                <MudButton Class="d-inline ml-3" OnClick="OpenInMaps" Color="Color.Info" Variant="Variant.Filled">Google maps</MudButton>
+                <div id="map" class="mt-3" style='height: 630px;'></div>
+            }
+            else
+            {
+                <MudText>Er is geen adres beschikbaar om te tonen</MudText>
+            }
+        </MudItem>
+    </MudGrid>
+</AuthorizeView>
+
+@implements IAsyncDisposable
+
+@code {
+    [Inject]
+    private IJSRuntime Js { get; set; }
+
+    [Parameter]
+    public string Destination { get; set; }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            if (firstRender)
+            {
+                if (!string.IsNullOrWhiteSpace(Destination))
+                {
+                    await Js.InvokeVoidAsync("mapBoxInit", Destination);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+    }
+
+    private async Task OpenInMaps()
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(Destination))
+            {
+                await Js.InvokeVoidAsync("mapsSelector", Destination);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(Destination))
+            {
+                await Js.InvokeVoidAsync("mapBoxClear");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+    }
+}

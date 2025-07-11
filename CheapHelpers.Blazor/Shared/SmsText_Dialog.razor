@@ -1,0 +1,102 @@
+﻿@using CheapHelpers.Services.Communication.Sms
+@using Newtonsoft.Json
+
+<AuthorizeView>
+    <MudDialog>
+        <DialogContent>
+            <MudRadioGroup @bind-Value="SelectedPhoneNumber">
+                <MudStack>
+                    @foreach (var item in NewObject)
+                    {
+                        <MudRadio Value="@item">@item</MudRadio>
+                    }
+                </MudStack>
+            </MudRadioGroup>
+            <MudNumericField T="int" Min="10" Max="60" Step="10" Value=TravelTime ValueChanged="TravelTimeChanged" Variant="Variant.Outlined" Label="Tijd" Class="mt-3"></MudNumericField>
+            <MudTextField Class="mt-3" Lines="4" @bind-Value="NotificationMessage" Label="Boodschap" Variant="Variant.Outlined" Immediate="true" Counter="160" MaxLength="160"></MudTextField>
+        </DialogContent>
+        <DialogActions>
+            @if (!string.IsNullOrWhiteSpace(SelectedPhoneNumber))
+            {
+                <MudButton Color="Color.Success" Variant=Variant.Filled OnClick="SendSms">Sms versturen</MudButton>
+            }
+        </DialogActions>
+    </MudDialog>
+</AuthorizeView>
+
+@code {
+    //todo: make it accept a generic object or smsobject
+    [Parameter]
+    public string[] NewObject { get; set; }
+
+    [Inject]
+    private ISmsService SmsService { get; set; }
+
+    [Inject]
+    private IConfiguration Configuration { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; }
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    public string SelectedPhoneNumber { get; set; }
+    public int TravelTime { get; set; } = 30;
+    public string NotificationMessage { get; set; }
+
+    protected override void OnInitialized()
+    {
+        NotificationMessage = $@"De Mecam technieker is onderweg om uw herstelling uit te voeren. Le technicien Mecam se rend chez vous pour effectuer la reparation. {TravelTime}min. Tel 089798251";
+        SelectedPhoneNumber = "phonenumber";
+    }
+
+    private async Task SendSms()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(SelectedPhoneNumber))
+            {
+                ToastService.Add("Geen telefoonnummer geselecteerd", Severity.Warning);
+                return;
+            }
+
+            await SmsService.Send(SelectedPhoneNumber, NotificationMessage);
+            using (var context = Factory.CreateDbContext())
+            {
+                var auth = await AuthenticationStateTask;
+                var user = await context.Users.FirstAsync(x => x.UserName == auth.User.Identity.Name);
+
+                // context.SmsLogs.Add(new SmsLog
+                //     {
+                //         ToNumber = SelectedPhoneNumber,
+                //         LogDescription = new { ServiceId = Service.Id, ServiceNumber = Service.ServiceNumber }.ToJson(),
+                //         IdentityUser = user,
+                //         LogTime = DateTime.Now
+                //     });
+
+                await context.SaveChangesAsync();
+            }
+
+            ToastService.Add("sms verstuurd", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+            if (ex.GetType() == typeof(Twilio.Exceptions.ApiException))
+            {
+                ToastService.Add("Foutief nummer, er kunnen geen berichten aan dit nummer bezorgd worden.", Severity.Warning);
+            }
+            else
+            {
+                ToastService.Add("Fout bij sms versturen", Severity.Error);
+            }
+        }
+    }
+
+    private async Task TravelTimeChanged(int step)
+    {
+        TravelTime = step;
+        NotificationMessage = $@"De Mecam technieker is onderweg om uw herstelling uit te voeren. Le technicien Mecam se rend chez vous pour effectuer la reparation. {TravelTime}min. Tel 089798251";
+    }
+}

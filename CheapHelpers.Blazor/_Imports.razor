@@ -1,0 +1,32 @@
+﻿@using System.Net.Http;
+@using System.Diagnostics;
+@using CheapHelpers.Blazor.Data
+@using CheapHelpers.EF
+@using CheapHelpers.Services.Email
+@using Microsoft.AspNetCore.Authorization;
+@using Microsoft.AspNetCore.Components.Authorization;
+@using Microsoft.AspNetCore.Components.Forms;
+@using Microsoft.AspNetCore.Components.Routing;
+@using Microsoft.AspNetCore.Components.Web;
+@using Microsoft.AspNetCore.Components.Web.Virtualization;
+@using Microsoft.AspNetCore.Identity;
+@using Microsoft.EntityFrameworkCore;
+@using Microsoft.JSInterop;
+@using Microsoft.Extensions.Configuration;
+@using System.Globalization;
+@using MimeMapping;
+@using Azure.Storage.Blobs;
+@using Azure.Storage.Blobs.Models;
+@using MudBlazor;
+@using Microsoft.Extensions.Localization;
+@using System.IO;
+@using System.Threading;
+
+
+@inject NavigationManager Nav;
+@inject IDbContextFactory<CheapContext> Factory;
+@inject UserService UserService;
+@inject ISnackbar ToastService;
+@inject IStringLocalizer<Properties.Language> Loc;
+@inject IEmailService Mailer;
+@inject IDialogService Dialog;

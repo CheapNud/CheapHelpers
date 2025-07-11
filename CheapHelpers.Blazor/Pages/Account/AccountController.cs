@@ -1,7 +1,7 @@
-﻿using MecamApplication.Blazor.Data;
-using MecamApplication.Context;
-using MecamApplication.CoreStandard.Models;
-using MecamApplication.CoreStandard.Services;
+﻿using CheapHelpers.Blazor.Data;
+using CheapHelpers.Context;
+using CheapHelpers.CoreStandard.Models;
+using CheapHelpers.CoreStandard.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -17,18 +17,19 @@ using System.Collections.Generic;
 using System.Text.Json;
 
 using System.Diagnostics;
+using CheapHelpers.Services.Email;
 
-namespace MecamApplication.Blazor.Pages.Account
+namespace CheapHelpers.Blazor.Pages.Account
 {
     [Route("[controller]/[action]")]
     [Authorize]
     public class AccountController : Controller
     {
         public AccountController(
-            SignInManager<ApplicationUser> signInManager,
-            IDbContextFactory<MecamContext> factory,
+            SignInManager<IdentityUser> signInManager,
+            IDbContextFactory<DbContext> factory,
             IEmailService mailer,
-            UserManager<ApplicationUser> userManager,
+            UserManager<IdentityUser> userManager,
             UserService userService,
             UrlEncoder urlEncoder
         )
@@ -40,9 +41,9 @@ namespace MecamApplication.Blazor.Pages.Account
             _userService = userService;
         }
 
-        private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IDbContextFactory<MecamContext> _factory;
+        private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly UserManager<IdentityUser> _userManager;
+        private readonly IDbContextFactory<DbContext> _factory;
         private readonly IEmailService _mailer;
         private readonly UserService _userService;
         private readonly UrlEncoder _urlEncoder;
@@ -290,7 +291,7 @@ namespace MecamApplication.Blazor.Pages.Account
         {
             return string.Format(
             AuthenticatorUriFormat,
-                _urlEncoder.Encode("MecamApplication.Blazor"),
+                _urlEncoder.Encode("CheapHelpers.Blazor"),
                 _urlEncoder.Encode(email),
                 unformattedKey
             );

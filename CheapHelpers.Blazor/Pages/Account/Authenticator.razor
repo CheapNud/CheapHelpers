@@ -43,7 +43,7 @@
     [CascadingParameter]
     private Task<AuthenticationState> AuthenticationStateTask { get; set; }
 
-    public ApplicationUser User { get; set; }
+    public IdentityUser User { get; set; }
     public string TestCode { get; set; }
     public string SharedKey { get; set; }
     public string AuthenticatorUri { get; set; }

@@ -19,7 +19,7 @@
     </MudAppBar>
     <MudDrawer @bind-Open="@open" Elevation="1">
         <MudDrawerHeader Dense="true">
-            <MudText Typo="Typo.h6">Mecam</MudText>
+            <MudText Typo="Typo.h6">CheapTitle</MudText>
         </MudDrawerHeader>
         <NavMenu />
     </MudDrawer>
@@ -42,6 +42,9 @@
 
     [Inject]
     private UserManager<IdentityUser> UserManager { get; set; }
+
+    [Inject]
+    private UserService UserService { get; set; }
 
     protected override async Task OnInitializedAsync()
     {

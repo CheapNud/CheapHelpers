@@ -10,7 +10,7 @@
 //{
 //    public class ChangePasswordValidator : BaseValidator<ChangePassword.ChangePasswordViewModel>
 //    {
-//        public ChangePasswordValidator(IDbContextFactory<MecamContext> f)
+//        public ChangePasswordValidator(IDbContextFactory<CheapContext> f)
 //        {
 //            RuleFor(x => x.NewPassword)
 //                .NotEmpty()

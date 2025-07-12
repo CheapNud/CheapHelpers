@@ -41,14 +41,17 @@
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; }
 
+    //TODO: abstract this to something else, it first accepoted an array of phone numbers, bring this back?
+    [Parameter]
     public string SelectedPhoneNumber { get; set; }
     public int TravelTime { get; set; } = 30;
+
+    //TODO: abstract this to something else
+    [Parameter]
     public string NotificationMessage { get; set; }
 
     protected override void OnInitialized()
     {
-        NotificationMessage = $@"De Mecam technieker is onderweg om uw herstelling uit te voeren. Le technicien Mecam se rend chez vous pour effectuer la reparation. {TravelTime}min. Tel 089798251";
-        SelectedPhoneNumber = "phonenumber";
     }
 
     private async Task SendSms()

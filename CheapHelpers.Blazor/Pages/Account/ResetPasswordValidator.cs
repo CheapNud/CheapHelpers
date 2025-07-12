@@ -7,7 +7,7 @@ namespace CheapHelpers.Blazor.Pages.Account
 {
     public class ResetPasswordValidator : BaseValidator<ResetPassword.ResetPasswordViewModel>
     {
-        public ResetPasswordValidator(IDbContextFactory<MecamContext> f)
+        public ResetPasswordValidator(IDbContextFactory<CheapContext> f)
         {
             RuleFor(x => x.NewPassword)
                 .NotEmpty()
@@ -21,7 +21,7 @@ namespace CheapHelpers.Blazor.Pages.Account
                 .Must((a, b) => CheckEqual(a, b, f))
                 .WithMessage("The password and confirmation password do not match");
         }
-        public bool CheckEqual(ResetPassword.ResetPasswordViewModel a, string pw, IDbContextFactory<MecamContext> f)
+        public bool CheckEqual(ResetPassword.ResetPasswordViewModel a, string pw, IDbContextFactory<CheapContext> f)
         {
             if (a.NewPassword == pw)
             {

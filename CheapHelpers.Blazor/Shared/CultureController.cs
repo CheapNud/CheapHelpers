@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MecamApplication.Blazor.Shared
+namespace CheapHelpers.Blazor.Shared
 {
 	[Route("[controller]/[action]")]
 	public class CultureController : Controller

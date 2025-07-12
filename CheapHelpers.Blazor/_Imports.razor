@@ -1,32 +1,39 @@
-﻿@using System.Net.Http;
-@using System.Diagnostics;
+﻿@* _Imports.razor - Generic imports for CheapHelpers.Blazor component library *@
+@using System.Net.Http
+@using System.Diagnostics
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Routing
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.JSInterop
+@using Microsoft.Extensions.Configuration
+@using Microsoft.Extensions.Localization
+@using System.Globalization
+@using System.IO
+@using System.Threading
+@using MudBlazor
+
+@* CheapHelpers namespaces *@
+@using CheapHelpers.Blazor.Abstractions
+@using CheapHelpers.Blazor.Components
+@using CheapHelpers.Blazor.Components.Shared
+@using CheapHelpers.Blazor.Extensions
+@using CheapHelpers.Blazor.Services
 @using CheapHelpers.Blazor.Data
-@using CheapHelpers.EF
-@using CheapHelpers.Services.Email
-@using Microsoft.AspNetCore.Authorization;
-@using Microsoft.AspNetCore.Components.Authorization;
-@using Microsoft.AspNetCore.Components.Forms;
-@using Microsoft.AspNetCore.Components.Routing;
-@using Microsoft.AspNetCore.Components.Web;
-@using Microsoft.AspNetCore.Components.Web.Virtualization;
-@using Microsoft.AspNetCore.Identity;
-@using Microsoft.EntityFrameworkCore;
-@using Microsoft.JSInterop;
-@using Microsoft.Extensions.Configuration;
-@using System.Globalization;
-@using MimeMapping;
-@using Azure.Storage.Blobs;
-@using Azure.Storage.Blobs.Models;
-@using MudBlazor;
-@using Microsoft.Extensions.Localization;
-@using System.IO;
-@using System.Threading;
 
-
-@inject NavigationManager Nav;
-@inject IDbContextFactory<CheapContext> Factory;
-@inject UserService UserService;
-@inject ISnackbar ToastService;
-@inject IStringLocalizer<Properties.Language> Loc;
-@inject IEmailService Mailer;
-@inject IDialogService Dialog;
+@* Note: These injections have been removed from _Imports.razor
+   They should be injected in individual components as needed:
+   - NavigationManager
+   - IDbContextFactory<TContext>
+   - IUserService<TUser>
+   - ISnackbar
+   - IStringLocalizer
+   - IEmailService
+   - IDialogService
+   
+   This allows the library to be context-agnostic and not tied to specific implementations.
+*@

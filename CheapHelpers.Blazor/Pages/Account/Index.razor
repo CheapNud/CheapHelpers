@@ -1,190 +1,159 @@
-﻿@page "/Account"
+﻿@* Account/Index.razor - Refactored for extensibility *@
+@page "/Account"
 @page "/Account/{TabIndex:int}"
-
+@typeparam TUser where TUser : IdentityUser
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
-@using Microsoft.AspNetCore.WebUtilities;
-@using System.Text;
 @attribute [Authorize]
 
-<MudText Typo="Typo.h5">Beheer je account</MudText>
+<MudText Typo="Typo.h5">@Title</MudText>
 
 @if (CurrentUser != null)
 {
     <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" Class="mt-3" PanelClass="pa-6" @bind-ActivePanelIndex=TabIndex>
+        @* Built-in General Tab *@
         <MudTabPanel Text="@Loc["General"]">
-            <MudPaper Class="pa-3">
-                <MudTooltip Text="@Loc["DarkTheme"]">
-                    <MudSwitch Class="mt-1" Color=Color.Success UncheckedColor=Color.Info Label="@Loc["DarkTheme"]" T=bool? ValueChanged="DarkModeChanged" Value=CurrentUser.IsDarkMode></MudSwitch>
-                </MudTooltip>
-
-                @if (CurrentUser.EmailConfirmed)
+            <CascadingValue Value="CurrentUser">
+                @if (GeneralTabContent != null)
                 {
-                    <MudStack Row Class="mt-3 mb-1">
-                        <MudTextField Label="Mail" Variant="Variant.Outlined" @bind-Value=CurrentUser.Email Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Check"></MudTextField>
-                        <MudTextField Label="New Mail" Variant="Variant.Outlined" @bind-Value=NewEmail></MudTextField>
-                        <ProgressButton Variant="Variant.Filled" Color=Color.Primary OnClick="ChangeMail" ButtonText="@Loc["ChangeMail"]"></ProgressButton>
-                    </MudStack>
+                    @GeneralTabContent
                 }
                 else
                 {
-                    <ProgressButton Class="mt-3" Variant="Variant.Filled" Color=Color.Primary OnClick="SendConfirmationMail" ButtonText="@Loc["VerifyMail"]"></ProgressButton>
-                }
-
-                <MudGrid>
-                    <MudItem xs="12" md="6">
-                        <MudTextField Label=@Loc["FirstName"] Variant="Variant.Outlined" @bind-Value=CurrentUser.FirstName></MudTextField>
-                        <MudTextField Class="mt-4" Label=@Loc["LastName"] Variant="Variant.Outlined" @bind-Value=CurrentUser.LastName></MudTextField>
-                    </MudItem>
-                    <MudItem xs="12" md="6">
-                        <MudTextField Label=@Loc["Tel"] Variant="Variant.Outlined" @bind-Value=CurrentUser.PhoneNumber></MudTextField>
-                        <MudSelect Class="mt-3" T="string" @bind-Value=CurrentUser.TimeZoneInfoId Label="TimeZone" Variant="Variant.Outlined">
-                            @foreach (var item in TimeZoneInfo.GetSystemTimeZones())
+                    @* Default General Tab Content *@
+                    <MudPaper Class="pa-3">
+                        <MudTooltip Text="@Loc["DarkTheme"]">
+                            <MudSwitch Class="mt-1" Color=Color.Success UncheckedColor=Color.Info 
+                                     Label="@Loc["DarkTheme"]" T="bool?" 
+                                     Value="@CurrentUser.IsDarkMode" 
+                                     ValueChanged="@DarkModeChanged" />
+                        </MudTooltip>
+                        
+                        @if (ShowEmailSection)
+                        {
+                            <MudTextField Class="mt-3" Label="Email" Value="@CurrentUser.Email" 
+                                        Disabled="true" Variant="Variant.Outlined" />
+                            @if (!CurrentUser.EmailConfirmed)
                             {
-                                <MudSelectItem Value="item.Id">@item.DisplayName</MudSelectItem>
+                                <MudButton Class="mt-2" Color="Color.Warning" Variant="Variant.Filled" 
+                                         OnClick="SendConfirmationMail">
+                                    @Loc["SendConfirmationEmail"]
+                                </MudButton>
                             }
-                        </MudSelect>
-                    </MudItem>
-                </MudGrid>
-
-                <AuthorizeView Roles=@(@$"{Roles.ServiceMechanic},{Roles.Admin}")>
-                    <MudNumericField Class="mt-3" Label="aantal KM" Variant="Variant.Outlined" @bind-Value=CurrentUser.TotalMileage></MudNumericField>
-                </AuthorizeView>
-            </MudPaper>
-
-            <AuthorizeView Policy=@Policies.AccountancyUser>
-                <MudPaper Class="pa-3 mt-3">
-                    <MudText Typo="Typo.h6" Class="pa-1">Ontvang facturatie</MudText>
-                    <MudTooltip Text="Schakelt het ontvangen van mails binnen de facturatie in of uit, standaard = uit.">
-                        <MudCheckBox Label="Mails ontvangen (1x week)" @bind-Value=CurrentUser.ReceiveMailAccountancy></MudCheckBox>
-                    </MudTooltip>
-                </MudPaper>
-            </AuthorizeView>
-
-            <AuthorizeView Policy=@Policies.ServiceUser>
-                <MudPaper Class="pa-3 mt-3">
-                    <MudText Typo="Typo.h6" Class="pa-1">Mailing interne service</MudText>
-                    <MudTooltip Text="Ontvang service mails als de status gewijzigd is.">
-                        <MudCheckBox Label="ontvang service status" @bind-Value=CurrentUser.ReceiveMailServiceStatus></MudCheckBox>
-                    </MudTooltip>
-                    <MudTooltip Text="Ontvang service mails als er iets verkeerd bevoorraad is.">
-                        <MudCheckBox Label="ontvang verkeerde bevoorrading" @bind-Value=CurrentUser.ReceiveMailWrongSupply></MudCheckBox>
-                    </MudTooltip>
-                </MudPaper>
-            </AuthorizeView>
-
-            <AuthorizeView Policy=@Policies.ServiceUser>
-                <MudPaper Class="pa-3 mt-3">
-                    <MudText Typo="Typo.h6" Class="pa-1">Mailing externe service</MudText>
-                    <MudTooltip Text="Schakelt het verzenden van mails binnen de externe service in of uit, standaard = aan.">
-                        <MudCheckBox Label="Versturen mails" @bind-Value=CurrentUser.SendMailServiceRequest></MudCheckBox>
-                    </MudTooltip>
-                </MudPaper>
-            </AuthorizeView>
-
-            <MudButton Class="mt-3" Variant="Variant.Filled" Color=Color.Primary FullWidth=true OnClick="Save">@Loc["Save"]</MudButton>
+                        }
+                        
+                        @* Additional default content can be added here *@
+                        @if (AdditionalGeneralContent != null)
+                        {
+                            @AdditionalGeneralContent
+                        }
+                        
+                        <MudButton Class="mt-3" Variant="Variant.Filled" Color=Color.Primary 
+                                 FullWidth=true OnClick="Save">@Loc["Save"]</MudButton>
+                    </MudPaper>
+                }
+            </CascadingValue>
         </MudTabPanel>
-        <MudTabPanel Text="@Loc["Notifications"]">
-            <Notifications></Notifications>
-        </MudTabPanel>
-        <MudTabPanel Text="@Loc["Password"]">
-            @if (CurrentUser.EmailConfirmed)
-            {
-                <ChangePassword></ChangePassword>
-            }
-            else
-            {
-                <MudButton Class="mt-3" Variant="Variant.Filled" Color=Color.Primary OnClick="SendConfirmationMail">@Loc["VerifyMail"]</MudButton>
-            }
-        </MudTabPanel>
-        <MudTabPanel Text="@Loc["Secrets"]">
-            @if (pinValidated)
-            {
-                //mudnumericfield has a bug where it doesn't show its initial value
-                <MudTextField Class="mt-3" Label="Prijs X" T=decimal Variant="Variant.Outlined" @bind-Value=CurrentUser.PriceMultiplier Immediate AutoFocus InputMode="@(InputMode.@decimal)" Placeholder="2.7" HelperText="In de configurator wordt deze factor gebruikt."></MudTextField>
-                <MudButton Class="mt-3" Variant="Variant.Filled" Color=Color.Primary FullWidth=true OnClick="Save">@Loc["Save"]</MudButton>
-            }
-            else if (string.IsNullOrWhiteSpace(CurrentUser.PinCodeHash))
-            {
-                <SetupPin></SetupPin>
-            }
-            else
-            {
-                <MudButton Class="mt-2" Color="Color.Primary" Variant="Variant.Filled" OnClick="PromptForPin">Unlock with PIN</MudButton>
-            }
-        </MudTabPanel>
-        <AuthorizeView Policy=@Policies.Admin>
-            <MudTabPanel Text="Authenticator">
+        
+        @* Built-in Security Tab (optional) *@
+        @if (ShowSecurityTab)
+        {
+            <MudTabPanel Text="@Loc["Security"]">
+                <CascadingValue Value="CurrentUser">
+                    @if (SecurityTabContent != null)
+                    {
+                        @SecurityTabContent
+                    }
+                    else
+                    {
+                        <ChangePassword />
+                        @if (ShowTwoFactorSection)
+                        {
+                            <MudDivider Class="my-4" />
+                            <TwoFactorAuthentication />
+                        }
+                    }
+                </CascadingValue>
             </MudTabPanel>
-        </AuthorizeView>
-        <AuthorizeView Policy=@Policies.Customer>
-            <MudTabPanel Text="Klanten">
-                <CustomerAccounts></CustomerAccounts>
-            </MudTabPanel>
-        </AuthorizeView>
+        }
+        
+        @* Custom Tabs *@
+        @if (CustomTabs != null)
+        {
+            @foreach (var tab in CustomTabs.Where(t => IsTabAuthorized(t)))
+            {
+                <MudTabPanel Text="@tab.Title">
+                    <CascadingValue Value="CurrentUser">
+                        @tab.Content
+                    </CascadingValue>
+                </MudTabPanel>
+            }
+        }
     </MudTabs>
 }
 
 @code {
-    /// <summary>
-    /// used to send confirmationmail
-    /// </summary>
-    [Inject]
-    public UserManager<ApplicationUser> UserManager { get; set; }
+    [Inject] protected UserService UserService { get; set; } = default!;
+    [Inject] protected UserManager<TUser> UserManager { get; set; } = default!;
+    [Inject] protected NavigationManager Nav { get; set; } = default!;
+    [Inject] protected ISnackbar ToastService { get; set; } = default!;
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] protected IEmailService? Mailer { get; set; }
+    [Inject] protected IAuthorizationService AuthorizationService { get; set; } = default!;
+    
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
+    
+    [Parameter] public int TabIndex { get; set; }
+    [Parameter] public string Title { get; set; } = "Manage Your Account";
+    [Parameter] public bool ShowEmailSection { get; set; } = true;
+    [Parameter] public bool ShowSecurityTab { get; set; } = true;
+    [Parameter] public bool ShowTwoFactorSection { get; set; } = false;
+    
+    [Parameter] public RenderFragment? GeneralTabContent { get; set; }
+    [Parameter] public RenderFragment? SecurityTabContent { get; set; }
+    [Parameter] public RenderFragment? AdditionalGeneralContent { get; set; }
+    [Parameter] public List<AccountTabDefinition>? CustomTabs { get; set; }
+    [Parameter] public EventCallback<TUser> OnUserSaved { get; set; }
+    [Parameter] public EventCallback<bool?> OnDarkModeChanged { get; set; }
 
-    [CascadingParameter]
-    private Task<AuthenticationState> AuthenticationState { get; set; }
-
-    [Parameter]
-    public int TabIndex { get; set; }
-
-    public string NewEmail { get; set; }
-
-    public IdentityUser CurrentUser { get; set; }
+    protected TUser? CurrentUser { get; set; }
     private bool wasDarkMode;
-    private bool pinValidated = false;
 
     protected override async Task OnInitializedAsync()
     {
         CurrentUser = await UserService.GetUserAsync(AuthenticationState);
-        wasDarkMode = CurrentUser.IsDarkMode;
-    }
-
-    private async Task PromptForPin()
-    {
-
-        var dialog = await Dialog.ShowAsync<Pin_Dialog>("PIN", new DialogOptions { MaxWidth = MaxWidth.Small });
-        var result = await dialog.Result;
-
-        if (!result.Canceled && result.Data is bool success && success)
+        if (CurrentUser != null)
         {
-            pinValidated = true;
+            wasDarkMode = CurrentUser.IsDarkMode;
         }
     }
 
-    private async Task Save()
+    private async Task<bool> IsTabAuthorized(AccountTabDefinition tab)
     {
-        try
-        {
-            await UserService.UpdateUser(CurrentUser);
-            ToastService.Add("Opgeslagen", Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            ToastService.Add(Loc["ErrorMessage"], Severity.Error);
-            Debug.WriteLine(ex.Message);
-        }
+        if (string.IsNullOrEmpty(tab.Policy))
+            return true;
+            
+        var authState = await AuthenticationState;
+        var result = await AuthorizationService.AuthorizeAsync(authState.User, tab.Policy);
+        return result.Succeeded;
     }
 
-    private async Task DarkModeChanged(bool? b = null)
+    protected virtual async Task DarkModeChanged(bool? b)
     {
+        if (CurrentUser == null) return;
+        
         try
         {
             CurrentUser.IsDarkMode = b.GetValueOrDefault();
             await UserService.UpdateUser(CurrentUser);
+            
+            if (OnDarkModeChanged.HasDelegate)
+            {
+                await OnDarkModeChanged.InvokeAsync(b);
+            }
 
-            //TODO: use an @key directive to trigger a reload to not lose state
+            // Reload if dark mode actually changed
             if (wasDarkMode != CurrentUser.IsDarkMode)
             {
                 Nav.NavigateTo(Nav.Uri, true);
@@ -197,15 +166,19 @@
         }
     }
 
-    private async Task ChangeMail()
+    protected virtual async Task Save()
     {
+        if (CurrentUser == null) return;
+        
         try
         {
-            if (string.IsNullOrWhiteSpace(NewEmail) && CurrentUser.Email != NewEmail && CurrentUser.EmailConfirmed)
+            await UserService.UpdateUser(CurrentUser);
+            ToastService.Add(Loc["Saved"], Severity.Success);
+            
+            if (OnUserSaved.HasDelegate)
             {
-                await UserService.SetEmail(CurrentUser, NewEmail);
+                await OnUserSaved.InvokeAsync(CurrentUser);
             }
-            ToastService.Add("Wachtwoord gewijzigd", Severity.Success);
         }
         catch (Exception ex)
         {
@@ -214,19 +187,33 @@
         }
     }
 
-    private async Task SendConfirmationMail()
+    protected virtual async Task SendConfirmationMail()
     {
+        if (CurrentUser == null || Mailer == null) return;
+        
         try
         {
             var code = await UserManager.GenerateEmailConfirmationTokenAsync(CurrentUser);
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-            var link = $@"{Nav.BaseUri}Account/ConfirmEmail?userid={CurrentUser.Id}&code={code}";
+            var link = $"{Nav.BaseUri}Account/ConfirmEmail?userid={CurrentUser.Id}&code={code}";
             await Mailer.SendEmailConfirmationAsync(CurrentUser.Email, link);
+            ToastService.Add(Loc["ConfirmationEmailSent"], Severity.Success);
         }
         catch (Exception ex)
         {
             ToastService.Add(Loc["ErrorMessage"], Severity.Error);
             Debug.WriteLine(ex.Message);
         }
+    }
+}
+
+@* Supporting class definition *@
+@code {
+    public class AccountTabDefinition
+    {
+        public string Title { get; set; } = string.Empty;
+        public RenderFragment Content { get; set; } = default!;
+        public string? Policy { get; set; }
+        public int Order { get; set; } = 0;
     }
 }

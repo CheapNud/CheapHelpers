@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using System.Net;
 
-namespace MecamApplication.Blazor.Shared
+namespace CheapHelpers.Blazor.Shared
 {
 	public class CookieProvider
 	{

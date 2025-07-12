@@ -1,6 +1,6 @@
 //using Azure;
 //using BlazorDownloadFile;
-//using MecamApplication.Blazor.Shared;
+//using CheapHelpers.Blazor.Shared;
 //using Microsoft.AspNetCore.Builder;
 //using Microsoft.AspNetCore.Components.Authorization;
 //using Microsoft.AspNetCore.Components.Server;
@@ -22,7 +22,7 @@
 //using System.Linq;
 //using System.Threading.Tasks;
 
-//namespace MecamApplication.Blazor
+//namespace CheapHelpers.Blazor
 //{
 //    public class Startup
 //    {

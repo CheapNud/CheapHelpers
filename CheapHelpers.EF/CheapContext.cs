@@ -9,10 +9,6 @@ using Microsoft.Extensions.Hosting;
 
 namespace CheapHelpers.EF
 {
-
-
-    namespace CheapHelpers.EF
-    {
         public class CheapContext<TUser>(
             DbContextOptions<CheapContext<TUser>> options,
             CheapContextOptions? contextOptions = null)
@@ -166,4 +162,4 @@ namespace CheapHelpers.EF
         //
         // Or direct instantiation:
         // var context = new CheapContext<MyUser>(options, contextOptions);
-    }
+}

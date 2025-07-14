@@ -1,6 +1,5 @@
 ﻿using CheapHelpers.Helpers.Encryption;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Authorization;
 
 namespace CheapHelpers.Blazor.Helpers
 {

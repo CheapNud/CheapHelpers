@@ -56,6 +56,14 @@ DeleteImage(image)" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Var
 
 
 @code {
+
+    [Inject]
+    public ISnackbar ToastService { get; set; }
+
+
+    [Inject]
+    protected IStringLocalizer Loc { get; set; } = default!;
+
     //TODO: Convert to filepanel and use to display all uploads
     [EditorRequired]
     [Parameter]
@@ -89,6 +97,11 @@ DeleteImage(image)" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Var
     [Inject]
     private BlobService BlobService { get; set; }
 
+    [Inject]
+    private IDialogService Dialog { get; set; }
+
+    [Inject]
+    private IDbContextFactory<CheapContext> Factory { get; set; }
     // [Inject]
     // private VisionServiceOptions VisionServiceOptions { get; set; }
 
@@ -153,7 +166,7 @@ DeleteImage(image)" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Var
             await OnDelete.InvokeAsync(file);
 
             //delete from azure
-            await BlobService.DeleteFile(file.FileName, BlobContainer);
+            await BlobService.DeleteFileAsync(file.FileName, BlobContainer);
         }
         catch (Exception ex)
         {

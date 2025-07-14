@@ -1,13 +1,14 @@
 ﻿@page "/Account/Register"
 @using CheapHelpers.Blazor.Shared
 @using CheapHelpers.Services;
+@using CheapHelpers.Services.Email
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities;
 @using System.Text
 @using MoreLinq;
 @using MudBlazor
 
-<MudForm @ref="form" Model="@model" Validation="@(validator.ValidateValue)">
+<MudForm @ref="form" Model="@model" @* Validation="@(validator.ValidateValue)" *@>
     <MudTextField Class="mt-3" Label="First name" Variant="Variant.Outlined" @bind-Value=model.FirstName For="(() => model.FirstName)"></MudTextField>
     <MudTextField Class="mt-3" Label="Last name" Variant="Variant.Outlined" @bind-Value=model.LastName For="(() => model.LastName)"></MudTextField>
     <MudTextField Class="mt-3" Label="Email" Required=true InputMode="InputMode.email" InputType="InputType.Email" Variant="Variant.Outlined" @bind-Value=model.Email For="(() => model.Email)"></MudTextField>
@@ -32,13 +33,22 @@
     [Inject]
     public UserManager<IdentityUser> UserManager { get; set; }
 
+    [Inject]
+    public IEmailService Mailer { get; set; }
+
+    [Inject]
+    public ISnackbar ToastService { get; set; }
+
+    [Inject]
+    public NavigationManager Nav { get; set; }
+
     public RegisterViewModel model = new();
     public MudForm form;
-    public RegisterValidator validator;
+    //public RegisterValidator validator;
 
     protected override async Task OnInitializedAsync()
     {
-        validator = new RegisterValidator(Factory);
+        //validator = new RegisterValidator(Factory);
     }
 
     private async Task SendConfirmationMail(IdentityUser user)

@@ -1,8 +1,8 @@
-﻿@* _Imports.razor - Generic imports for CheapHelpers.Blazor component library *@
+﻿<!-- Updated _Imports.razor -->
+@* Core .NET and ASP.NET imports *@
 @using System.Net.Http
 @using System.Diagnostics
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Web
@@ -15,15 +15,21 @@
 @using System.Globalization
 @using System.IO
 @using System.Threading
+
+@* MudBlazor *@
 @using MudBlazor
 
 @* CheapHelpers namespaces *@
-@using CheapHelpers.Blazor.Abstractions
-@using CheapHelpers.Blazor.Components
-@using CheapHelpers.Blazor.Components.Shared
+@using CheapHelpers.Models.Entities
+@using CheapHelpers.Models.Contracts
+@using CheapHelpers.EF
+@using CheapHelpers.Services
 @using CheapHelpers.Blazor.Extensions
-@using CheapHelpers.Blazor.Services
-@using CheapHelpers.Blazor.Data
+
+@* IMPORTANT: No more hardcoded injections here! 
+   Components should inject services locally using [Inject] or @inject directives
+   Base component classes handle common injections
+*@
 
 @* Note: These injections have been removed from _Imports.razor
    They should be injected in individual components as needed:

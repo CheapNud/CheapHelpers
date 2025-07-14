@@ -1,32 +1,33 @@
-﻿using CheapHelpers.Blazor.Abstractions;
-using CheapHelpers.Blazor.Configuration;
-using CheapHelpers.Blazor.Services;
+﻿using CheapHelpers.Blazor.Configuration;
+using CheapHelpers.EF;
+using CheapHelpers.Models.Entities;
 using CheapHelpers.Services.Email;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MudBlazor;
 using MudBlazor.Services;
+using System.Diagnostics;
 
 namespace CheapHelpers.Blazor.Extensions
 {
     public static class CheapHelpersBlazorExtensions
     {
         /// <summary>
-        /// Adds CheapHelpers Blazor components and services to the service collection
+        /// Register CheapHelpers Blazor services with full configuration
         /// </summary>
-        /// <typeparam name="TContext">The application's DbContext type</typeparam>
-        /// <typeparam name="TUser">The application's user type</typeparam>
-        public static IServiceCollection AddCheapHelpersBlazor<TContext, TUser>(
+        public static IServiceCollection AddCheapHelpersBlazor<TUser, TContext>(
             this IServiceCollection services,
             Action<CheapHelpersBlazorOptions>? configure = null)
-            where TContext : DbContext
-            where TUser : IdentityUser, new()
+            where TUser : CheapUser
+            where TContext : CheapContext<TUser>
         {
+            // Configure options
             var options = new CheapHelpersBlazorOptions();
             configure?.Invoke(options);
+            services.AddSingleton(options);
 
-            // Add MudBlazor if not already added
+            // Add MudBlazor if not already registered
             if (!services.Any(x => x.ServiceType == typeof(IMudPopoverService)))
             {
                 services.AddMudServices(config =>
@@ -50,26 +51,25 @@ namespace CheapHelpers.Blazor.Extensions
             }
 
             // Register core services
-            services.AddScoped<IUserService<TUser>, UserService<TUser>>();
+            services.AddScoped<ICheapUserService<TUser>, CheapUserService<TUser, TContext>>();
 
             // Register email service if configured
             if (options.EmailServiceType != null)
             {
-                services.AddScoped(typeof(IEmailService), options.EmailServiceType);
+                services.AddScoped(typeof(ICheapEmailService), options.EmailServiceType);
             }
 
-            // Register repositories if base repo is configured
-            if (options.UseRepositories)
+            // Register DbContext factory if not already registered
+            if (!services.Any(x => x.ServiceType == typeof(IDbContextFactory<TContext>)))
             {
-                services.AddScoped<BaseRepo<TContext>();
-                services.AddScoped<UserRepo<TContext, TUser>>();
+                Debug.WriteLine("Warning: IDbContextFactory<TContext> not found. Make sure to register it in your Program.cs");
             }
 
             // Register additional services based on options
             if (options.EnableFileDownload)
             {
-                // Add any file download service registration here
-                // services.AddBlazorDownloadFile();
+                // Add file download service if available
+                // services.AddBlazorDownloadFile(); // Uncomment if using BlazorDownloadFile package
             }
 
             // Register custom services
@@ -82,75 +82,18 @@ namespace CheapHelpers.Blazor.Extensions
         }
 
         /// <summary>
-        /// Adds CheapHelpers Blazor with minimal configuration
+        /// Register CheapHelpers Blazor with minimal configuration (for quick setup)
         /// </summary>
-        public static IServiceCollection AddCheapHelpersBlazor(
+        public static IServiceCollection AddCheapHelpersBlazorMinimal<TUser, TContext>(
             this IServiceCollection services)
+            where TUser : CheapUser
+            where TContext : CheapContext
         {
-            return services.AddCheapHelpersBlazor<DbContext, IdentityUser>();
-        }
-    }
-
-    /// <summary>
-    /// Configuration options for CheapHelpers Blazor
-    /// </summary>
-    public class CheapHelpersBlazorOptions
-    {
-        /// <summary>
-        /// Enable localization support
-        /// </summary>
-        public bool EnableLocalization { get; set; } = true;
-
-        /// <summary>
-        /// Enable file download functionality
-        /// </summary>
-        public bool EnableFileDownload { get; set; } = false;
-
-        /// <summary>
-        /// Use repository pattern
-        /// </summary>
-        public bool UseRepositories { get; set; } = true;
-
-        /// <summary>
-        /// Snackbar position
-        /// </summary>
-        public string SnackbarPosition { get; set; } = Defaults.Classes.Position.BottomLeft;
-
-        /// <summary>
-        /// Prevent duplicate snackbars
-        /// </summary>
-        public bool PreventDuplicateSnackbars { get; set; } = true;
-
-        /// <summary>
-        /// Maximum number of displayed snackbars
-        /// </summary>
-        public int MaxSnackbars { get; set; } = 3;
-
-        /// <summary>
-        /// Snackbar visible duration in milliseconds
-        /// </summary>
-        public int SnackbarDuration { get; set; } = 3000;
-
-        /// <summary>
-        /// Type of email service to use
-        /// </summary>
-        public Type? EmailServiceType { get; set; }
-
-        /// <summary>
-        /// Custom service registrations
-        /// </summary>
-        public List<ServiceDescriptor> CustomServices { get; set; } = new();
-
-        /// <summary>
-        /// Add a custom service registration
-        /// </summary>
-        public CheapHelpersBlazorOptions AddCustomService<TService, TImplementation>(
-            ServiceLifetime lifetime = ServiceLifetime.Scoped)
-            where TService : class
-            where TImplementation : class, TService
-        {
-            CustomServices.Add(new ServiceDescriptor(typeof(TService), typeof(TImplementation), lifetime));
-            return this;
+            return services.AddCheapHelpersBlazor<CheapUser, CheapContext>(options =>
+            {
+                options.EnableLocalization = false;
+                options.EnableFileDownload = false;
+            });
         }
     }
 }

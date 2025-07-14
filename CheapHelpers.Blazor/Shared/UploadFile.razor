@@ -1,5 +1,6 @@
 ﻿@using System.IO
 @using System.Linq.Expressions;
+@using CheapHelpers.Extensions
 @using CheapHelpers.Helpers.Files
 @using CheapHelpers.Services.Storage
 @using CheapHelpers.Services.Storage.Configuration
@@ -141,6 +142,9 @@ else
 @code {
     [Inject]
     private IConfiguration Configuration { get; set; }
+
+    [Inject]
+    protected IStringLocalizer Loc { get; set; } = default!;
 
     [Inject]
     private BlobService BlobService { get; set; }
@@ -354,7 +358,7 @@ else
 
                 if (UseBlobStorage)
                 {
-                    await BlobService.UploadFile(isimage ? outStream : stream, trustedFileNameForFileStorage, BlobContainer);
+                    await BlobService.UploadFileAsync(isimage ? outStream : stream, trustedFileNameForFileStorage, BlobContainer);
                 }
                 else
                 {

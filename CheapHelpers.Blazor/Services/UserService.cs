@@ -1,16 +1,9 @@
 ﻿
 using CheapHelpers.EF;
 using CheapHelpers.EF.Repositories;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace CheapHelpers.Blazor.Data
 {

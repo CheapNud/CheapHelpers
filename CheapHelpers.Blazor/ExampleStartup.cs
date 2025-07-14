@@ -44,8 +44,8 @@
 //            services.AddScoped<IEmailService, GraphService>(
 //                x =>
 //                    new GraphService(
-//                        "Mecam",
-//                        "noreply@mecam.be",
+//                        "CheapHelpers",
+//                        "noreply@CheapHelpers.be",
 //                        Configuration["ClientId"],
 //                        Configuration["TenantId"],
 //                        Configuration["ClientSecret"],
@@ -54,11 +54,11 @@
 //                    )
 //            );
 //            services.AddLocalization();
-//            services.AddDbContextFactory<MecamContext>(options =>
+//            services.AddDbContextFactory<CheapHelpersContext>(options =>
 //            {
 //                var con = Configuration.GetConnectionString("AzureSQLConnection");
 //                Debug.WriteLine(con);
-//                options.UseSqlServer(con, x => x.MigrationsAssembly("MecamApplication.Migrations"));
+//                options.UseSqlServer(con, x => x.MigrationsAssembly("CheapHelpersApplication.Migrations"));
 //            } );
 //            services
 //                .AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -84,7 +84,7 @@
 //                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
 //                    options.User.RequireUniqueEmail = true;
 //                })
-//                .AddEntityFrameworkStores<MecamContext>()
+//                .AddEntityFrameworkStores<CheapHelpersContext>()
 //                .AddDefaultTokenProviders();
 
 
@@ -93,7 +93,7 @@
 //            //services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
 //            //    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
 //            //{
-//            //    options.Cookie.Name = "MecamCookie";
+//            //    options.Cookie.Name = "CheapHelpersCookie";
 //            //    options.LoginPath = "/account/login";
 //            //options.Cookie.SameSite = SameSiteMode.Lax;
 //            //    options.Cookie.HttpOnly = true;
@@ -315,7 +315,7 @@
 //            services.AddScoped<IBarcodeService, BarcodeService>();
 //            services.AddScoped<ISmsService, TwilioSmsService>();
 //            services.AddScoped<ICsvService, CsvService>();
-//            services.AddScoped<IPdfService, MecamApplication.CoreStandard.Services.PdfTextService>();
+//            services.AddScoped<IPdfService, CheapHelpersApplication.CoreStandard.Services.PdfTextService>();
 //            services.AddScoped<IXlsxService, XlsxService>();
 //            services.AddScoped<IXmlService, XmlService>();
 //            services.AddScoped<TranslatorService>(

@@ -1,23 +1,14 @@
 ﻿using CheapHelpers.Blazor.Data;
-using CheapHelpers.Context;
-using CheapHelpers.CoreStandard.Models;
-using CheapHelpers.CoreStandard.Services;
+using CheapHelpers.Services.Email;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using System.Text.Encodings.Web;
-using System.Text;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Text.Json;
-
 using System.Diagnostics;
-using CheapHelpers.Services.Email;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 
 namespace CheapHelpers.Blazor.Pages.Account
 {

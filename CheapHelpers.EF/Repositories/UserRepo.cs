@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using CheapHelpers.Models.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 
@@ -11,7 +12,7 @@ namespace CheapHelpers.EF.Repositories
     /// <param name="mapper"></param>
     public class UserRepo(IDbContextFactory<CheapContext> factory) : BaseRepo(factory)
     {
-        public async Task RemoveFromRoleAsync(IdentityUser user, string role)
+        public async Task RemoveFromRoleAsync(CheapUser user, string role)
         {
             using var context = _factory.CreateDbContext();
             var dbrole = await context.Roles.AsNoTracking().FirstAsync(x => x.Name == role);
@@ -22,7 +23,7 @@ namespace CheapHelpers.EF.Repositories
             await context.SaveChangesAsync();
         }
 
-        public async Task AddToRoleAsync(IdentityUser user, string role)
+        public async Task AddToRoleAsync(CheapUser user, string role)
         {
             using var context = _factory.CreateDbContext();
             var dbrole = await context.Roles.AsNoTracking().FirstAsync(x => x.Name == role);
@@ -32,7 +33,7 @@ namespace CheapHelpers.EF.Repositories
             await context.SaveChangesAsync();
         }
 
-        public async Task<List<IdentityUser>> GetUsersInRole(string role)
+        public async Task<List<CheapUser>> GetUsersInRole(string role)
         {
             using var context = _factory.CreateDbContext();
             var dbrole = await context.Roles.AsNoTracking().FirstAsync(x => x.Name == role);
@@ -47,7 +48,7 @@ namespace CheapHelpers.EF.Repositories
                 .ToListAsync();
         }
 
-        public async Task<List<IdentityUserRole<string>>> GetUserRoles(IdentityUser user)
+        public async Task<List<IdentityUserRole<string>>> GetUserRoles(CheapUser user)
         {
             using var context = _factory.CreateDbContext();
             return await context
@@ -56,7 +57,7 @@ namespace CheapHelpers.EF.Repositories
                 .ToListAsync();
         }
 
-        public async Task<List<string>> GetUserStringRoles(IdentityUser user)
+        public async Task<List<string>> GetUserStringRoles(CheapUser user)
         {
             using var context = _factory.CreateDbContext();
             var r = await context
@@ -73,7 +74,7 @@ namespace CheapHelpers.EF.Repositories
             return output;
         }
 
-        public async Task<bool> IsInRole(IdentityUser user, string role)
+        public async Task<bool> IsInRole(CheapUser user, string role)
         {
             using var context = _factory.CreateDbContext();
             return await IsInRole(user.Id, role);
@@ -90,7 +91,7 @@ namespace CheapHelpers.EF.Repositories
                 .ContainsAsync(dbrole.Id);
         }
 
-        public async Task UpdateUser(IdentityUser user)
+        public async Task UpdateUser(CheapUser user)
         {
             try
             {
@@ -119,7 +120,7 @@ namespace CheapHelpers.EF.Repositories
             }
         }
 
-        public async Task SetEmail(IdentityUser user, string email)
+        public async Task SetEmail(CheapUser user, string email)
         {
             if (user == null)
             {

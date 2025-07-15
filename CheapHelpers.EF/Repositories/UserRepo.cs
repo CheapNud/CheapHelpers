@@ -10,7 +10,7 @@ namespace CheapHelpers.EF.Repositories
     /// </summary>
     /// <param name="factory"></param>
     /// <param name="mapper"></param>
-    public class UserRepo(IDbContextFactory<CheapContext> factory) : BaseRepo(factory)
+    public class UserRepo(IDbContextFactory<CheapContext<CheapUser>> factory) : BaseRepo(factory)
     {
         public async Task RemoveFromRoleAsync(CheapUser user, string role)
         {

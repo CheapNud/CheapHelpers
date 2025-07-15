@@ -1,9 +1,12 @@
-﻿using CheapHelpers.Blazor.Data;
+﻿using CheapHelpers.Blazor.Services;
+using CheapHelpers.EF;
+using CheapHelpers.Models.Entities;
 using CheapHelpers.Services.Email;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Text;
@@ -14,31 +17,15 @@ namespace CheapHelpers.Blazor.Pages.Account
 {
     [Route("[controller]/[action]")]
     [Authorize]
-    public class AccountController : Controller
+    public class AccountController(
+        SignInManager<CheapUser> signInManager,
+        IDbContextFactory<CheapContext<CheapUser>> factory,
+        IEmailService mailer,
+        UserManager<CheapUser> userManager,
+        UserService userService,
+        UrlEncoder urlEncoder
+        ) : Controller
     {
-        public AccountController(
-            SignInManager<IdentityUser> signInManager,
-            IDbContextFactory<DbContext> factory,
-            IEmailService mailer,
-            UserManager<IdentityUser> userManager,
-            UserService userService,
-            UrlEncoder urlEncoder
-        )
-        {
-            _signInManager = signInManager;
-            _factory = factory;
-            _mailer = mailer;
-            _userManager = userManager;
-            _userService = userService;
-        }
-
-        private readonly SignInManager<IdentityUser> _signInManager;
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly IDbContextFactory<DbContext> _factory;
-        private readonly IEmailService _mailer;
-        private readonly UserService _userService;
-        private readonly UrlEncoder _urlEncoder;
-
         private const string AuthenticatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
 
         [HttpGet]
@@ -65,7 +52,7 @@ namespace CheapHelpers.Blazor.Pages.Account
         //    }
 
         //    var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
-        //    var result = await _userManager.ResetPasswordAsync(user, code, newpassword);
+        //    var result = await userManager.ResetPasswordAsync(user, code, newpassword);
         //}
 
         //[AllowAnonymous]
@@ -74,8 +61,8 @@ namespace CheapHelpers.Blazor.Pages.Account
         //    try
         //    {
         //        var email = fc["UserName"];
-        //        var user = await _userManager.FindByEmailAsync(email);
-        //        if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+        //        var user = await userManager.FindByEmailAsync(email);
+        //        if (user == null || !(await userManager.IsEmailConfirmedAsync(user)))
         //        {
         //            // Don't reveal that the user does not exist or is not confirmed
         //            //return RedirectToPage("./ForgotPasswordConfirmation");
@@ -88,7 +75,7 @@ namespace CheapHelpers.Blazor.Pages.Account
         //        //await Mailer.SendEmailAsync(Email, "Reset Password", $"Please reset your password by <a href='{HtmlEncoder.Alternative.Encode(callbackUrl)}'>clicking here</a>.");
         //        //return RedirectToPage("./ForgotPasswordConfirmation");
 
-        //        var code = await _userManager.GeneratePasswordResetTokenAsync(user);
+        //        var code = await userManager.GeneratePasswordResetTokenAsync(user);
         //        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
         //        var link = $@"{Nav.BaseUri}Account/ResetPassword?userid={user.Id}&code={code}";
         //        await _mailer.SendPasswordTokenAsync(email, link);
@@ -106,7 +93,7 @@ namespace CheapHelpers.Blazor.Pages.Account
             // Clear the existing external cookie to ensure a clean login process
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
-            using var context = _factory.CreateDbContext();
+            using var context = factory.CreateDbContext();
             SignInLog log =
            new()
            {
@@ -114,7 +101,7 @@ namespace CheapHelpers.Blazor.Pages.Account
                IpAddress = Request.HttpContext.Connection.RemoteIpAddress.ToString()
            };
 
-            var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
+            var user = await signInManager.GetTwoFactorAuthenticationUserAsync();
             string username = user.UserName;
 
             if (user == null)
@@ -126,33 +113,33 @@ namespace CheapHelpers.Blazor.Pages.Account
 
             var recoveryCode = ((string)fc["RecoveryCode"]).Replace(" ", string.Empty);
 
-            var result = await _signInManager.TwoFactorRecoveryCodeSignInAsync(recoveryCode);
+            var result = await signInManager.TwoFactorRecoveryCodeSignInAsync(recoveryCode);
 
             if (result.Succeeded)
             {
-                log.IdentityUser = await context.Users.FirstAsync(x => x.UserName == username);
-                log.Success = true;
-                log.LogDescription = $@"Signed in";
-                context.SignInLogs.Add(log);
-                await context.SaveChangesAsync();
+                //log.IdentityUser = await context.Users.FirstAsync(x => x.UserName == username);
+                //log.Success = true;
+                //log.LogDescription = $@"Signed in";
+                //context.SignInLogs.Add(log);
+                //await context.SaveChangesAsync();
                 return Redirect("/");
             }
             if (result.IsLockedOut)
             {
-                log.IdentityUser = await context.Users.FirstOrDefaultAsync(x => x.UserName == username) ?? await context.Users.FirstAsync(x => x.UserName == Program.DefaultAccount);
-                log.Success = false;
-                log.LogDescription = $@"{username} tried to login but was locked out.";
-                context.SignInLogs.Add(log);
-                await context.SaveChangesAsync();
+                //log.IdentityUser = await context.Users.FirstOrDefaultAsync(x => x.UserName == username) ?? await context.Users.FirstAsync(x => x.UserName == Program.DefaultAccount);
+                //log.Success = false;
+                //log.LogDescription = $@"{username} tried to login but was locked out.";
+                //context.SignInLogs.Add(log);
+                //await context.SaveChangesAsync();
                 return Redirect("/Account/Lockout/");
             }
             else
             {
-                log.IdentityUser = await context.Users.FirstOrDefaultAsync(x => x.UserName == username) ?? await context.Users.FirstAsync(x => x.UserName == Program.DefaultAccount);
-                log.Success = false;
-                log.LogDescription = $@"{username} Invalid recovery code entered";
-                context.SignInLogs.Add(log);
-                await context.SaveChangesAsync();
+                //log.IdentityUser = await context.Users.FirstOrDefaultAsync(x => x.UserName == username) ?? await context.Users.FirstAsync(x => x.UserName == Program.DefaultAccount);
+                //log.Success = false;
+                //log.LogDescription = $@"{username} Invalid recovery code entered";
+                //context.SignInLogs.Add(log);
+                //await context.SaveChangesAsync();
                 return Redirect("/Account/Login/");
             }
         }
@@ -165,14 +152,14 @@ namespace CheapHelpers.Blazor.Pages.Account
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
             string username = fc["UserName"];
-            var signinresult = await _signInManager.PasswordSignInAsync(
+            var signinresult = await signInManager.PasswordSignInAsync(
                 username,
                 fc["Password"],
                 true,
                 false
             );
 
-            using var context = _factory.CreateDbContext();
+            using var context = factory.CreateDbContext();
             SignInLog log =
                 new()
                 {
@@ -182,56 +169,56 @@ namespace CheapHelpers.Blazor.Pages.Account
 
             if (signinresult.Succeeded)
             {
-                log.IdentityUser = await context.Users.FirstAsync(x => x.UserName == username);
-                log.Success = true;
-                log.LogDescription = $@"Signed in";
-                context.SignInLogs.Add(log);
-                await context.SaveChangesAsync();
+                //log.IdentityUser = await context.Users.FirstAsync(x => x.UserName == username);
+                //log.Success = true;
+                //log.LogDescription = $@"Signed in";
+                //context.SignInLogs.Add(log);
+                //await context.SaveChangesAsync();
                 return Redirect("/");
             }
             else
             {
-                log.IdentityUser =
-                    await context.Users.FirstOrDefaultAsync(x => x.UserName == username)
-                    ?? await context.Users.FirstAsync(x => x.UserName == Program.DefaultAccount);
-                log.Success = false;
-                log.LogDescription = $@"{username} failed sign in";
-                context.SignInLogs.Add(log);
-                await context.SaveChangesAsync();
+                //log.IdentityUser =
+                //    await context.Users.FirstOrDefaultAsync(x => x.UserName == username)
+                //    ?? await context.Users.FirstAsync(x => x.UserName == Program.DefaultAccount);
+                //log.Success = false;
+                //log.LogDescription = $@"{username} failed sign in";
+                //context.SignInLogs.Add(log);
+                //await context.SaveChangesAsync();
                 return Redirect("/Account/Login/");
             }
         }
 
         public new async Task<IActionResult> SignOut()
         {
-            if (_signInManager.IsSignedIn(User))
+            if (signInManager.IsSignedIn(User))
             {
-                await _signInManager.SignOutAsync();
+                await signInManager.SignOutAsync();
             }
 
-            using var context = _factory.CreateDbContext();
-            SignInLog log =
-                new()
-                {
-                    LogTime = DateTime.Now,
-                    IpAddress = Request.HttpContext.Connection.RemoteIpAddress.ToString(),
-                    IdentityUser = await context.Users.FirstAsync(
-                        x => x.UserName == User.Identity.Name
-                    ),
-                    Success = true,
-                    LogDescription = $@"Signed out"
-                };
+            //using var context = factory.CreateDbContext();
+            //SignInLog log =
+            //    new()
+            //    {
+            //        LogTime = DateTime.Now,
+            //        IpAddress = Request.HttpContext.Connection.RemoteIpAddress.ToString(),
+            //        IdentityUser = await context.Users.FirstAsync(
+            //            x => x.UserName == User.Identity.Name
+            //        ),
+            //        Success = true,
+            //        LogDescription = $@"Signed out"
+            //    };
 
-            context.SignInLogs.Add(log);
-            await context.SaveChangesAsync();
+            //context.SignInLogs.Add(log);
+            //await context.SaveChangesAsync();
             return Redirect("/");
         }
 
         public async Task<IActionResult> Refresh()
         {
-            if (_signInManager.IsSignedIn(User))
+            if (signInManager.IsSignedIn(User))
             {
-                await _signInManager.RefreshSignInAsync(await _userService.GetUserAsync(User));
+                await signInManager.RefreshSignInAsync(await userService.GetUserAsync(User));
             }
 
             return Redirect("/");
@@ -242,19 +229,19 @@ namespace CheapHelpers.Blazor.Pages.Account
     string providerKey
 )
         {
-            var user = await _userManager.GetUserAsync(User);
+            var user = await userManager.GetUserAsync(User);
             if (user == null)
             {
                 return BadRequest("The external login was not removed.");
             }
 
-            var result = await _userManager.RemoveLoginAsync(user, loginProvider, providerKey);
+            var result = await userManager.RemoveLoginAsync(user, loginProvider, providerKey);
             if (!result.Succeeded)
             {
                 return BadRequest("The external login was not removed.");
             }
 
-            await _signInManager.RefreshSignInAsync(user);
+            await signInManager.RefreshSignInAsync(user);
             return Ok();
         }
 
@@ -282,8 +269,8 @@ namespace CheapHelpers.Blazor.Pages.Account
         {
             return string.Format(
             AuthenticatorUriFormat,
-                _urlEncoder.Encode("CheapHelpers.Blazor"),
-                _urlEncoder.Encode(email),
+                urlEncoder.Encode("CheapHelpers.Blazor"),
+                urlEncoder.Encode(email),
                 unformattedKey
             );
         }
@@ -297,7 +284,7 @@ namespace CheapHelpers.Blazor.Pages.Account
         [AllowAnonymous]
         public async Task<IActionResult> GetSharedKey(IFormCollection? fc = null)
         {
-            var user = await _userManager.GetUserAsync(User);
+            var user = await userManager.GetUserAsync(User);
             return Json(await LoadSharedKeyAndQrCodeUriAsync(user));
         }
 
@@ -306,20 +293,20 @@ namespace CheapHelpers.Blazor.Pages.Account
         /// </summary>
         /// <param name="user"></param>
         /// <returns>(sharedkey, authenticatoruri)</returns>
-        private async Task<ValueTuple<string, string>?> LoadSharedKeyAndQrCodeUriAsync(ApplicationUser user)
+        private async Task<ValueTuple<string, string>?> LoadSharedKeyAndQrCodeUriAsync(CheapUser user)
         {
             try
             {
                 // Load the authenticator key & QR code URI to display on the form
-                var unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+                var unformattedKey = await userManager.GetAuthenticatorKeyAsync(user);
                 if (string.IsNullOrEmpty(unformattedKey))
                 {
-                    await _userManager.ResetAuthenticatorKeyAsync(user);
-                    unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+                    await userManager.ResetAuthenticatorKeyAsync(user);
+                    unformattedKey = await userManager.GetAuthenticatorKeyAsync(user);
                 }
 
                 var sharedkey = FormatKey(unformattedKey);
-                var email = await _userManager.GetEmailAsync(user);
+                var email = await userManager.GetEmailAsync(user);
                 var authenticatoruri = GenerateQrCodeUri(email, unformattedKey);
 
                 return (sharedkey, authenticatoruri);
@@ -334,7 +321,7 @@ namespace CheapHelpers.Blazor.Pages.Account
         [HttpPost("EnableAuthenticator")]
         public async Task<IActionResult> EnableAuthenticator(IFormCollection fc)
         {
-            var user = await _userManager.GetUserAsync(User);
+            var user = await userManager.GetUserAsync(User);
             if (user == null)
             {
                 return BadRequest("The authenticator was not enabled.");
@@ -343,9 +330,9 @@ namespace CheapHelpers.Blazor.Pages.Account
             // Strip spaces and hypens
             var verificationCode = ((string)fc["VerificationCode"]).Replace(" ", string.Empty).Replace("-", string.Empty);
 
-            var is2faTokenValid = await _userManager.VerifyTwoFactorTokenAsync(
+            var is2faTokenValid = await userManager.VerifyTwoFactorTokenAsync(
                 user,
-                _userManager.Options.Tokens.AuthenticatorTokenProvider,
+                userManager.Options.Tokens.AuthenticatorTokenProvider,
                 verificationCode
             );
 
@@ -354,11 +341,11 @@ namespace CheapHelpers.Blazor.Pages.Account
                 return BadRequest("invalid token");
             }
 
-            await _userManager.SetTwoFactorEnabledAsync(user, true);
+            await userManager.SetTwoFactorEnabledAsync(user, true);
 
-            if (await _userManager.CountRecoveryCodesAsync(user) == 0)
+            if (await userManager.CountRecoveryCodesAsync(user) == 0)
             {
-                var recoveryCodes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(
+                var recoveryCodes = await userManager.GenerateNewTwoFactorRecoveryCodesAsync(
                     user,
                     10
                 );
@@ -373,14 +360,14 @@ namespace CheapHelpers.Blazor.Pages.Account
 
         public async Task<IActionResult> GetExternalLogins()
         {
-            var user = await _userManager.GetUserAsync(User);
+            var user = await userManager.GetUserAsync(User);
             if (user == null)
             {
-                return NotFound($"Unable to load user with ID {_userManager.GetUserId(User)}.");
+                return NotFound($"Unable to load user with ID {userManager.GetUserId(User)}.");
             }
 
-            var currentLogins = await _userManager.GetLoginsAsync(user);
-            var otherLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync())
+            var currentLogins = await userManager.GetLoginsAsync(user);
+            var otherLogins = (await signInManager.GetExternalAuthenticationSchemesAsync())
                 .Where(auth => currentLogins.All(ul => auth.Name != ul.LoginProvider))
                 .ToList();
             return Ok();
@@ -388,30 +375,30 @@ namespace CheapHelpers.Blazor.Pages.Account
 
         public async Task<IActionResult> ResetAuthenticatorAsync()
         {
-            var user = await _userManager.GetUserAsync(User);
+            var user = await userManager.GetUserAsync(User);
             if (user == null)
             {
-                return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+                return NotFound($"Unable to load user with ID '{userManager.GetUserId(User)}'.");
             }
 
-            await _userManager.SetTwoFactorEnabledAsync(user, false);
-            await _userManager.ResetAuthenticatorKeyAsync(user);
+            await userManager.SetTwoFactorEnabledAsync(user, false);
+            await userManager.ResetAuthenticatorKeyAsync(user);
 
-            await _signInManager.RefreshSignInAsync(user);
+            await signInManager.RefreshSignInAsync(user);
             return Redirect("Account/EnableAuthenticator");
         }
 
         public async Task<IActionResult> GetPersonalData()
         {
-            var user = await _userManager.GetUserAsync(User);
+            var user = await userManager.GetUserAsync(User);
             if (user == null)
             {
-                return NotFound($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+                return NotFound($"Unable to load user with ID '{userManager.GetUserId(User)}'.");
             }
 
             // Only include personal data for download
             var personalData = new Dictionary<string, string>();
-            var personalDataProps = typeof(ApplicationUser)
+            var personalDataProps = typeof(CheapUser)
                 .GetProperties()
                 .Where(prop => Attribute.IsDefined(prop, typeof(PersonalDataAttribute)));
             foreach (var p in personalDataProps)
@@ -419,7 +406,7 @@ namespace CheapHelpers.Blazor.Pages.Account
                 personalData.Add(p.Name, p.GetValue(user)?.ToString() ?? "null");
             }
 
-            var logins = await _userManager.GetLoginsAsync(user);
+            var logins = await userManager.GetLoginsAsync(user);
             foreach (var l in logins)
             {
                 personalData.Add($"{l.LoginProvider} external login provider key", l.ProviderKey);

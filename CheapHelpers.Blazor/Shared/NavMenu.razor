@@ -1,12 +1,12 @@
-﻿@using CheapHelpers.Blazor.Data
-@using CheapHelpers.Blazor.Helpers
+﻿@using CheapHelpers.Blazor.Helpers
+@using CheapHelpers.Blazor.Services
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using MudBlazor
 
 <MudNavMenu Style="height:100%" Color="Color.Tertiary" Rounded="true" Bordered=true Dense=false Class="pa-2" onclick="@Save()">
     <MudNavLink Href="" Match="NavLinkMatch.All">Home</MudNavLink>
-    <AuthorizeView Context="LoggedInContext">
+@*     <AuthorizeView Context="LoggedInContext">
         @if (User != null)
         {
             <AuthorizeView Context="contextcontrolpanel" Roles="@Roles.Admin">
@@ -18,14 +18,17 @@
                 </MudNavGroup>
             </AuthorizeView>
         }
-    </AuthorizeView>
+    </AuthorizeView> *@
 </MudNavMenu>
 
 @code {
-    public IdentityUser User { get; set; }
+    public CheapUser User { get; set; }
 
     [CascadingParameter]
     private Task<AuthenticationState> AuthenticationState { get; set; }
+
+    [Inject]
+    public UserService UserService { get; set; }
 
     protected override async Task OnInitializedAsync()
     {

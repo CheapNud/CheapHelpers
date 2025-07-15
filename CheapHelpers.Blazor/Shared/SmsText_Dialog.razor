@@ -1,4 +1,6 @@
-﻿@using CheapHelpers.Services.Communication.Sms
+﻿@using CheapHelpers.EF
+@using CheapHelpers.Services.Communication.Sms
+@using Microsoft.AspNetCore.Components.Authorization
 @using Newtonsoft.Json
 
 <AuthorizeView>
@@ -41,6 +43,9 @@
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; }
 
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] protected ISnackbar ToastService { get; set; } = default!;
+
     //TODO: abstract this to something else, it first accepoted an array of phone numbers, bring this back?
     [Parameter]
     public string SelectedPhoneNumber { get; set; }
@@ -49,6 +54,9 @@
     //TODO: abstract this to something else
     [Parameter]
     public string NotificationMessage { get; set; }
+
+    [Inject]
+    public IDbContextFactory<CheapContext<CheapUser>> Factory { get; set; }
 
     protected override void OnInitialized()
     {

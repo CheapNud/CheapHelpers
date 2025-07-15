@@ -1,6 +1,7 @@
 ﻿@typeparam C where C : class, IEntityCode, new()
 @using System.Threading
 @using System.Linq.Expressions
+@using CheapHelpers.EF
 
 <MudAutocomplete Variant="@Variant" @ref="autocomplete" T="C" Label="@Label" Value="Value" SearchFunc="@Search"
                  ShowProgressIndicator=true CoerceText=true CoerceValue=false ResetValueOnEmptyText=true
@@ -111,6 +112,9 @@
     /// </summary>
     [Parameter]
     public int? SelectFirstWithId { get; set; } = null;
+
+    [Inject]
+    public IDbContextFactory<CheapContext<CheapUser>> Factory { get; set; }
 
     #endregion
 

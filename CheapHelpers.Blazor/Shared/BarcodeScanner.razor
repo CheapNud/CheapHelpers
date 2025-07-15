@@ -4,11 +4,11 @@
 @if (showScanner)
 {
     <MultiFormatReader Format="@_formatList"
-                   VideoWidth="500"
-                   VideoHeight="400"
-                   VideoProperties="@_videoProperties"
-                   OnStartVideo="StartVideo"
-                   OnBarcodeRead="BarcodeRead">
+                       VideoWidth="500"
+                       VideoHeight="400"
+                       VideoProperties="@_videoProperties"
+                       OnStartVideo="StartVideo"
+                       OnBarcodeRead="BarcodeRead">
     </MultiFormatReader>
 }
 else
@@ -26,6 +26,8 @@ else
     private string _inputDevice;
     private bool showScanner = true;
     private string manualBarcode;
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] protected ISnackbar ToastService { get; set; } = default!;
 
     [Parameter]
     public EventCallback<string> OnBarcodeRead { get; set; }

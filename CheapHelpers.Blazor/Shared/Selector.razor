@@ -84,6 +84,9 @@
 
     [Parameter]
     public Expression<Func<C, bool>>? Where { get; set; }
+
+    [Inject]
+    public IDbContextFactory<CheapContext<CheapUser>> Factory { get; set; }
 #nullable disable
 
     /// <summary>

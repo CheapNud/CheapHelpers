@@ -1,6 +1,6 @@
 ﻿@using System.IO
 @using Azure.AI.Vision.ImageAnalysis
-@using CheapHelpers.EF.CheapHelpers.EF
+@using CheapHelpers.EF
 @using CheapHelpers.Extensions
 @using CheapHelpers.Models.Entities
 @using CheapHelpers.Services.Storage
@@ -102,7 +102,7 @@ DeleteImage(image)" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Var
     private IDialogService Dialog { get; set; }
 
     [Inject]
-    private IDbContextFactory<CheapContext> Factory { get; set; }
+    private IDbContextFactory<CheapHelpers.EF.CheapContext<CheapUser>> Factory { get; set; }
     // [Inject]
     // private VisionServiceOptions VisionServiceOptions { get; set; }
 

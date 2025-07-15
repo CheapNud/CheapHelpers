@@ -1,31 +1,32 @@
-﻿
-using CheapHelpers.EF;
+﻿using CheapHelpers.EF;
 using CheapHelpers.EF.Repositories;
+using CheapHelpers.Models.Entities;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
-namespace CheapHelpers.Blazor.Data
+namespace CheapHelpers.Blazor.Services
 {
     /// <summary>
     /// Blazor Replacement for UsermManager and RoleManager
     /// All Task<AuthenticationState>, AuthenticationState and Claimsprincipal tasks check for authentication!
     /// </summary>
-    public class UserService(IDbContextFactory<CheapContext> factory) : UserRepo(factory)
+    public class UserService(IDbContextFactory<CheapContext<CheapUser>> factory) : UserRepo(factory)
     {
-        public async Task<IdentityUser> GetUserAsync(ClaimsPrincipal principal, CheapContext context = null)
+        public async Task<CheapUser> GetUserAsync(ClaimsPrincipal principal, CheapContext<CheapUser> context = null)
         {
             string id = GetUserId(principal);
             return await GetUserAsync(id, context);
         }
 
-        public async Task<IdentityUser> GetUserAsync(Task<AuthenticationState> authstate, CheapContext context = null)
+        public async Task<CheapUser> GetUserAsync(Task<AuthenticationState> authstate, CheapContext<CheapUser> context = null)
         {
             var r = await authstate;
             return await GetUserAsync(r, context);
         }
 
-        public async Task<IdentityUser> GetUserAsync(string userId, CheapContext context = null)
+        public async Task<CheapUser> GetUserAsync(string userId, CheapContext<CheapUser> context = null)
         {
             if (context == null)
             {
@@ -38,7 +39,7 @@ namespace CheapHelpers.Blazor.Data
             }
         }
 
-        public async Task<IdentityUser> GetUserAsync(AuthenticationState authstate, CheapContext context = null)
+        public async Task<CheapUser> GetUserAsync(AuthenticationState authstate, CheapContext<CheapUser> context = null)
         {
             return await GetUserAsync(authstate.User, context);
         }
@@ -103,12 +104,12 @@ namespace CheapHelpers.Blazor.Data
                 throw new ArgumentNullException(nameof(principal));
             }
 
-            return (
+            return
                     principal.Identities != null
                     && principal.Identities.Any(
                         i => i.AuthenticationType == IdentityConstants.ApplicationScheme
                     )
-                ) || (principal.Identity != null && principal.Identity.IsAuthenticated);
+                 || principal.Identity != null && principal.Identity.IsAuthenticated;
         }
 
         /// <summary>

@@ -1,4 +1,6 @@
-﻿<MudDialog>
+﻿@using CheapHelpers.Blazor.Services
+@using Microsoft.AspNetCore.Components.Authorization
+<MudDialog>
     <DialogContent>
         <MudStack AlignItems="AlignItems.Center" Class="my-4" Spacing="3">
             <MudTextField @ref="_pinField" T=string Immediate
@@ -37,6 +39,8 @@
 
     [CascadingParameter]
     private Task<AuthenticationState> AuthenticationState { get; set; }
+
+    [Inject] protected UserService UserService { get; set; } = default!;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -106,12 +110,12 @@
 
     private bool ValidatePinAsync(IdentityUser user, string pin)
     {
-        if (user is ApplicationUser appUser && !string.IsNullOrWhiteSpace(appUser.PinCodeHash))
-        {
-            var hasher = new PasswordHasher<ApplicationUser>();
-            var result = hasher.VerifyHashedPassword(appUser, appUser.PinCodeHash, pin);
-            return result == PasswordVerificationResult.Success;
-        }
+        // if (user is CheapUser appUser && !string.IsNullOrWhiteSpace(appUser.PinCodeHash))
+        // {
+        //     var hasher = new PasswordHasher<CheapUser>();
+        //     var result = hasher.VerifyHashedPassword(appUser, appUser.PinCodeHash, pin);
+        //     return result == PasswordVerificationResult.Success;
+        // }
 
         return false;
     }

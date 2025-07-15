@@ -1,4 +1,6 @@
-﻿<AuthorizeView>
+﻿@using CheapHelpers.Blazor.Services
+@using Microsoft.AspNetCore.Components.Authorization
+<AuthorizeView>
     <Authorized>
         @if (User != null)
         {
@@ -49,7 +51,7 @@
 
 
 @code {
-    public IdentityUser User { get; set; }
+    public CheapUser User { get; set; }
     public int UnreadServiceChats { get; set; }
 
     [CascadingParameter]
@@ -57,6 +59,11 @@
 
     [Inject]
     private IAuthorizationService AuthorizationService { get; set; }
+
+    [Inject]
+    private UserService UserService { get; set; }
+
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
 
     // [Inject]
     // private ReceiverRepo Receiverservice { get; set; }
@@ -80,7 +87,7 @@
         // var auth = await AuthenticationState;
 
         // if ((await AuthorizationService.AuthorizeAsync(auth.User, Policies.ServiceExternal)).Succeeded)
-        // { 
+        // {
         //     UnreadServiceChats += await Receiverservice.GetNotificationCount(User.Id, customers);
         // }
 

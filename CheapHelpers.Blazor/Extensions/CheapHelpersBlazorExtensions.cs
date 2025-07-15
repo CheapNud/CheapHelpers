@@ -1,4 +1,5 @@
 ﻿using CheapHelpers.Blazor.Configuration;
+using CheapHelpers.Blazor.Services;
 using CheapHelpers.EF;
 using CheapHelpers.Models.Entities;
 using CheapHelpers.Services.Email;
@@ -16,21 +17,33 @@ namespace CheapHelpers.Blazor.Extensions
         /// <summary>
         /// Register CheapHelpers Blazor services with full configuration
         /// </summary>
-        public static IServiceCollection AddCheapHelpersBlazor<TUser, TContext>(
+        public static IServiceCollection AddCheapHelpersBlazor<TUser>(
             this IServiceCollection services,
             Action<CheapHelpersBlazorOptions>? configure = null)
             where TUser : CheapUser
-            where TContext : CheapContext<TUser>
         {
             // Configure options
             var options = new CheapHelpersBlazorOptions();
             configure?.Invoke(options);
             services.AddSingleton(options);
 
-            // Add MudBlazor if not already registered
-            if (!services.Any(x => x.ServiceType == typeof(IMudPopoverService)))
+            // Add MudBlazor if not already registered, kind of a hack to detect mudblazor presence
+            if (services.Any(x => x.ServiceType == typeof(IMudPopoverHolder)))
             {
-                services.AddMudServices(config =>
+                Debug.WriteLine($"Warning: {nameof(IMudPopoverHolder)} already registered, manage state properly! continuing...");
+            }
+
+            if (services.Any(x => x.ServiceType == typeof(IDialogService)))
+            {
+                Debug.WriteLine($"Warning: {nameof(IDialogService)} already registered, manage state properly! continuing...");
+            }
+
+            if (services.Any(x => x.ServiceType == typeof(ISnackbar)))
+            {
+                Debug.WriteLine($"Warning: {nameof(ISnackbar)} already registered, manage state properly! continuing...");
+            }
+
+            services.AddMudServices(config =>
                 {
                     config.SnackbarConfiguration.PositionClass = options.SnackbarPosition;
                     config.SnackbarConfiguration.PreventDuplicates = options.PreventDuplicateSnackbars;
@@ -42,7 +55,7 @@ namespace CheapHelpers.Blazor.Extensions
                     config.SnackbarConfiguration.ShowTransitionDuration = 300;
                     config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
                 });
-            }
+         
 
             // Add localization support
             if (options.EnableLocalization)
@@ -51,18 +64,18 @@ namespace CheapHelpers.Blazor.Extensions
             }
 
             // Register core services
-            services.AddScoped<ICheapUserService<TUser>, CheapUserService<TUser, TContext>>();
+            services.AddScoped<UserService>();
 
             // Register email service if configured
             if (options.EmailServiceType != null)
             {
-                services.AddScoped(typeof(ICheapEmailService), options.EmailServiceType);
+                services.AddScoped(typeof(IEmailService), options.EmailServiceType);
             }
 
             // Register DbContext factory if not already registered
-            if (!services.Any(x => x.ServiceType == typeof(IDbContextFactory<TContext>)))
+            if (!services.Any(x => x.ServiceType == typeof(IDbContextFactory<CheapContext<TUser>>)))
             {
-                Debug.WriteLine("Warning: IDbContextFactory<TContext> not found. Make sure to register it in your Program.cs");
+                Debug.WriteLine($"Warning: IDbContextFactory<CheapContext<{typeof(TUser).Name}>> not found. Make sure to register it in your Program.cs");
             }
 
             // Register additional services based on options
@@ -82,18 +95,100 @@ namespace CheapHelpers.Blazor.Extensions
         }
 
         /// <summary>
-        /// Register CheapHelpers Blazor with minimal configuration (for quick setup)
+        /// Register CheapHelpers Blazor with minimal configuration (for quick setup with CheapUser)
         /// </summary>
-        public static IServiceCollection AddCheapHelpersBlazorMinimal<TUser, TContext>(
+        public static IServiceCollection AddCheapHelpersBlazorMinimal(
             this IServiceCollection services)
-            where TUser : CheapUser
-            where TContext : CheapContext
         {
-            return services.AddCheapHelpersBlazor<CheapUser, CheapContext>(options =>
+            return services.AddCheapHelpersBlazor<CheapUser>(options =>
             {
                 options.EnableLocalization = false;
                 options.EnableFileDownload = false;
             });
         }
+
+        /// <summary>
+        /// Register CheapHelpers Blazor with minimal configuration for custom user type
+        /// </summary>
+        public static IServiceCollection AddCheapHelpersBlazorMinimal<TUser>(
+            this IServiceCollection services)
+            where TUser : CheapUser
+        {
+            return services.AddCheapHelpersBlazor<TUser>(options =>
+            {
+                options.EnableLocalization = false;
+                options.EnableFileDownload = false;
+            });
+        }
+
+        /// <summary>
+        /// Complete setup: CheapContext + Blazor services in one call
+        /// </summary>
+        public static IServiceCollection AddCheapHelpersComplete<TUser>(
+            this IServiceCollection services,
+            Action<DbContextOptionsBuilder> configureContext,
+            CheapContextOptions? contextOptions = null,
+            Action<CheapHelpersBlazorOptions>? configureBlazor = null)
+            where TUser : CheapUser
+        {
+            // Add CheapContext
+            services.AddCheapContext<TUser>(configureContext, contextOptions);
+
+            // Add Blazor services
+            services.AddCheapHelpersBlazor<TUser>(configureBlazor);
+
+            return services;
+        }
+
+        /// <summary>
+        /// Complete setup with Identity: CheapContext + Identity + Blazor services
+        /// </summary>
+        public static IServiceCollection AddCheapHelpersCompleteWithIdentity<TUser, TRole>(
+            this IServiceCollection services,
+            Action<DbContextOptionsBuilder> configureContext,
+            CheapContextOptions? contextOptions = null,
+            Action<IdentityOptions>? configureIdentity = null,
+            Action<CheapHelpersBlazorOptions>? configureBlazor = null)
+            where TUser : CheapUser
+            where TRole : IdentityRole
+        {
+            // Add CheapContext + Identity
+            services.AddCheapContext<TUser>(configureContext, contextOptions)
+                .AddIdentity<TRole>(configureIdentity);
+
+            // Add Blazor services
+            services.AddCheapHelpersBlazor<TUser>(configureBlazor);
+
+            return services;
+        }
+
+        /// <summary>
+        /// Simple complete setup with IdentityUser and IdentityRole
+        /// </summary>
+        public static IServiceCollection AddCheapHelpersCompleteWithIdentity(
+            this IServiceCollection services,
+            Action<DbContextOptionsBuilder> configureContext,
+            CheapContextOptions? contextOptions = null,
+            Action<IdentityOptions>? configureIdentity = null,
+            Action<CheapHelpersBlazorOptions>? configureBlazor = null)
+        {
+            return services.AddCheapHelpersCompleteWithIdentity<CheapUser, IdentityRole>(
+                configureContext, contextOptions, configureIdentity, configureBlazor);
+        }
     }
+
+    // Usage Examples:
+    // 
+    // Just Blazor services:
+    // services.AddCheapHelpersBlazorMinimal<ApplicationUser>();
+    // 
+    // Complete setup (Context + Blazor):
+    // services.AddCheapHelpersComplete<ApplicationUser>(options => options.UseSqlServer(connectionString));
+    // 
+    // Everything (Context + Identity + Blazor):
+    // services.AddCheapHelpersCompleteWithIdentity<ApplicationUser, IdentityRole>(
+    //     options => options.UseSqlServer(connectionString));
+    // 
+    // Simple everything with defaults:
+    // services.AddCheapHelpersCompleteWithIdentity(options => options.UseSqlServer(connectionString));
 }

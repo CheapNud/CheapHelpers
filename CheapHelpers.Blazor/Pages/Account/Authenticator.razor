@@ -1,5 +1,8 @@
 ﻿@using System.Net
 @using System.Net.Http.Json
+@using CheapHelpers.Blazor.Services
+@using CheapHelpers.Services.Email
+@using Microsoft.AspNetCore.Components.Authorization
 
 
 
@@ -51,6 +54,13 @@
 
     [Inject]
     private IJSRuntime Js { get; set; }
+
+    [Inject] protected NavigationManager Nav { get; set; } = default!;
+    [Inject] protected ISnackbar ToastService { get; set; } = default!;
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] protected IEmailService Mailer { get; set; }
+    [Inject] protected IAuthorizationService AuthorizationService { get; set; } = default!;
+    [Inject] protected UserService UserService { get; set; } = default!;
 
     private static HttpClient sharedClient = new()
         {

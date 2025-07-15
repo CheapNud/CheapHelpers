@@ -36,6 +36,8 @@
     public string Password { get; set; }
     object form;
 
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+
     [Inject]
     private IJSRuntime Js { get; set; }
 

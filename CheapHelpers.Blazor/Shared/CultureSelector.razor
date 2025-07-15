@@ -9,7 +9,7 @@
 </MudSelect>
 
 @code {
-    public CultureInfo[] SupportedCultures => Program.SupportedCultures.Select(x => new CultureInfo(x)).ToArray();
+    public CultureInfo[] SupportedCultures;  // => Program.SupportedCultures.Select(x => new CultureInfo(x)).ToArray(); i need a place to store suportcultures
 
     public CultureInfo SelectedCulture { get; set; }
 
@@ -21,6 +21,8 @@
 
     [Parameter]
     public string Style { get; set; }
+
+    [Inject] protected NavigationManager Nav { get; set; } = default!;
 
     protected override void OnInitialized()
     {

@@ -1,4 +1,7 @@
-﻿namespace CheapHelpers.Blazor.Shared
+﻿using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace CheapHelpers.Blazor.Shared
 {
     [Route("[controller]/[action]")]
     public class CultureController : Controller

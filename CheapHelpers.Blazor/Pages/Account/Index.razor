@@ -2,9 +2,13 @@
 @page "/Account"
 @page "/Account/{TabIndex:int}"
 @typeparam TUser where TUser : IdentityUser
+@using CheapHelpers.Blazor.Services
+@using CheapHelpers.Services.Email
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using System.Text
 @attribute [Authorize]
 
 <MudText Typo="Typo.h5">@Title</MudText>
@@ -79,7 +83,7 @@
         }
         
         @* Custom Tabs *@
-        @if (CustomTabs != null)
+@*         @if (CustomTabs != null)
         {
             @foreach (var tab in CustomTabs.Where(t => IsTabAuthorized(t)))
             {
@@ -89,13 +93,13 @@
                     </CascadingValue>
                 </MudTabPanel>
             }
-        }
+        } *@
     </MudTabs>
 }
 
 @code {
     [Inject] protected UserService UserService { get; set; } = default!;
-    [Inject] protected UserManager<TUser> UserManager { get; set; } = default!;
+    [Inject] protected UserManager<CheapUser> UserManager { get; set; } = default!;
     [Inject] protected NavigationManager Nav { get; set; } = default!;
     [Inject] protected ISnackbar ToastService { get; set; } = default!;
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;
@@ -114,10 +118,10 @@
     [Parameter] public RenderFragment? SecurityTabContent { get; set; }
     [Parameter] public RenderFragment? AdditionalGeneralContent { get; set; }
     [Parameter] public List<AccountTabDefinition>? CustomTabs { get; set; }
-    [Parameter] public EventCallback<TUser> OnUserSaved { get; set; }
+    [Parameter] public EventCallback<CheapUser> OnUserSaved { get; set; }
     [Parameter] public EventCallback<bool?> OnDarkModeChanged { get; set; }
 
-    protected TUser? CurrentUser { get; set; }
+    protected CheapUser? CurrentUser { get; set; }
     private bool wasDarkMode;
 
     protected override async Task OnInitializedAsync()

@@ -1,15 +1,16 @@
 ﻿using CheapHelpers.EF.Extensions;
 using CheapHelpers.EF.Infrastructure;
 using CheapHelpers.Models.Contracts;
+using CheapHelpers.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using System.Diagnostics;
 
 namespace CheapHelpers.EF.Repositories
 {
-    public class BaseRepo(IDbContextFactory<CheapContext> factory) : IDisposable
+    public class BaseRepo(IDbContextFactory<CheapContext<CheapUser>> factory) : IDisposable
     {
-        protected readonly IDbContextFactory<CheapContext> _factory = factory;
+        protected readonly IDbContextFactory<CheapContext<CheapUser>> _factory = factory;
 
         public void Dispose()
         {

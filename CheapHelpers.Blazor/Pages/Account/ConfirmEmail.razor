@@ -1,6 +1,5 @@
 ﻿@page "/Account/ConfirmEmail"
 
-@using CheapHelpers.CoreStandard.Services;
 @using System.Text;
 @using Microsoft.AspNetCore.WebUtilities;
 
@@ -21,7 +20,11 @@
     public string Message { get; set; }
 
     [Inject]
-    private UserManager<ApplicationUser> UserManager { get; set; }
+    private UserManager<CheapUser> UserManager { get; set; }
+
+    [Inject] protected ISnackbar ToastService { get; set; } = default!;
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] protected NavigationManager Nav { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {

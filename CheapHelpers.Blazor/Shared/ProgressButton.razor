@@ -66,6 +66,8 @@
     [Parameter]
     public MudBlazor.Size Size { get; set; } = Size.Medium;
 
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    
     private bool processing = false;
 
 

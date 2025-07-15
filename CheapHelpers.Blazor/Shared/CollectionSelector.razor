@@ -1,4 +1,4 @@
-﻿<MudGrid>
+﻿@* <MudGrid>
     <MudItem xs=4>
         <Selector Label=@(Loc["Firm"]) C="Firm" OnlyDBValues="true" UseSelect="true" DisplayProp="@(x => x.FirmName)" Variant="Variant.Outlined" ValueChanged="FirmChanged" Value="SelectedFirm"></Selector>
     </MudItem>
@@ -55,3 +55,4 @@
         await ValueChanged.InvokeAsync(Value);
     }
 }
+ *@

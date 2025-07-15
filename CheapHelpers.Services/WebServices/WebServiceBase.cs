@@ -15,7 +15,7 @@ public abstract class WebServiceBase : IWebServiceBase, IAsyncDisposable
     private const int DefaultTimeoutMinutes = 5;
     private const int MaxRetryAttempts = 3;
     private const int RetryDelayMs = 1000;
-    private const string JsonContentType = "application/json";
+    private const string JsonContentType = MimeMapping.KnownMimeTypes.Json;
     private const int TokenCacheExpiryMinutes = 55; // Cache tokens for 55 minutes (typical tokens are 60min)
 
     // Cache Keys

@@ -1,6 +1,8 @@
 ﻿using CheapHelpers.Blazor.Configuration;
 using CheapHelpers.Blazor.Services;
 using CheapHelpers.EF;
+using CheapHelpers.EF.Extensions;
+using CheapHelpers.EF.Infrastructure;
 using CheapHelpers.Models.Entities;
 using CheapHelpers.Services.Email;
 using Microsoft.AspNetCore.Identity;

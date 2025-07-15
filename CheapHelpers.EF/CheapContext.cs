@@ -1,50 +1,14 @@
-﻿using CheapHelpers.Models.Contracts;
+﻿using CheapHelpers.EF.Infrastructure;
+using CheapHelpers.Models.Contracts;
 using CheapHelpers.Models.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace CheapHelpers.EF
 {
-    public class CheapContextOptions
-    {
-        public string EnvironmentVariable { get; set; } = "ASPNETCORE_ENVIRONMENT";
-        public int DevCommandTimeoutMs { get; set; } = 150000;
-        public bool EnableAuditing { get; set; } = true;
-        public bool EnableSensitiveDataLogging { get; set; } = true;
-
-        // Use the real IdentityOptions with your defaults
-        public IdentityOptions Identity { get; set; } = new()
-        {
-            Password = new PasswordOptions
-            {
-                RequireDigit = true,
-                RequireLowercase = true,
-                RequireNonAlphanumeric = false,
-                RequireUppercase = true,
-                RequiredLength = 8,
-                RequiredUniqueChars = 1
-            },
-            SignIn = new SignInOptions
-            {
-                RequireConfirmedAccount = false
-            },
-            Lockout = new LockoutOptions
-            {
-                DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5),
-                MaxFailedAccessAttempts = 8,
-                AllowedForNewUsers = true
-            },
-            User = new UserOptions
-            {
-                AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+",
-                RequireUniqueEmail = true
-            }
-        };
-    }
     public class CheapContext<TUser>(
         DbContextOptions<CheapContext<TUser>> options,
         CheapContextOptions? contextOptions = null)
@@ -58,7 +22,7 @@ namespace CheapHelpers.EF
             return string.Equals(environmentName, Environments.Development, StringComparison.OrdinalIgnoreCase);
         }
 
-        public string ConnectionString => Database.GetConnectionString();
+        public string? ConnectionString => Database?.GetConnectionString();
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -177,97 +141,7 @@ namespace CheapHelpers.EF
             //    });
         }
 
-        public DbSet<CheapUser> Users { get; set; }
         public DbSet<FileAttachment> FileAttachments { get; set; }
-    }
-
-    // Extension methods for easy setup
-    public static class CheapContextServiceExtensions
-    {
-        /// <summary>
-        /// Adds CheapContext with the specified user type. Chain .AddIdentity() for Identity services.
-        /// </summary>
-        public static CheapContextBuilder<TUser> AddCheapContext<TUser>(
-            this IServiceCollection services,
-            Action<DbContextOptionsBuilder> configureContext,
-            CheapContextOptions? contextOptions = null)
-            where TUser : IdentityUser
-        {
-            var options = contextOptions ?? new CheapContextOptions();
-
-            // Register context options
-            services.AddSingleton(options);
-
-            // Add DbContext
-            services.AddDbContext<CheapContext<TUser>>(configureContext);
-
-            return new CheapContextBuilder<TUser>(services, options);
-        }
-
-        /// <summary>
-        /// Adds CheapContext with IdentityUser. Chain .AddIdentity() for Identity services.
-        /// </summary>
-        public static CheapContextBuilder<IdentityUser> AddCheapContext(
-            this IServiceCollection services,
-            Action<DbContextOptionsBuilder> configureContext,
-            CheapContextOptions? contextOptions = null)
-        {
-            return services.AddCheapContext<IdentityUser>(configureContext, contextOptions);
-        }
-    }
-
-    /// <summary>
-    /// Builder for fluent CheapContext configuration
-    /// </summary>
-    public class CheapContextBuilder<TUser> where TUser : IdentityUser
-    {
-        private readonly IServiceCollection _services;
-        private readonly CheapContextOptions _contextOptions;
-
-        internal CheapContextBuilder(IServiceCollection services, CheapContextOptions contextOptions)
-        {
-            _services = services;
-            _contextOptions = contextOptions;
-        }
-
-        /// <summary>
-        /// Adds Identity services with CheapContext defaults. Follows standard .AddIdentity() pattern.
-        /// </summary>
-        public IdentityBuilder AddIdentity<TRole>(Action<IdentityOptions>? configureOptions = null)
-            where TRole : IdentityRole
-        {
-            var identityBuilder = _services.AddIdentity<TUser, TRole>(identityOptions =>
-            {
-                // Apply CheapContext defaults first
-                identityOptions.Password = _contextOptions.Identity.Password;
-                identityOptions.SignIn = _contextOptions.Identity.SignIn;
-                identityOptions.Lockout = _contextOptions.Identity.Lockout;
-                identityOptions.User = _contextOptions.Identity.User;
-                identityOptions.Stores = _contextOptions.Identity.Stores;
-                identityOptions.Tokens = _contextOptions.Identity.Tokens;
-                identityOptions.ClaimsIdentity = _contextOptions.Identity.ClaimsIdentity;
-
-                // Allow user overrides
-                configureOptions?.Invoke(identityOptions);
-            })
-            .AddEntityFrameworkStores<CheapContext<TUser>>()
-            .AddDefaultTokenProviders();
-
-            return identityBuilder;
-        }
-
-        /// <summary>
-        /// Adds Identity services with IdentityRole and CheapContext defaults.
-        /// </summary>
-        public IdentityBuilder AddIdentity(Action<IdentityOptions>? configureOptions = null)
-        {
-            return AddIdentity<IdentityRole>(configureOptions);
-        }
-
-        /// <summary>
-        /// Access to the underlying service collection for additional configuration.
-        /// </summary>
-        public IServiceCollection Services => _services;
     }
 
     // Usage Examples:

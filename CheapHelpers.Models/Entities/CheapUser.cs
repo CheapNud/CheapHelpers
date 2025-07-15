@@ -25,5 +25,13 @@ namespace CheapHelpers.Models.Entities
         public string? PreferredLanguage { get; set; } = "en-US";
         public DateTime? LastLoginDate { get; set; }
         public bool IsFirstLogin { get; set; } = true;
+
+        public string? TimeZoneInfoId { get; set; } = null;
+        public TimeZoneInfo TimeZoneInfo => TimeZoneInfoId != null ? System.TimeZoneInfo.FindSystemTimeZoneById(TimeZoneInfoId) : TimeZoneInfo.Local;
+
+        /// <summary>
+        /// Save the hash of the pin code for this user, used to verify the pin code when needed (only factor for now)
+        /// </summary>
+        public string? PinCodeHash { get; set; }
     }
 }

@@ -150,7 +150,7 @@
         try
         {
             CurrentUser.IsDarkMode = b.GetValueOrDefault();
-            await UserService.UpdateUser(CurrentUser);
+            await UserService.UpdateUserAsync(CurrentUser);
             
             if (OnDarkModeChanged.HasDelegate)
             {
@@ -176,7 +176,7 @@
         
         try
         {
-            await UserService.UpdateUser(CurrentUser);
+            await UserService.UpdateUserAsync(CurrentUser);
             ToastService.Add(Loc["Saved"], Severity.Success);
             
             if (OnUserSaved.HasDelegate)

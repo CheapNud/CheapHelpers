@@ -1,4 +1,6 @@
 ﻿
+@using CheapHelpers.Blazor.Services
+@using CheapHelpers.Services.Email
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Identity
@@ -57,6 +59,13 @@
 
     private MudTextField<string> _newPinField;
     private MudTextField<string> _confirmPinField;
+
+    [Inject] protected NavigationManager Nav { get; set; } = default!;
+    [Inject] protected ISnackbar ToastService { get; set; } = default!;
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] protected IEmailService? Mailer { get; set; }
+    [Inject] protected IAuthorizationService AuthorizationService { get; set; } = default!;
+    [Inject] protected UserService UserService { get; set; } = default!;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -160,29 +169,29 @@
             return;
         }
 
-        // try
-        // {
-        //     if (CurrentUser != null)
-        //     {
-        //         var hasher = new PasswordHasher<IdentityUser>();
-        //         CurrentUser.PinCodeHash = hasher.HashPassword(CurrentUser, _newPin);
-        //         await UserService.UpdateUser(CurrentUser);
+        try
+        {
+            if (CurrentUser != null)
+            {
+                var hasher = new PasswordHasher<IdentityUser>();
+                CurrentUser.PinCodeHash = hasher.HashPassword(CurrentUser, _newPin);
+                await UserService.UpdateUserAsync(CurrentUser);
 
-        //         _newPin = "";
-        //         _confirmPin = "";
+                _newPin = "";
+                _confirmPin = "";
 
-        //         _successMessage = "PIN has been set successfully!";
-        //         ToastService.Add("PIN has been set successfully!", Severity.Success);
+                _successMessage = "PIN has been set successfully!";
+                ToastService.Add("PIN has been set successfully!", Severity.Success);
 
-        //         await OnPinSet.InvokeAsync();
-        //         StateHasChanged();
-        //     }
-        // }
-        // catch (Exception ex)
-        // {
-        //     Debug.WriteLine(ex.Message);
-        //     _pinSetupError = "An error occurred while setting your PIN.";
-        //     ToastService.Add("Error setting PIN", Severity.Error);
-        // }
+                await OnPinSet.InvokeAsync();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+            _pinSetupError = "An error occurred while setting your PIN.";
+            ToastService.Add("Error setting PIN", Severity.Error);
+        }
     }
 }

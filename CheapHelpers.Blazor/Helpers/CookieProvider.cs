@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using System.Net;
 
-namespace CheapHelpers.Blazor.Shared
+namespace CheapHelpers.Blazor.Helpers
 {
     public class CookieProvider
     {

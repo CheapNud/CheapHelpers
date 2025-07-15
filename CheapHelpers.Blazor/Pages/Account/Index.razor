@@ -2,6 +2,7 @@
 @page "/Account"
 @page "/Account/{TabIndex:int}"
 @typeparam TUser where TUser : IdentityUser
+@using CheapHelpers.Blazor.Helpers
 @using CheapHelpers.Blazor.Services
 @using CheapHelpers.Services.Email
 @using Microsoft.AspNetCore.Authorization
@@ -208,16 +209,5 @@
             ToastService.Add(Loc["ErrorMessage"], Severity.Error);
             Debug.WriteLine(ex.Message);
         }
-    }
-}
-
-@* Supporting class definition *@
-@code {
-    public class AccountTabDefinition
-    {
-        public string Title { get; set; } = string.Empty;
-        public RenderFragment Content { get; set; } = default!;
-        public string? Policy { get; set; }
-        public int Order { get; set; } = 0;
     }
 }

@@ -110,12 +110,12 @@
 
     private bool ValidatePinAsync(IdentityUser user, string pin)
     {
-        // if (user is CheapUser appUser && !string.IsNullOrWhiteSpace(appUser.PinCodeHash))
-        // {
-        //     var hasher = new PasswordHasher<CheapUser>();
-        //     var result = hasher.VerifyHashedPassword(appUser, appUser.PinCodeHash, pin);
-        //     return result == PasswordVerificationResult.Success;
-        // }
+        if (user is CheapUser appUser && !string.IsNullOrWhiteSpace(appUser.PinCodeHash))
+        {
+            var hasher = new PasswordHasher<CheapUser>();
+            var result = hasher.VerifyHashedPassword(appUser, appUser.PinCodeHash, pin);
+            return result == PasswordVerificationResult.Success;
+        }
 
         return false;
     }

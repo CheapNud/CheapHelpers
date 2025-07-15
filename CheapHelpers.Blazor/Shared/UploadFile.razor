@@ -1,12 +1,13 @@
 ﻿@using System.IO
 @using System.Linq.Expressions;
+@using CheapHelpers.Blazor.Helpers
 @using CheapHelpers.Extensions
 @using CheapHelpers.Helpers.Files
 @using CheapHelpers.Services.Storage
 @using CheapHelpers.Services.Storage.Configuration
 @using FileTypeChecker.Extensions;
-@using SixLabors.ImageSharp.Processing;
 @using SixLabors.ImageSharp;
+@using SixLabors.ImageSharp.Processing;
 @typeparam T
 
 @if (typeof(T) == typeof(IReadOnlyList<IBrowserFile>))
@@ -396,9 +397,6 @@ else
 
     private async Task OnFilesUploaded(IReadOnlyList<IBrowserFile> files)
     {
-        //List<Task> uploads = files.Select(x => OnFileUploaded(x)).ToList();
-        //await Task.WhenAll(uploads);
-
         try
         {
             Debug.WriteLine(files.Count);

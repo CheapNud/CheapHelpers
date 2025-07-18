@@ -24,21 +24,3 @@
 @using CheapHelpers.EF
 @using CheapHelpers.Services
 @using CheapHelpers.Blazor.Extensions
-
-@* IMPORTANT: No more hardcoded injections here! 
-   Components should inject services locally using [Inject] or @inject directives
-   Base component classes handle common injections
-*@
-
-@* Note: These injections have been removed from _Imports.razor
-   They should be injected in individual components as needed:
-   - NavigationManager
-   - IDbContextFactory<TContext>
-   - IUserService<TUser>
-   - ISnackbar
-   - IStringLocalizer
-   - IEmailService
-   - IDialogService
-   
-   This allows the library to be context-agnostic and not tied to specific implementations.
-*@

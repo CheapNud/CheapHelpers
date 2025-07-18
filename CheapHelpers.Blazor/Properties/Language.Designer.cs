@@ -59,5 +59,41 @@ namespace CheapHelpers.Blazor.Properties {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Are you sure you want to delete this image?.
+        /// </summary>
+        internal static string ConfirmDeleteMessage {
+            get {
+                return ResourceManager.GetString("ConfirmDeleteMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Delete.
+        /// </summary>
+        internal static string Delete {
+            get {
+                return ResourceManager.GetString("Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Display Order.
+        /// </summary>
+        internal static string DisplayIndex {
+            get {
+                return ResourceManager.GetString("DisplayIndex", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Visible.
+        /// </summary>
+        internal static string Visible {
+            get {
+                return ResourceManager.GetString("Visible", resourceCulture);
+            }
+        }
     }
 }

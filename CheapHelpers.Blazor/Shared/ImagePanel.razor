@@ -10,31 +10,52 @@
 @using System.Net.Http.Headers
 @using System.Text
 @using System.Web
+@typeparam TUser where TUser : CheapUser
 
-@if (Files != null)
+@if (Files != null && Files.Count > 0)
 {
     <MudGrid Class="@Class" Justify="Justify.FlexStart">
-        @foreach (var image in Files)
+        @foreach (var image in Files.OrderBy(f => f.DisplayIndex))
         {
             <MudItem>
                 <MudPaper Style="overflow-wrap:anywhere;" Class="pa-4" Elevation="2">
                     <MudStack Justify="Justify.Center" AlignItems="AlignItems.Center">
-                        <MudText Align="Align.Center" Typo="Typo.body1">@(UseShortNames ? image.FileName.ToShortString() : image.FileName)</MudText>
-                        <ImageComponent Height="ImageHeight" BlobContainer="BlobContainer" Image="image"></ImageComponent>
+                        <MudText Align="Align.Center" Typo="Typo.body1">
+                            @(UseShortNames? image.FileName.ToShortString() : image.FileName)
+                        </MudText>
+                        <ImageComponent Height="ImageHeight"
+                                        BlobContainer="BlobContainer"
+                                        Image="image"
+                                        Alt="@GetImageAltText(image)">
+                        </ImageComponent>
                     </MudStack>
+
                     @if (CanDelete || CanEdit)
                     {
-                        <MudGrid Class="px-3 mt-2">
+                        <MudGrid Class="px-3 mt-2" Spacing="2">
                             @if (CanEdit)
                             {
                                 <MudItem xs="4">
                                     <MudTooltip Text="@Loc["DisplayIndex"]">
-                                        <MudNumericField T="int" Step="1" FullWidth="true" Variant="Variant.Outlined" ValueChanged="@(x => OnDisplayIndexChanged(image, x))" Value=@image.DisplayIndex Label="@Loc["DisplayIndex"]" />
+                                        <MudNumericField T="int"
+                                                         Step="1"
+                                                         FullWidth="true"
+                                                         Variant="Variant.Outlined"
+                                                         ValueChanged="@(x => OnDisplayIndexChanged(image, x))"
+                                                         Value="@image.DisplayIndex"
+                                                         Label="@Loc["DisplayIndex"]"
+                                                         Min="0"
+                                                         Max="9999" />
                                     </MudTooltip>
                                 </MudItem>
                                 <MudItem>
                                     <MudTooltip Text="@Loc["Visible"]">
-                                        <MudCheckBox Class="mt-2" T="bool" ValueChanged="@(x => OnVisibleChanged(image, x))" Value=@image.Visible Label="@Loc["Visible"]" />
+                                        <MudSwitch T="bool"
+                                                   Class="mt-2"
+                                                   ValueChanged="@(x => OnVisibleChanged(image, x))"
+                                                   Value="@image.Visible"
+                                                   Label="@Loc["Visible"]"
+                                                   Color="Color.Primary" />
                                     </MudTooltip>
                                 </MudItem>
                             }
@@ -42,8 +63,14 @@
                             {
                                 <MudItem>
                                     <MudTooltip Text="@Loc["Delete"]">
-                                        <MudIconButton Class="mt-3" OnClick="() => 
-DeleteImage(image)" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Variant="Variant.Filled" aria-label="delete"></MudIconButton>
+                                        <MudIconButton Class="mt-3"
+                                                       OnClick="() => DeleteImageAsync(image)"
+                                                       Icon="@Icons.Material.Filled.Delete"
+                                                       Color="Color.Error"
+                                                       Variant="Variant.Filled"
+                                                       aria-label="@Loc["Delete"].Value"
+                                                       Disabled="@IsProcessing">
+                                        </MudIconButton>
                                     </MudTooltip>
                                 </MudItem>
                             }
@@ -54,21 +81,40 @@ DeleteImage(image)" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Var
         }
     </MudGrid>
 }
-
+else if (ShowEmptyState)
+{
+    <MudPaper Class="pa-4" Elevation="1">
+        <MudStack AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Large" Color="Color.Secondary" />
+            <MudText Typo="Typo.h6" Color="Color.Secondary">@Loc["NoImagesFound"]</MudText>
+        </MudStack>
+    </MudPaper>
+}
 
 @code {
+    #region Constants
 
-    [Inject]
-    public ISnackbar ToastService { get; set; }
+    private const int DefaultImageHeight = 200;
+    private const int MaxDisplayIndex = 9999;
+    private const int MinDisplayIndex = 0;
 
+    #endregion
 
-    [Inject]
-    protected IStringLocalizer Loc { get; set; } = default!;
+    #region Injected Services
 
-    //TODO: Convert to filepanel and use to display all uploads
+    [Inject] protected ISnackbar SnackbarService { get; set; } = default!;
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] protected BlobService BlobService { get; set; } = default!;
+    [Inject] protected IDialogService DialogService { get; set; } = default!;
+    [Inject] protected IDbContextFactory<CheapContext<TUser>> ContextFactory { get; set; } = default!;
+
+    #endregion
+
+    #region Parameters
+
     [EditorRequired]
     [Parameter]
-    public List<FileAttachment> Files { get; set; }
+    public List<FileAttachment> Files { get; set; } = [];
 
     [Parameter]
     public bool CanDelete { get; set; } = true;
@@ -81,176 +127,200 @@ DeleteImage(image)" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Var
     public BlobContainers BlobContainer { get; set; }
 
     [Parameter]
-    public string Class { get; set; }
+    public string Class { get; set; } = string.Empty;
 
     /// <summary>
-    /// Deletes the image from the blobcontainer, database calls you need to handle on your own
+    /// Event callback for when an image is deleted. Handle database cleanup in the parent component.
     /// </summary>
     [Parameter]
     public EventCallback<FileAttachment> OnDelete { get; set; }
 
+    /// <summary>
+    /// Event callback for when an image is updated (visibility or display index changed).
+    /// </summary>
     [Parameter]
-    public int ImageHeight { get; set; } = 200;
+    public EventCallback<FileAttachment> OnUpdate { get; set; }
+
+    [Parameter]
+    public int ImageHeight { get; set; } = DefaultImageHeight;
 
     [Parameter]
     public bool UseShortNames { get; set; } = false;
 
-    [Inject]
-    private BlobService BlobService { get; set; }
+    [Parameter]
+    public bool ShowEmptyState { get; set; } = true;
 
-    [Inject]
-    private IDialogService Dialog { get; set; }
+    [Parameter]
+    public bool EnableImageAnalysis { get; set; } = false;
 
-    [Inject]
-    private IDbContextFactory<CheapHelpers.EF.CheapContext<CheapUser>> Factory { get; set; }
-    // [Inject]
-    // private VisionServiceOptions VisionServiceOptions { get; set; }
+    #endregion
 
-    protected override async Task OnInitializedAsync()
+    #region State
+
+    private bool IsProcessing { get; set; } = false;
+
+    #endregion
+
+    #region Event Handlers
+
+    private async Task OnVisibleChanged(FileAttachment file, bool visible)
     {
-        // AnalyzeImage();
-    }
+        if (file == null || IsProcessing) return;
 
-    private async Task OnVisibleChanged(FileAttachment f, bool visible)
-    {
         try
         {
-            f.Visible = visible;
-            using (var context = Factory.CreateDbContext())
-            {
-                await context.FileAttachments.Where(x => x.Id == f.Id).ExecuteUpdateAsync(x => x.SetProperty(y => y.Visible, visible));
-            }
+            IsProcessing = true;
+            file.Visible = visible;
+
+            using var context = ContextFactory.CreateDbContext();
+            await context.FileAttachments
+                .Where(x => x.Id == file.Id)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.Visible, visible));
+            await OnUpdate.InvokeAsync(file);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
-            ToastService.Add(Loc["Error"], Severity.Error);
+            Debug.WriteLine($"Error updating file visibility: {ex.Message}");
+            SnackbarService.Add(Loc["UpdateErrorMessage"].Value, Severity.Error);
+
+            // Revert the change on error
+            file.Visible = !visible;
+        }
+        finally
+        {
+            IsProcessing = false;
         }
     }
 
-    private async Task OnDisplayIndexChanged(FileAttachment f, int displayindex)
+    private async Task OnDisplayIndexChanged(FileAttachment file, int displayIndex)
     {
+        if (file == null || IsProcessing) return;
+
+        // Validate display index range
+        if (displayIndex < MinDisplayIndex || displayIndex > MaxDisplayIndex)
+        {
+            SnackbarService.Add($"Display index must be between {MinDisplayIndex} and {MaxDisplayIndex}", Severity.Warning);
+            return;
+        }
+
         try
         {
-            f.DisplayIndex = displayindex;
-            using (var context = Factory.CreateDbContext())
-            {
-                await context.FileAttachments.Where(x => x.Id == f.Id).ExecuteUpdateAsync(x => x.SetProperty(y => y.DisplayIndex, displayindex));
-            }
+            IsProcessing = true;
+            var oldIndex = file.DisplayIndex;
+            file.DisplayIndex = displayIndex;
+
+            using var context = ContextFactory.CreateDbContext();
+            await context.FileAttachments
+                .Where(x => x.Id == file.Id)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.DisplayIndex, displayIndex));
+            await OnUpdate.InvokeAsync(file);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
-            ToastService.Add(Loc["Error"], Severity.Error);
+            Debug.WriteLine($"Error updating file display index: {ex.Message}");
+            SnackbarService.Add(Loc["UpdateErrorMessage"].Value, Severity.Error);
+
+            // Revert the change on error
+            file.DisplayIndex = displayIndex; // Reset to previous value
+        }
+        finally
+        {
+            IsProcessing = false;
         }
     }
 
-    private async Task DeleteImage(FileAttachment file)
+    private async Task DeleteImageAsync(FileAttachment file)
     {
-        if (file is null)
-        {
-            throw new ArgumentNullException(nameof(file));
-        }
+        if (file == null || IsProcessing) return;
 
         try
         {
-            bool? result = await Dialog.ShowMessageBox("Bevestiging", (MarkupString)$"Bent u zeker dat u deze afbeelding wilt verwijderen?", yesText: "Verwijderen", noText: "Annuleren");
+            var confirmed = await ShowDeleteConfirmationAsync(file);
+            if (!confirmed) return;
 
-            if (!result.Value)
-            {
-                return;
-            }
+            IsProcessing = true;
 
+            // Remove from local collection first for immediate UI feedback
             Files.Remove(file);
+            StateHasChanged();
 
-            //await Delete, you need to make your own database calls for now, temp blobcontainer does not exist in database;
+            // Notify parent component to handle database cleanup
             await OnDelete.InvokeAsync(file);
 
-            //delete from azure
+            // Delete from Azure Blob Storage
             await BlobService.DeleteFileAsync(file.FileName, BlobContainer);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
-            ToastService.Add("Er ging iets mis bij het verwijderen", Severity.Error);
+            Debug.WriteLine($"Error deleting image: {ex.Message}");
+            SnackbarService.Add(Loc["DeleteErrorMessage"].Value, Severity.Error);
+
+            // Add the file back to the collection on error
+            Files.Add(file);
+            StateHasChanged();
         }
-    }
-
-    static async void GetThumbnail(Uri publicuri)
-    {
-        var client = new HttpClient();
-        var queryString = HttpUtility.ParseQueryString(string.Empty);
-
-        // Request headers
-        client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", "{subscription key}");
-
-        // Request parameters
-        queryString["width"] = "{800}";
-        queryString["height"] = "{600}";
-        queryString["smartCropping"] = "true";
-        queryString["model-version"] = "latest";
-        var uri = "https://xxxvision.cognitiveservices.azure.com/vision/v3.2/generateThumbnail?" + queryString;
-
-        HttpResponseMessage response;
-
-        // Request body
-        byte[] byteData = Encoding.UTF8.GetBytes("{body}");
-
-        using (var content = new ByteArrayContent(byteData))
+        finally
         {
-            content.Headers.ContentType = new MediaTypeHeaderValue(MimeMapping.KnownMimeTypes.Json);
-            response = await client.PostAsync(uri, content);
+            IsProcessing = false;
         }
     }
 
-    // private void AnalyzeImage()
-    // {
-    //     //exmaple on how to use AI for image analyses
-    //     using var imageSource = VisionSource.FromUrl(new Uri("https://learn.microsoft.com/azure/ai-services/computer-vision/media/quickstarts/presentation.png"));
+    #endregion
 
-    //     var analysisOptions = new ImageAnalysisOptions()
-    //         {
-    //             Features = ImageAnalysisFeature.Caption | ImageAnalysisFeature.Text,
-    //             Language = "en",
-    //             GenderNeutralCaption = false //<== WTF, is this reality or a dream?
-    //         };
+    #region Helper Methods
 
-    //     using var analyzer = new ImageAnalyzer(VisionServiceOptions, imageSource, analysisOptions);
+    private async Task<bool> ShowDeleteConfirmationAsync(FileAttachment file)
+    {
+        var parameters = new DialogParameters
+        {
+            [nameof(file.FileName)] = UseShortNames ? file.FileName.ToShortString() : file.FileName
+        };
 
-    //     var result = analyzer.Analyze();
+        var result = await DialogService.ShowMessageBox(
+            title: Loc["ConfirmDeleteTitle"].Value,
+            markupMessage: (MarkupString)Loc["ConfirmDeleteMessage"].Value,
+            yesText: Loc["Delete"].Value,
+            noText: Loc["Cancel"].Value);
 
-    //     if (result.Reason == ImageAnalysisResultReason.Analyzed)
-    //     {
-    //         if (result.Caption != null)
-    //         {
-    //             Debug.WriteLine(" Caption:");
-    //             Debug.WriteLine($"   \"{result.Caption.Content}\", Confidence {result.Caption.Confidence:0.0000}");
-    //         }
+        return result == true;
+    }
 
-    //         if (result.Text != null)
-    //         {
-    //             Debug.WriteLine($" Text:");
-    //             foreach (var line in result.Text.Lines)
-    //             {
-    //                 string pointsToString = "{" + string.Join(',', line.BoundingPolygon.Select(pointsToString => pointsToString.ToString())) + "}";
-    //                 Debug.WriteLine($"   Line: '{line.Content}', Bounding polygon {pointsToString}");
+    private static string GetImageAltText(FileAttachment image) =>
+        $"Image: {image.FileName}";
 
-    //                 foreach (var word in line.Words)
-    //                 {
-    //                     pointsToString = "{" + string.Join(',', word.BoundingPolygon.Select(pointsToString => pointsToString.ToString())) + "}";
-    //                     Debug.WriteLine($"     Word: '{word.Content}', Bounding polygon {pointsToString}, Confidence {word.Confidence:0.0000}");
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     else
-    //     {
-    //         var errorDetails = ImageAnalysisErrorDetails.FromResult(result);
-    //         Debug.WriteLine(" Analysis failed.");
-    //         Debug.WriteLine($"   Error reason : {errorDetails.Reason}");
-    //         Debug.WriteLine($"   Error code : {errorDetails.ErrorCode}");
-    //         Debug.WriteLine($"   Error message: {errorDetails.Message}");
-    //     }
-    // }
+    #endregion
 
+    #region Image Analysis (Future Enhancement)
+
+    // TODO: Implement image analysis when VisionServiceOptions configuration is available
+    // This method demonstrates how to integrate Azure Cognitive Services for image analysis
+    private async Task AnalyzeImageAsync(FileAttachment image)
+    {
+        if (!EnableImageAnalysis) return;
+
+        try
+        {
+            // Implementation would go here when VisionServiceOptions is properly configured
+            // Example structure for future implementation:
+
+            // using var imageSource = VisionSource.FromUrl(new Uri(image.BlobUrl));
+            // var analysisOptions = new ImageAnalysisOptions()
+            // {
+            //     Features = ImageAnalysisFeature.Caption | ImageAnalysisFeature.Text,
+            //     Language = "en",
+            //     GenderNeutralCaption = true
+            // };
+
+            // using var analyzer = new ImageAnalyzer(visionServiceOptions, imageSource, analysisOptions);
+            // var result = analyzer.Analyze();
+
+            // Process and store analysis results...
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error analyzing image {image.FileName}: {ex.Message}");
+        }
+    }
+
+    #endregion
 }

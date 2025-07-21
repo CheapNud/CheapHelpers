@@ -139,6 +139,58 @@ namespace CheapHelpers.EF
             //        Zip = "456789 BE",
             //        CountryId = 1
             //    });
+
+            modelBuilder.Entity<CheapUser>(entity =>
+            {
+                // Configure the NavigationStateJson column
+                entity.Property(e => e.NavigationStateJson)
+                    .HasColumnType("TEXT") // Works for both SQLite and SQL Server
+                    .HasDefaultValue("{}");
+
+                // Index for performance if needed
+                // entity.HasIndex(e => e.NavigationStateJson)
+                //     .HasDatabaseName("IX_Users_NavigationState");
+            });
+
+            // Configure FileAttachment entities
+            modelBuilder.Entity<FileAttachment>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                // String length constraints
+                entity.Property(e => e.FileName).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.MimeType).HasMaxLength(100);
+                entity.Property(e => e.FileExtension).HasMaxLength(10);
+                entity.Property(e => e.StoragePath).HasMaxLength(500);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.Tags).HasMaxLength(1000);
+                entity.Property(e => e.CreatedById).HasMaxLength(450);
+                entity.Property(e => e.UpdatedById).HasMaxLength(450);
+
+                // Indexes for performance
+                entity.HasIndex(e => e.CreatedAt).HasDatabaseName("IX_FileAttachments_CreatedAt");
+                entity.HasIndex(e => e.Visible).HasDatabaseName("IX_FileAttachments_Visible");
+                entity.HasIndex(e => e.MimeType).HasDatabaseName("IX_FileAttachments_MimeType");
+
+                // Default values
+                entity.Property(e => e.Visible).HasDefaultValue(true);
+                entity.Property(e => e.DisplayIndex).HasDefaultValue(0);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("DATETIME('now')"); // SQLite
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("DATETIME('now')"); // SQLite
+
+                // For SQL Server, use these instead:
+                // entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+                // entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+            });
+
+
+            modelBuilder.Entity<GenericFileAttachment>(entity =>
+            {
+                entity.Property(e => e.EntityType).HasMaxLength(50);
+                entity.HasIndex(e => new { e.EntityId, e.EntityType })
+                      .HasDatabaseName("IX_FileAttachments_Entity");
+            });
+
         }
 
         public DbSet<FileAttachment> FileAttachments { get; set; }

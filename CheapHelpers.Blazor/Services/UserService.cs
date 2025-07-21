@@ -4,6 +4,7 @@ using CheapHelpers.Models.Entities;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 using System.Security.Claims;
 
 namespace CheapHelpers.Blazor.Services
@@ -14,6 +15,151 @@ namespace CheapHelpers.Blazor.Services
     /// </summary>
     public class UserService(IDbContextFactory<CheapContext<CheapUser>> factory) : UserRepo(factory)
     {
+        #region Navigation State Management
+
+        /// <summary>
+        /// Updates navigation state for the current user based on authentication state
+        /// </summary>
+        /// <param name="authState">Authentication state</param>
+        /// <param name="navigationKey">Key for the navigation section (e.g., "Service", "Production")</param>
+        /// <param name="expanded">Whether the section should be expanded</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if update was successful</returns>
+        public async Task<bool> UpdateNavigationStateAsync(Task<AuthenticationState> authState, string navigationKey, bool expanded, CancellationToken token = default)
+        {
+            var userId = await GetUserIdAsync(authState);
+            return await UpdateNavigationStateAsync(userId, navigationKey, expanded, token);
+        }
+
+        /// <summary>
+        /// Updates navigation state for a specific user
+        /// </summary>
+        /// <param name="userId">User ID</param>
+        /// <param name="navigationKey">Key for the navigation section</param>
+        /// <param name="expanded">Whether the section should be expanded</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if update was successful</returns>
+        public async Task<bool> UpdateNavigationStateAsync(string userId, string navigationKey, bool expanded, CancellationToken token = default)
+        {
+            try
+            {
+                Debug.WriteLine($"Updating navigation state for user {userId}: {navigationKey} = {expanded}");
+
+                using var context = _factory.CreateDbContext();
+                var user = await context.Users.FirstOrDefaultAsync(x => x.Id == userId, token);
+
+                if (user == null)
+                {
+                    Debug.WriteLine($"User with ID {userId} not found");
+                    return false;
+                }
+
+                // Update the navigation state using the enhanced method
+                user.SetExpandState(navigationKey, expanded);
+
+                await context.SaveChangesAsync(token);
+                Debug.WriteLine($"Navigation state updated successfully for user {userId}");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error updating navigation state: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Batch update multiple navigation states for better performance
+        /// </summary>
+        /// <param name="userId">User ID</param>
+        /// <param name="navigationStates">Dictionary of navigation keys and their expanded states</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if update was successful</returns>
+        public async Task<bool> UpdateNavigationStatesAsync(string userId, Dictionary<string, bool> navigationStates, CancellationToken token = default)
+        {
+            try
+            {
+                Debug.WriteLine($"Batch updating navigation states for user {userId}: {navigationStates.Count} states");
+
+                using var context = _factory.CreateDbContext();
+                var user = await context.Users.FirstOrDefaultAsync(x => x.Id == userId, token);
+
+                if (user == null)
+                {
+                    Debug.WriteLine($"User with ID {userId} not found");
+                    return false;
+                }
+
+                // Update all navigation states
+                foreach (var kvp in navigationStates)
+                {
+                    user.SetExpandState(kvp.Key, kvp.Value);
+                }
+
+                await context.SaveChangesAsync(token);
+                Debug.WriteLine($"Batch navigation state update completed for user {userId}");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error batch updating navigation states: {ex.Message}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Gets navigation state for a specific section
+        /// </summary>
+        /// <param name="userId">User ID</param>
+        /// <param name="navigationKey">Navigation section key</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>True if expanded, false if collapsed or user not found</returns>
+        public async Task<bool> GetNavigationStateAsync(string userId, string navigationKey, CancellationToken token = default)
+        {
+            try
+            {
+                using var context = _factory.CreateDbContext();
+                var user = await context.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Id == userId, token);
+
+                return user?.GetExpandState(navigationKey) ?? false;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error getting navigation state: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets all navigation states for a user
+        /// </summary>
+        /// <param name="userId">User ID</param>
+        /// <param name="token">Cancellation token</param>
+        /// <returns>Dictionary of all navigation states</returns>
+        public async Task<Dictionary<string, bool>> GetAllNavigationStatesAsync(string userId, CancellationToken token = default)
+        {
+            try
+            {
+                using var context = _factory.CreateDbContext();
+                var user = await context.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Id == userId, token);
+
+                return user?.GetAllExpandStates() ?? new Dictionary<string, bool>();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error getting all navigation states: {ex.Message}");
+                return new Dictionary<string, bool>();
+            }
+        }
+
+        #endregion
+
         public async Task<CheapUser> GetUserAsync(ClaimsPrincipal principal, CheapContext<CheapUser> context = null)
         {
             string id = GetUserId(principal);

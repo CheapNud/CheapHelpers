@@ -14,7 +14,8 @@ namespace CheapHelpers.EF.Repositories
         private const int DEFAULT_PAGE_SIZE = 10;
         private const int DEFAULT_PAGE_INDEX = 1;
 
-        protected readonly IDbContextFactory<CheapContext<CheapUser>> _factory = factory;
+        //TODO: this field should not be public but its used so i left it for now
+        public readonly IDbContextFactory<CheapContext<CheapUser>> _factory = factory;
 
         public void Dispose()
         {

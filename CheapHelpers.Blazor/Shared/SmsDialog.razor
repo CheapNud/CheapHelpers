@@ -260,7 +260,7 @@
             var finalMessage = GetFinalMessage();
             var phoneNumber = SelectedRecipient.PhoneNumber;
 
-            await SmsService.Send(phoneNumber, finalMessage);
+            await SmsService.SendAsync(phoneNumber, finalMessage);
             await LogSmsAsync(phoneNumber, finalMessage, success: true);
 
             var result = new SmsResult<T>

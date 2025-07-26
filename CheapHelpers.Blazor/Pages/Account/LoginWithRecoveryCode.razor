@@ -1,5 +1,175 @@
-﻿<h3>LoginWithRecoveryCode</h3>
+﻿@page "/Account/LoginWithRecoveryCode"
+@using FluentValidation
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Logging
+@attribute [AllowAnonymous]
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudPaper Class="pa-6" Elevation="4">
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-4">
+            <MudIcon Icon="Icons.Material.Filled.VpnKey" Class="me-2" />
+            @Loc["RecoveryCodeLogin"]
+        </MudText>
+
+        <MudAlert Severity="MudBlazor.Severity.Info" Class="mb-4">
+            @Loc["RecoveryCodeDescription"]
+        </MudAlert>
+
+        <MudForm @ref="form" Model="@model" Validation="@(validator.ValidateValue)">
+            <MudTextField @bind-Value="model.RecoveryCode"
+                          For="@(() => model.RecoveryCode)"
+                          Label="@Loc["RecoveryCode"]"
+                          Placeholder="XXXX-XXXX"
+                          Variant="Variant.Outlined"
+                          Class="mb-4"
+                          MaxLength="20"
+                          Immediate="true"
+                          HelperText="@Loc["EnterRecoveryCodeHelp"]" />
+        </MudForm>
+
+        <MudStack Direction="Direction.Column" Spacing="3">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Size="Size.Large"
+                       FullWidth="true"
+                       OnClick="LoginAsync"
+                       Disabled="isLoading">
+                @if (isLoading)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                    <MudText Class="ms-2">@Loc["SigningIn"]</MudText>
+                }
+                else
+                {
+                    <MudIcon Icon="Icons.Material.Filled.Login" Class="me-2" />
+                    @Loc["SignInWithRecoveryCode"]
+                }
+            </MudButton>
+
+            <MudDivider />
+
+            <MudButton Variant="Variant.Text"
+                       Color="Color.Secondary"
+                       FullWidth="true"
+                       OnClick="NavigateToAuthenticator">
+                <MudIcon Icon="Icons.Material.Filled.ArrowBack" Class="me-2" />
+                @Loc["BackToAuthenticator"]
+            </MudButton>
+        </MudStack>
+
+        <MudAlert Severity="MudBlazor.Severity.Warning" Class="mt-4">
+            <MudText Typo="Typo.caption">
+                <strong>@Loc["Important"]:</strong> @Loc["RecoveryCodeWarning"]
+            </MudText>
+        </MudAlert>
+    </MudPaper>
+</MudContainer>
 
 @code {
+    public class RecoveryCodeLoginViewModel
+    {
+        public string RecoveryCode { get; set; } = string.Empty;
+    }
 
+    [Inject] private SignInManager<IdentityUser> SignInManager { get; set; } = default!;
+    [Inject] private ISnackbar ToastService { get; set; } = default!;
+    [Inject] private IStringLocalizer Loc { get; set; } = default!;
+    [Inject] private NavigationManager Nav { get; set; } = default!;
+    [Inject] private ILogger<LoginWithRecoveryCode> Logger { get; set; } = default!;
+
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+
+    private RecoveryCodeLoginViewModel model = new();
+    private MudForm form = default!;
+    private RecoveryCodeValidator validator = new();
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await SignInManager.GetTwoFactorAuthenticationUserAsync();
+        if (user == null)
+        {
+            ToastService.Add(Loc["InvalidTwoFactorSession"], MudBlazor.Severity.Error);
+            Nav.NavigateTo("/Account/Login");
+        }
+    }
+
+    private async Task LoginAsync()
+    {
+        try
+        {
+            await form.Validate();
+            if (!form.IsValid) return;
+
+            isLoading = true;
+            StateHasChanged();
+
+            // Clean the recovery code (remove spaces and special characters)
+            var recoveryCode = model.RecoveryCode.Replace(" ", string.Empty).Replace("-", string.Empty);
+
+            var result = await SignInManager.TwoFactorRecoveryCodeSignInAsync(recoveryCode);
+
+            if (result.Succeeded)
+            {
+                Logger.LogInformation("User logged in with recovery code");
+                ToastService.Add(Loc["LoginSuccessful"], MudBlazor.Severity.Success);
+                ToastService.Add(Loc["RecoveryCodeUsed"], MudBlazor.Severity.Warning);
+
+                var returnUrl = string.IsNullOrEmpty(ReturnUrl) ? "/" : ReturnUrl;
+                Nav.NavigateTo(returnUrl);
+            }
+            else if (result.IsLockedOut)
+            {
+                Logger.LogWarning("User account locked out during recovery code login");
+                Nav.NavigateTo("/Account/Lockout");
+            }
+            else
+            {
+                Logger.LogWarning("Invalid recovery code entered");
+                ToastService.Add(Loc["InvalidRecoveryCode"], MudBlazor.Severity.Error);
+                model.RecoveryCode = string.Empty; // Clear the invalid code
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error during recovery code authentication");
+            System.Diagnostics.Debug.WriteLine($"Recovery code login error: {ex.Message}");
+            ToastService.Add(Loc["LoginError"], MudBlazor.Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void NavigateToAuthenticator()
+    {
+        var returnUrlParam = string.IsNullOrEmpty(ReturnUrl) ? "" : $"?ReturnUrl={Uri.EscapeDataString(ReturnUrl)}";
+        Nav.NavigateTo($"/Account/Login2FA{returnUrlParam}");
+    }
+
+    public class RecoveryCodeValidator : FluentValidation.AbstractValidator<RecoveryCodeLoginViewModel>
+    {
+        public RecoveryCodeValidator()
+        {
+            RuleFor(x => x.RecoveryCode)
+                .NotEmpty()
+                .WithMessage("Recovery code is required")
+                .Length(8, 20)
+                .WithMessage("Recovery code should be between 8-20 characters")
+                .Matches(@"^[a-zA-Z0-9\-\s]+$")
+                .WithMessage("Recovery code can only contain letters, numbers, spaces, and dashes");
+        }
+
+        public Func<object, string, Task<IEnumerable<string>>> ValidateValue => async (model, propertyName) =>
+        {
+            var result = await ValidateAsync(ValidationContext<RecoveryCodeLoginViewModel>.CreateWithOptions((RecoveryCodeLoginViewModel)model, x => x.IncludeProperties(propertyName)));
+            if (result.IsValid)
+                return Array.Empty<string>();
+            return result.Errors.Select(e => e.ErrorMessage);
+        };
+    }
 }

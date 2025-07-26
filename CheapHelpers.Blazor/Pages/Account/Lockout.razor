@@ -1,6 +1,242 @@
 ﻿@page "/Account/Lockout"
-<h3>You have been Locked out</h3>
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@attribute [AllowAnonymous]
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudPaper Class="pa-8" Elevation="4">
+        <MudStack Direction="Direction.Column" Spacing="4" AlignItems="AlignItems.Center">
+            <MudIcon Icon="Icons.Material.Filled.Lock" Size="Size.Large" Color="Color.Error"/>
+            
+            <MudText Typo="Typo.h3" Align="Align.Center" Color="Color.Error">
+                @Loc["AccountLocked"]
+            </MudText>
+            
+            <MudText Typo="Typo.h6" Align="Align.Center" Class="text-muted">
+                @Loc["AccountLockedSubtitle"]
+            </MudText>
+        </MudStack>
+
+        <MudDivider Class="my-6"/>
+
+        <MudAlert Severity="Severity.Error" Class="mb-4">
+            <MudText Typo="Typo.body1">
+                @Loc["LockoutMessage"]
+            </MudText>
+        </MudAlert>
+
+        @if (lockoutInfo != null)
+        {
+            <MudPaper Class="pa-4 mb-4" Elevation="1">
+                <MudText Typo="Typo.h6" Class="mb-3">@Loc["LockoutDetails"]</MudText>
+                
+                @if (lockoutInfo.LockoutEnd.HasValue)
+                {
+                    <MudStack Direction="Direction.Column" Spacing="2">
+                        <MudText Typo="Typo.body2">
+                            <strong>@Loc["LockoutUntil"]:</strong> @lockoutInfo.LockoutEnd.Value.ToString("yyyy-MM-dd HH:mm:ss")
+                        </MudText>
+                        
+                        @if (timeRemaining.HasValue && timeRemaining.Value > TimeSpan.Zero)
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Warning">
+                                <strong>@Loc["TimeRemaining"]:</strong> @FormatTimeRemaining(timeRemaining.Value)
+                            </MudText>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Success">
+                                @Loc["LockoutExpired"]
+                            </MudText>
+                        }
+                    </MudStack>
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Error">
+                        @Loc["PermanentLockout"]
+                    </MudText>
+                }
+            </MudPaper>
+        }
+
+        <MudPaper Class="pa-4 mb-4" Elevation="1">
+            <MudText Typo="Typo.h6" Class="mb-3">@Loc["WhyLocked"]</MudText>
+            <MudList T=string Dense="true">
+                <MudListItem Icon="@Icons.Material.Filled.Error" Text="@Loc["TooManyFailedAttempts"]"/>
+                <MudListItem Icon="@Icons.Material.Filled.Security" Text="@Loc["SecurityMeasure"]"/>
+                <MudListItem Icon="@Icons.Material.Filled.Schedule" Text="@Loc["TemporaryRestriction"]"/>
+            </MudList>
+        </MudPaper>
+
+        <MudPaper Class="pa-4 mb-4" Elevation="1">
+            <MudText Typo="Typo.h6" Class="mb-3">@Loc["WhatCanYouDo"]</MudText>
+            <MudList T=string Dense="true">
+                <MudListItem Icon="@Icons.Material.Filled.AccessTime" Text="@Loc["WaitForExpiry"]"/>
+                <MudListItem Icon="@Icons.Material.Filled.Email" Text="@Loc["ContactSupport"]"/>
+                <MudListItem Icon="@Icons.Material.Filled.VpnKey" Text="@Loc["ResetPasswordOption"]"/>
+            </MudList>
+        </MudPaper>
+
+        <MudStack Direction="Direction.Column" Spacing="3">
+            @if (timeRemaining.HasValue && timeRemaining.Value <= TimeSpan.Zero)
+            {
+                <MudButton Variant="Variant.Filled" 
+                         Color="Color.Primary" 
+                         Size="Size.Large"
+                         FullWidth="true"
+                         OnClick="TryLoginAgain">
+                    <MudIcon Icon="Icons.Material.Filled.Login" Class="me-2"/>
+                    @Loc["TryLoginAgain"]
+                </MudButton>
+            }
+            else
+            {
+                <MudButton Variant="Variant.Filled" 
+                         Color="Color.Primary" 
+                         Size="Size.Large"
+                         FullWidth="true"
+                         OnClick="RefreshStatus">
+                    <MudIcon Icon="Icons.Material.Filled.Refresh" Class="me-2"/>
+                    @Loc["RefreshStatus"]
+                </MudButton>
+            }
+
+            <MudButton Variant="Variant.Outlined" 
+                     Color="Color.Secondary" 
+                     Size="Size.Large"
+                     FullWidth="true"
+                     OnClick="GoToForgotPassword">
+                <MudIcon Icon="Icons.Material.Filled.LockReset" Class="me-2"/>
+                @Loc["ForgotPassword"]
+            </MudButton>
+
+            <MudButton Variant="Variant.Text" 
+                     Color="Color.Default" 
+                     Size="Size.Medium"
+                     FullWidth="true"
+                     OnClick="GoHome">
+                <MudIcon Icon="Icons.Material.Filled.Home" Class="me-2"/>
+                @Loc["BackToHome"]
+            </MudButton>
+        </MudStack>
+
+        <MudDivider Class="my-4"/>
+
+        <MudText Typo="Typo.caption" Align="Align.Center" Class="text-muted">
+            @Loc["NeedHelp"] 
+            <MudLink Href="mailto:support@yourapp.com">support@yourapp.com</MudLink>
+        </MudText>
+    </MudPaper>
+</MudContainer>
 
 @code {
+    public class LockoutInfo
+    {
+        public DateTimeOffset? LockoutEnd { get; set; }
+        public bool IsLockedOut { get; set; }
+        public int AccessFailedCount { get; set; }
+    }
 
+    [Inject] private NavigationManager Nav { get; set; } = default!;
+    [Inject] private IStringLocalizer Loc { get; set; } = default!;
+    [Inject] private UserManager<IdentityUser>? UserManager { get; set; }
+    [Inject] private ISnackbar ToastService { get; set; } = default!;
+
+    [SupplyParameterFromQuery] private string? Email { get; set; }
+    
+    private LockoutInfo? lockoutInfo;
+    private TimeSpan? timeRemaining;
+    private System.Threading.Timer? refreshTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLockoutInfoAsync();
+        StartRefreshTimer();
+    }
+
+    private async Task LoadLockoutInfoAsync()
+    {
+        try
+        {
+            if (UserManager != null && !string.IsNullOrEmpty(Email))
+            {
+                var user = await UserManager.FindByEmailAsync(Email);
+                if (user != null)
+                {
+                    lockoutInfo = new LockoutInfo
+                    {
+                        LockoutEnd = await UserManager.GetLockoutEndDateAsync(user),
+                        IsLockedOut = await UserManager.IsLockedOutAsync(user),
+                        AccessFailedCount = await UserManager.GetAccessFailedCountAsync(user)
+                    };
+                }
+            }
+
+            UpdateTimeRemaining();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error loading lockout info: {ex.Message}");
+            // Continue without user-specific info
+        }
+    }
+
+    private void UpdateTimeRemaining()
+    {
+        if (lockoutInfo?.LockoutEnd.HasValue == true)
+        {
+            timeRemaining = lockoutInfo.LockoutEnd.Value - DateTimeOffset.UtcNow;
+            if (timeRemaining.Value < TimeSpan.Zero)
+            {
+                timeRemaining = TimeSpan.Zero;
+            }
+        }
+    }
+
+    private void StartRefreshTimer()
+    {
+        refreshTimer = new System.Threading.Timer(async _ =>
+        {
+            UpdateTimeRemaining();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+    }
+
+    private string FormatTimeRemaining(TimeSpan time)
+    {
+        if (time.TotalDays >= 1)
+            return $"{time.Days}d {time.Hours}h {time.Minutes}m";
+        else if (time.TotalHours >= 1)
+            return $"{time.Hours}h {time.Minutes}m";
+        else
+            return $"{time.Minutes}m {time.Seconds}s";
+    }
+
+    private void TryLoginAgain()
+    {
+        Nav.NavigateTo("/Account/Login");
+    }
+
+    private async Task RefreshStatus()
+    {
+        await LoadLockoutInfoAsync();
+        ToastService.Add(Loc["StatusRefreshed"], Severity.Info);
+    }
+
+    private void GoToForgotPassword()
+    {
+        Nav.NavigateTo("/Account/ForgotPassword");
+    }
+
+    private void GoHome()
+    {
+        Nav.NavigateTo("/");
+    }
+
+    public void Dispose()
+    {
+        refreshTimer?.Dispose();
+    }
 }

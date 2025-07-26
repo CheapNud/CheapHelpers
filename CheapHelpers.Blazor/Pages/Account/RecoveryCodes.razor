@@ -1,5 +1,206 @@
-﻿<h3>RecoveryCodes</h3>
+﻿@page "/Account/RecoveryCodes"
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using CheapHelpers.Blazor.Helpers
+@attribute [Authorize]
+
+<MudText Typo="Typo.h4">@Loc["RecoveryCodes"]</MudText>
+<MudText Typo="Typo.body1" Class="mb-4">@Loc["RecoveryCodesDescription"]</MudText>
+
+@if (recoveryCodes?.Any() == true)
+{
+    <MudAlert Severity="Severity.Warning" Class="mb-4">
+        <MudText Typo="Typo.body1">
+            <strong>@Loc["ImportantWarning"]:</strong> @Loc["RecoveryCodesWarning"]
+        </MudText>
+    </MudAlert>
+
+    <MudPaper Class="pa-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-3">@Loc["YourRecoveryCodes"]</MudText>
+        
+        <MudGrid>
+            @foreach (var rcode in recoveryCodes)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <MudCard Class="recovery-code-card" Elevation="1">
+                        <MudCardContent Class="pa-3">
+                            <MudText Typo="Typo.body1" Class="text-center recovery-code-text">
+                                @rcode
+                            </MudText>
+                            <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Primary" 
+                                     FullWidth="true" OnClick="@(() => CopyToClipboard(rcode))">
+                                <MudIcon Icon="Icons.Material.Filled.ContentCopy" Size="Size.Small"/>
+                                @Loc["Copy"]
+                            </MudButton>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    </MudPaper>
+}
+else
+{
+    <MudAlert Severity="Severity.Info" Class="mb-4">
+        @Loc["NoRecoveryCodes"]
+    </MudAlert>
+}
+
+<MudPaper Class="pa-4 mt-4" Elevation="2">
+    <MudText Typo="Typo.h6" Class="mb-3">@Loc["ManageRecoveryCodes"]</MudText>
+    
+    <MudStack Direction="Direction.Row" Spacing="3">
+        <MudButton Variant="Variant.Filled" Color="Color.Warning" 
+                 OnClick="ShowGenerateCodesDialog" Disabled="isProcessing">
+            @if (isProcessing)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+                <MudText Class="ms-2">@Loc["Processing"]</MudText>
+            }
+            else
+            {
+                <MudIcon Icon="Icons.Material.Filled.Refresh" Class="me-2"/>
+                @Loc["GenerateNewCodes"]
+            }
+        </MudButton>
+
+        <MudButton Variant="Variant.Text" Color="Color.Info" OnClick="ShowInfoDialog">
+            <MudIcon Icon="Icons.Material.Filled.Info" Class="me-2"/>
+            @Loc["MoreInfo"]
+        </MudButton>
+    </MudStack>
+</MudPaper>
+
+<style>
+    .recovery-code-card {
+        background-color: var(--mud-palette-grey-lighten5);
+        border: 1px dashed var(--mud-palette-grey-default);
+    }
+    
+    .recovery-code-text {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        letter-spacing: 1px;
+        word-break: break-all;
+        background-color: var(--mud-palette-background-grey);
+        padding: 8px;
+        border-radius: 4px;
+    }
+</style>
 
 @code {
+    [Inject] private UserManager<IdentityUser> UserManager { get; set; } = default!;
+    [Inject] private ISnackbar ToastService { get; set; } = default!;
+    [Inject] private IStringLocalizer Loc { get; set; } = default!;
+    [Inject] private ClipboardService ClipboardService { get; set; } = default!;
+    [Inject] private IDialogService DialogService { get; set; }
+    
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+    
+    private IEnumerable<string>? recoveryCodes;
+    private bool isProcessing = false;
 
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRecoveryCodesCountAsync();
+    }
+
+    private async Task LoadRecoveryCodesCountAsync()
+    {
+        try
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null) return;
+
+            var codesCount = await UserManager.CountRecoveryCodesAsync(user);
+            if (codesCount == 0)
+            {
+                // No codes exist, show message
+                recoveryCodes = null;
+            }
+            else
+            {
+                // Codes exist but we can't display them (they're hashed)
+                // We'll show a message that codes exist
+                recoveryCodes = Enumerable.Range(1, codesCount).Select(i => "••••-••••").ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error loading recovery codes count: {ex.Message}");
+            ToastService.Add(Loc["ErrorLoadingCodes"], Severity.Error);
+        }
+    }
+
+    private async Task ShowGenerateCodesDialog()
+    {
+        var result = await DialogService.ShowMessageBox(
+            Loc["GenerateNewCodes"],
+            Loc["GenerateNewCodesConfirmation"],
+            yesText: Loc["Generate"],
+            cancelText: Loc["Cancel"]
+        );
+
+        if (result == true)
+        {
+            await GenerateNewRecoveryCodesAsync();
+        }
+    }
+
+    private async Task GenerateNewRecoveryCodesAsync()
+    {
+        try
+        {
+            isProcessing = true;
+            StateHasChanged();
+
+            var user = await GetCurrentUserAsync();
+            if (user == null) return;
+
+            var codes = await UserManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
+            recoveryCodes = codes;
+
+            ToastService.Add(Loc["NewCodesGenerated"], Severity.Success);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error generating recovery codes: {ex.Message}");
+            ToastService.Add(Loc["ErrorGeneratingCodes"], Severity.Error);
+        }
+        finally
+        {
+            isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CopyToClipboard(string code)
+    {
+        try
+        {
+            await ClipboardService.WriteTextAsync(code);
+            ToastService.Add(Loc["CodeCopied"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error copying to clipboard: {ex.Message}");
+            ToastService.Add(Loc["ErrorCopying"], Severity.Error);
+        }
+    }
+
+    private async Task ShowInfoDialog()
+    {
+        await DialogService.ShowMessageBox(
+            Loc["RecoveryCodesInfo"],
+            Loc["RecoveryCodesInfoContent"],
+            yesText: Loc["Understood"]
+        );
+    }
+
+    private async Task<IdentityUser?> GetCurrentUserAsync()
+    {
+        var authState = await AuthenticationStateTask;
+        return await UserManager.GetUserAsync(authState.User);
+    }
 }

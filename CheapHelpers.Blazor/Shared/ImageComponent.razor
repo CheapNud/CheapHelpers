@@ -1,0 +1,177 @@
+﻿@using CheapHelpers.Models.Entities
+@using CheapHelpers.Services.Storage
+@using CheapHelpers.Services.Storage.Configuration
+@using Microsoft.AspNetCore.Components.Web
+@using MudBlazor
+@using Blazored.LocalStorage
+
+<div class="@Class">
+    @if (!string.IsNullOrWhiteSpace(ext) && !string.IsNullOrWhiteSpace(url))
+    {
+        <MudTooltip Text="Click to open full screen">
+            @if (ext.Contains(".mp4", StringComparison.OrdinalIgnoreCase)
+                    || ext.Contains(".mov", StringComparison.OrdinalIgnoreCase))
+            {
+                <video style="@Style" width="400" height="@Height" controls>
+                    <source src="@url" type="video/mp4">
+                </video>
+            }
+            else if (ext.Contains(".pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                <a href=@url target="_blank">
+                    <MudImage Style="@Style" ObjectPosition="@ObjectPosition" ObjectFit="@ObjectFit" Src="pdfpreview.png" Alt="@Image.FileName" Height="@Height" Fluid="false" />
+                </a>
+            }
+            else
+            {
+                <MudImage Class="rounded " Style="@Style" ObjectPosition="@ObjectPosition" ObjectFit="@ObjectFit" Src="@url" @onclick="@OnClick" Height="@Height" Fluid="false" />
+            }
+        </MudTooltip>
+    }
+    else
+    {
+        <MudProgressCircular Color="Color.Info" Indeterminate=true />
+    }
+</div>
+
+@code {
+    private const string CACHE_PREFIX = "img_cache_";
+    private const int CACHE_EXPIRY_HOURS = 24;
+
+    string url;
+    string ext;
+
+    [Parameter]
+    public FileAttachment Image { get; set; }
+
+    [Parameter]
+    public Uri Uri { get; set; }
+
+    [Parameter]
+    public string Class { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    [Parameter]
+    public string Style { get; set; }
+
+    [Parameter]
+    public int? Height { get; set; } = 200;
+
+    [Parameter]
+    public bool Fluid { get; set; } = false;
+
+    [Parameter]
+    public ObjectFit ObjectFit { get; set; } = ObjectFit.Fill;
+
+    [Parameter]
+    public ObjectPosition ObjectPosition { get; set; } = ObjectPosition.Center;
+
+    [Parameter]
+    public BlobContainers BlobContainer { get; set; }
+
+    [Inject]
+    private BlobService BlobService { get; set; }
+
+    [Inject]
+    private ILocalStorageService LocalStorage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadImageUrlAsync();
+
+        if (!OnClick.HasDelegate)
+        {
+            OnClick = EventCallback.Factory.Create<MouseEventArgs>(this, () => ShowImage(url));
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadImageUrlAsync();
+        OnClick = EventCallback.Factory.Create<MouseEventArgs>(this, () => ShowImage(url));
+    }
+
+    private async Task LoadImageUrlAsync()
+    {
+        if (Image != null)
+        {
+            var cacheKey = $"{CACHE_PREFIX}{Image.FileName}";
+
+            // Check if the image URL is cached and still valid
+            var cachedData = await GetCachedImageDataAsync(cacheKey);
+            if (cachedData != null && !IsCacheExpired(cachedData.CachedAt))
+            {
+                url = cachedData.Url;
+                Debug.WriteLine($"Image URL loaded from cache: {Image.FileName}");
+            }
+            else
+            {
+                // Get fresh URL and cache it
+                url = BlobService.GetFile(Image.FileName, BlobContainer);
+                await CacheImageDataAsync(cacheKey, url);
+                Debug.WriteLine($"Image URL cached: {Image.FileName}");
+            }
+        }
+        else if (Uri != null)
+        {
+            url = Uri.AbsoluteUri;
+        }
+        else
+        {
+            url = "noimageplaceholder.jpg";
+        }
+
+        ext = Path.GetExtension(url);
+    }
+
+    private async Task<CachedImageData> GetCachedImageDataAsync(string cacheKey)
+    {
+        try
+        {
+            return await LocalStorage.GetItemAsync<CachedImageData>(cacheKey);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to get cached image data: {ex.Message}");
+            return null;
+        }
+    }
+
+    private async Task CacheImageDataAsync(string cacheKey, string imageUrl)
+    {
+        try
+        {
+            var cacheData = new CachedImageData
+            {
+                Url = imageUrl,
+                CachedAt = DateTime.UtcNow
+            };
+
+            await LocalStorage.SetItemAsync(cacheKey, cacheData);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to cache image data: {ex.Message}");
+            // Continue without caching if storage fails
+        }
+    }
+
+    private static bool IsCacheExpired(DateTime cachedAt)
+    {
+        return DateTime.UtcNow.Subtract(cachedAt).TotalHours > CACHE_EXPIRY_HOURS;
+    }
+
+    private async Task ShowImage(string uri)
+    {
+        //await Dialog.ShowAsync<Image_Dialog>("Afbeelding", new DialogParameters { ["SourceUrl"] = uri }, new DialogOptions { MaxWidth = MaxWidth.False, FullScreen = true });
+    }
+
+    // Helper class for caching with expiry
+    private class CachedImageData
+    {
+        public string Url { get; set; }
+        public DateTime CachedAt { get; set; }
+    }
+}

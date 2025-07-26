@@ -1,0 +1,96 @@
+﻿@using System.Net
+@using System.Net.Http.Json
+@using CheapHelpers.Blazor.Services
+@using CheapHelpers.Services.Email
+@using Microsoft.AspNetCore.Components.Authorization
+
+
+
+<MudText>To use an authenticator app go through the following steps:</MudText>
+<MudList T="string">
+    <MudListItem>
+        <MudText>
+            Download a two-factor authenticator app like Microsoft Authenticator for
+            <MudLink href="https://go.microsoft.com/fwlink/?Linkid=825072">Android</MudLink>
+            and
+            <MudLink href="https://go.microsoft.com/fwlink/?Linkid=825073">iOS</MudLink>
+            or Google Authenticator for
+            <MudLink href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&amp;hl=en">Android</MudLink>
+            and
+            <MudLink href="https://itunes.apple.com/us/app/google-authenticator/id388497605?mt=8">iOS</MudLink>.
+        </MudText>
+    </MudListItem>
+
+    <MudListItem>
+        <MudText>Scan the QR Code or enter this key <kbd>@SharedKey</kbd> into your two factor authenticator app. Spaces and casing do not matter.</MudText>
+        <MudLink href="https://go.microsoft.com/fwlink/?Linkid=852423">Learn how to enable QR code generation.</MudLink>
+
+        <div id="qrCode"></div>
+        <div id="qrCodeData" data-url="@AuthenticatorUri"></div>
+    </MudListItem>
+
+    <MudListItem>
+        <MudText>
+            Once you have scanned the QR code or input the key above, your two factor authentication app will provide you
+            with a unique code. Enter the code in the confirmation box below.
+        </MudText>
+    </MudListItem>
+</MudList>
+
+<form @ref=form class="mt-3" method="post" action="/Account/EnableAuthenticator" contextmenu="">
+    <MudTextField Variant="Variant.Outlined" Label="Verification Code" @bind-Value=TestCode @onkeypress="KeySend"></MudTextField>
+    <MudButton Class="mt-3" Variant="Variant.Filled" FullWidth=true Color=Color.Primary ButtonType="ButtonType.Submit">Verify</MudButton>
+</form>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; }
+
+    public IdentityUser User { get; set; }
+    public string TestCode { get; set; }
+    public string SharedKey { get; set; }
+    public string AuthenticatorUri { get; set; }
+    object? form;
+
+    [Inject]
+    private IJSRuntime Js { get; set; }
+
+    [Inject] protected NavigationManager Nav { get; set; } = default!;
+    [Inject] protected ISnackbar ToastService { get; set; } = default!;
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] protected IEmailService Mailer { get; set; }
+    [Inject] protected IAuthorizationService AuthorizationService { get; set; } = default!;
+    [Inject] protected UserService UserService { get; set; } = default!;
+
+    private static HttpClient sharedClient = new()
+        {
+            BaseAddress = new Uri(@"https://localhost:44366/"),
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        User = await UserService.GetUserAsync(AuthenticationStateTask);
+        try
+        {
+            var a = await sharedClient.GetAsync("Account/GetSharedKey");
+            var b = await sharedClient.PostAsync("Account/GetSharedKey", null);
+            Debug.WriteLine(await a.Content.ReadAsStringAsync());
+            Debug.WriteLine(await b.Content.ReadAsStringAsync());
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+    }
+
+    private async Task KeySend(KeyboardEventArgs? args = null)
+    {
+        if (args != null)
+        {
+            if (args.Code == "Enter" || args.Code == "NumpadEnter")
+            {
+                await Js.InvokeVoidAsync("submitForm", form);
+            }
+        }
+    }
+}

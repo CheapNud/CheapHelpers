@@ -1,0 +1,195 @@
+﻿@page "/Account/PersonalData"
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using System.Text.Json
+@attribute [Authorize]
+
+<MudText Typo="Typo.h4">@Loc["PersonalData"]</MudText>
+<MudText Typo="Typo.body1" Class="mb-4">@Loc["PersonalDataDescription"]</MudText>
+
+<MudPaper Class="pa-4" Elevation="2">
+    <MudAlert Severity="Severity.Info" Class="mb-4">
+        @Loc["PersonalDataWarning"]
+    </MudAlert>
+
+    @if (personalDataItems?.Any() == true)
+    {
+        <MudText Typo="Typo.h6" Class="mb-3">@Loc["YourPersonalData"]</MudText>
+
+        <MudTable Items="personalDataItems" Dense="true" Hover="true" Class="mb-4">
+            <HeaderContent>
+                <MudTh>@Loc["Property"]</MudTh>
+                <MudTh>@Loc["Value"]</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Property">@context.Key</MudTd>
+                <MudTd DataLabel="Value">
+                    <MudTextField Value="@context.Value" ReadOnly="true" Variant="Variant.Text"
+                                  Margin="Margin.None" Class="mud-input-text-readonly" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+
+    <MudStack Direction="Direction.Row" Spacing="3" Class="mt-4">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   OnClick="DownloadPersonalDataAsync" Disabled="isDownloading">
+            @if (isDownloading)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">@Loc["Downloading"]</MudText>
+            }
+            else
+            {
+                <MudIcon Icon="Icons.Material.Filled.Download" Class="me-2" />
+                @Loc["DownloadData"]
+            }
+        </MudButton>
+
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="RefreshDataAsync">
+            <MudIcon Icon="Icons.Material.Filled.Refresh" Class="me-2" />
+            @Loc["RefreshData"]
+        </MudButton>
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Inject] private UserManager<IdentityUser> UserManager { get; set; } = default!;
+    [Inject] private ISnackbar ToastService { get; set; } = default!;
+    [Inject] private IStringLocalizer Loc { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    private Dictionary<string, string>? personalData;
+    private List<KeyValuePair<string, string>>? personalDataItems;
+    private bool isDownloading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPersonalDataAsync();
+    }
+
+    private async Task LoadPersonalDataAsync()
+    {
+        try
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null) return;
+
+            personalData = await BuildPersonalDataDictionary(user);
+            personalDataItems = personalData?.ToList();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error loading personal data: {ex.Message}");
+            ToastService.Add(Loc["ErrorLoadingData"], Severity.Error);
+        }
+    }
+
+    private async Task RefreshDataAsync()
+    {
+        await LoadPersonalDataAsync();
+        ToastService.Add(Loc["DataRefreshed"], Severity.Success);
+    }
+
+    private async Task DownloadPersonalDataAsync()
+    {
+        try
+        {
+            isDownloading = true;
+            StateHasChanged();
+
+            if (personalData == null)
+            {
+                ToastService.Add(Loc["NoDataToDownload"], Severity.Warning);
+                return;
+            }
+
+            var json = JsonSerializer.Serialize(personalData, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+
+            var fileName = $"PersonalData_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            var fileBytes = System.Text.Encoding.UTF8.GetBytes(json);
+            var base64 = Convert.ToBase64String(fileBytes);
+
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, "application/json", base64);
+            ToastService.Add(Loc["DataDownloaded"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error downloading personal data: {ex.Message}");
+            ToastService.Add(Loc["ErrorDownloadingData"], Severity.Error);
+        }
+        finally
+        {
+            isDownloading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<IdentityUser?> GetCurrentUserAsync()
+    {
+        var authState = await AuthenticationStateTask;
+        return await UserManager.GetUserAsync(authState.User);
+    }
+
+    private async Task<Dictionary<string, string>> BuildPersonalDataDictionary(IdentityUser user)
+    {
+        var personalData = new Dictionary<string, string>();
+
+        // Add basic user properties
+        personalData.Add("Id", user.Id ?? "null");
+        personalData.Add("UserName", user.UserName ?? "null");
+        personalData.Add("Email", user.Email ?? "null");
+        personalData.Add("EmailConfirmed", user.EmailConfirmed.ToString());
+        personalData.Add("PhoneNumber", user.PhoneNumber ?? "null");
+        personalData.Add("PhoneNumberConfirmed", user.PhoneNumberConfirmed.ToString());
+        personalData.Add("TwoFactorEnabled", user.TwoFactorEnabled.ToString());
+        personalData.Add("AccessFailedCount", user.AccessFailedCount.ToString());
+        personalData.Add("LockoutEnabled", user.LockoutEnabled.ToString());
+
+        if (user.LockoutEnd.HasValue)
+        {
+            personalData.Add("LockoutEnd", user.LockoutEnd.Value.ToString());
+        }
+
+        // Add external login information
+        var logins = await UserManager.GetLoginsAsync(user);
+        foreach (var login in logins)
+        {
+            personalData.Add($"{login.LoginProvider} external login provider key", login.ProviderKey);
+        }
+
+        return personalData;
+    }
+}
+
+<script>
+    window.downloadFile = (filename, contentType, content) => {
+        // Convert base64 to blob
+        const byteCharacters = atob(content);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: contentType });
+
+        // Create download link
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = filename;
+
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Clean up
+        window.URL.revokeObjectURL(link.href);
+    };
+</script>

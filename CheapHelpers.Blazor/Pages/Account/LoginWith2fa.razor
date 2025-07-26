@@ -1,0 +1,178 @@
+﻿@page "/Account/Login2FA"
+@using FluentValidation
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.Extensions.Logging
+@attribute [AllowAnonymous]
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudPaper Class="pa-6" Elevation="4">
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-4">
+            <MudIcon Icon="Icons.Material.Filled.Security" Class="me-2" />
+            @Loc["TwoFactorAuthentication"]
+        </MudText>
+
+        <MudText Typo="Typo.body1" Class="mb-4" Align="Align.Center">
+            @Loc["AuthenticatorCodePrompt"]
+        </MudText>
+
+        <MudForm @ref="form" Model="@model" Validation="@(validator.ValidateValue)">
+            <MudTextField @bind-Value="model.TwoFactorCode"
+                          For="@(() => model.TwoFactorCode)"
+                          Label="@Loc["AuthenticatorCode"]"
+                          Placeholder="123456"
+                          Variant="Variant.Outlined"
+                          Class="mb-3"
+                          MaxLength="10"
+                          Immediate="true"
+                          HelperText="@Loc["EnterCodeFromApp"]" />
+
+            <MudCheckBox @bind-Value="model.RememberMachine"
+                         T="bool"
+                         Label="@Loc["RememberThisMachine"]"
+                         Class="mb-4" />
+        </MudForm>
+
+        <MudStack Direction="Direction.Column" Spacing="3">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Size="Size.Large"
+                       FullWidth="true"
+                       OnClick="LoginAsync"
+                       Disabled="isLoading">
+                @if (isLoading)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                    <MudText Class="ms-2">@Loc["SigningIn"]</MudText>
+                }
+                else
+                {
+                    <MudIcon Icon="Icons.Material.Filled.Login" Class="me-2" />
+                    @Loc["SignIn"]
+                }
+            </MudButton>
+
+            <MudDivider />
+
+            <MudText Typo="Typo.body2" Align="Align.Center" Class="mb-2">
+                @Loc["DontHaveAccess"]
+            </MudText>
+
+            <MudButton Variant="Variant.Text"
+                       Color="Color.Secondary"
+                       FullWidth="true"
+                       OnClick="NavigateToRecoveryCode">
+                <MudIcon Icon="Icons.Material.Filled.VpnKey" Class="me-2" />
+                @Loc["UseRecoveryCode"]
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    public class TwoFactorLoginViewModel
+    {
+        public string TwoFactorCode { get; set; } = string.Empty;
+        public bool RememberMachine { get; set; } = false;
+    }
+
+    [Inject] private SignInManager<IdentityUser> SignInManager { get; set; } = default!;
+    [Inject] private ISnackbar ToastService { get; set; } = default!;
+    [Inject] private IStringLocalizer Loc { get; set; } = default!;
+    [Inject] private NavigationManager Nav { get; set; } = default!;
+    [Inject] private ILogger<LoginWith2fa> Logger { get; set; } = default!;
+
+    [SupplyParameterFromQuery] private string? ReturnUrl { get; set; }
+
+    private TwoFactorLoginViewModel model = new();
+    private MudForm form = default!;
+    private TwoFactorValidator validator = new();
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await SignInManager.GetTwoFactorAuthenticationUserAsync();
+        if (user == null)
+        {
+            ToastService.Add(Loc["InvalidTwoFactorSession"], MudBlazor.Severity.Error);
+            Nav.NavigateTo("/Account/Login");
+        }
+    }
+
+    private async Task LoginAsync()
+    {
+        try
+        {
+            await form.Validate();
+            if (!form.IsValid) return;
+
+            isLoading = true;
+            StateHasChanged();
+
+            var authenticatorCode = model.TwoFactorCode.Replace(" ", string.Empty).Replace("-", string.Empty);
+
+            var result = await SignInManager.TwoFactorAuthenticatorSignInAsync(
+                authenticatorCode,
+                model.RememberMachine,
+                false);
+
+            if (result.Succeeded)
+            {
+                Logger.LogInformation("User logged in with 2fa");
+                ToastService.Add(Loc["LoginSuccessful"], MudBlazor.Severity.Success);
+
+                var returnUrl = string.IsNullOrEmpty(ReturnUrl) ? "/" : ReturnUrl;
+                Nav.NavigateTo(returnUrl);
+            }
+            else if (result.IsLockedOut)
+            {
+                Logger.LogWarning("User account locked out during 2fa login");
+                Nav.NavigateTo("/Account/Lockout");
+            }
+            else
+            {
+                Logger.LogWarning("Invalid authenticator code entered during 2fa login");
+                ToastService.Add(Loc["InvalidAuthenticatorCode"], MudBlazor.Severity.Error);
+                model.TwoFactorCode = string.Empty; // Clear the invalid code
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error during two-factor authentication");
+            System.Diagnostics.Debug.WriteLine($"2FA login error: {ex.Message}");
+            ToastService.Add(Loc["LoginError"], MudBlazor.Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void NavigateToRecoveryCode()
+    {
+        var returnUrlParam = string.IsNullOrEmpty(ReturnUrl) ? "" : $"?ReturnUrl={Uri.EscapeDataString(ReturnUrl)}";
+        Nav.NavigateTo($"/Account/LoginWithRecoveryCode{returnUrlParam}");
+    }
+
+    public class TwoFactorValidator : FluentValidation.AbstractValidator<TwoFactorLoginViewModel>
+    {
+        public TwoFactorValidator()
+        {
+            RuleFor(x => x.TwoFactorCode)
+                .NotEmpty()
+                .WithMessage("Authenticator code is required")
+                .Matches(@"^\d{6}$|^\d{3}\s?\d{3}$|^\d{3}-\d{3}$")
+                .WithMessage("Please enter a valid 6-digit authenticator code");
+        }
+
+        public Func<object, string, Task<IEnumerable<string>>> ValidateValue => async (model, propertyName) =>
+        {
+            var result = await ValidateAsync(ValidationContext<TwoFactorLoginViewModel>.CreateWithOptions((TwoFactorLoginViewModel)model, x => x.IncludeProperties(propertyName)));
+            if (result.IsValid)
+                return Array.Empty<string>();
+            return result.Errors.Select(e => e.ErrorMessage);
+        };
+    }
+}

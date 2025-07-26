@@ -1,0 +1,50 @@
+﻿
+<MudSelect IconSize="Size.Small" Class="@Class" Style="@Style" T="CultureInfo" Margin="Margin.Dense" Variant=@Variant Value=SelectedCulture ValueChanged="ChangeCulture">
+    @foreach (var item in SupportedCultures)
+    {
+        <MudSelectItem Value="@item">
+            @item.NativeName
+        </MudSelectItem>
+    }
+</MudSelect>
+
+@code {
+    public CultureInfo[] SupportedCultures;  // => Program.SupportedCultures.Select(x => new CultureInfo(x)).ToArray(); i need a place to store suportcultures
+
+    public CultureInfo SelectedCulture { get; set; }
+
+    [Parameter]
+    public string Class { get; set; }
+
+    [Parameter]
+    public Variant Variant { get; set; } = Variant.Outlined;
+
+    [Parameter]
+    public string Style { get; set; }
+
+    [Inject] protected NavigationManager Nav { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        SelectedCulture = SupportedCultures.First(x => x.LCID == CultureInfo.CurrentCulture.LCID);
+    }
+
+    private void ChangeCulture(CultureInfo ci)
+    {
+        try
+        {
+            if (ci.LCID == CultureInfo.CurrentCulture.LCID)
+            {
+                return;
+            }
+            var uri = new Uri(Nav.Uri).GetComponents(UriComponents.PathAndQuery, UriFormat.Unescaped);
+            var cultureEscaped = Uri.EscapeDataString(ci.Name);
+            var uriEscaped = Uri.EscapeDataString(uri);
+            Nav.NavigateTo($"Culture/Set?culture={cultureEscaped}&redirectUri={uriEscaped}", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+    }
+}

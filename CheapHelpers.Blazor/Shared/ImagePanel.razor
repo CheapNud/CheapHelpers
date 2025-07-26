@@ -1,0 +1,326 @@
+﻿@using System.IO
+@using Azure.AI.Vision.ImageAnalysis
+@using CheapHelpers.EF
+@using CheapHelpers.Extensions
+@using CheapHelpers.Models.Entities
+@using CheapHelpers.Services.Storage
+@using CheapHelpers.Services.Storage.Configuration
+@using Microsoft.Extensions.Hosting
+@using Microsoft.AspNetCore.Components.Web
+@using System.Net.Http.Headers
+@using System.Text
+@using System.Web
+@typeparam TUser where TUser : CheapUser
+
+@if (Files != null && Files.Count > 0)
+{
+    <MudGrid Class="@Class" Justify="Justify.FlexStart">
+        @foreach (var image in Files.OrderBy(f => f.DisplayIndex))
+        {
+            <MudItem>
+                <MudPaper Style="overflow-wrap:anywhere;" Class="pa-4" Elevation="2">
+                    <MudStack Justify="Justify.Center" AlignItems="AlignItems.Center">
+                        <MudText Align="Align.Center" Typo="Typo.body1">
+                            @(UseShortNames? image.FileName.ToShortString() : image.FileName)
+                        </MudText>
+                        <ImageComponent Height="ImageHeight"
+                                        BlobContainer="BlobContainer"
+                                        Image="image"
+                                        Alt="@GetImageAltText(image)">
+                        </ImageComponent>
+                    </MudStack>
+
+                    @if (CanDelete || CanEdit)
+                    {
+                        <MudGrid Class="px-3 mt-2" Spacing="2">
+                            @if (CanEdit)
+                            {
+                                <MudItem xs="4">
+                                    <MudTooltip Text="@Loc["DisplayIndex"]">
+                                        <MudNumericField T="int"
+                                                         Step="1"
+                                                         FullWidth="true"
+                                                         Variant="Variant.Outlined"
+                                                         ValueChanged="@(x => OnDisplayIndexChanged(image, x))"
+                                                         Value="@image.DisplayIndex"
+                                                         Label="@Loc["DisplayIndex"]"
+                                                         Min="0"
+                                                         Max="9999" />
+                                    </MudTooltip>
+                                </MudItem>
+                                <MudItem>
+                                    <MudTooltip Text="@Loc["Visible"]">
+                                        <MudSwitch T="bool"
+                                                   Class="mt-2"
+                                                   ValueChanged="@(x => OnVisibleChanged(image, x))"
+                                                   Value="@image.Visible"
+                                                   Label="@Loc["Visible"]"
+                                                   Color="Color.Primary" />
+                                    </MudTooltip>
+                                </MudItem>
+                            }
+                            @if (CanDelete)
+                            {
+                                <MudItem>
+                                    <MudTooltip Text="@Loc["Delete"]">
+                                        <MudIconButton Class="mt-3"
+                                                       OnClick="() => DeleteImageAsync(image)"
+                                                       Icon="@Icons.Material.Filled.Delete"
+                                                       Color="Color.Error"
+                                                       Variant="Variant.Filled"
+                                                       aria-label="@Loc["Delete"].Value"
+                                                       Disabled="@IsProcessing">
+                                        </MudIconButton>
+                                    </MudTooltip>
+                                </MudItem>
+                            }
+                        </MudGrid>
+                    }
+                </MudPaper>
+            </MudItem>
+        }
+    </MudGrid>
+}
+else if (ShowEmptyState)
+{
+    <MudPaper Class="pa-4" Elevation="1">
+        <MudStack AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Large" Color="Color.Secondary" />
+            <MudText Typo="Typo.h6" Color="Color.Secondary">@Loc["NoImagesFound"]</MudText>
+        </MudStack>
+    </MudPaper>
+}
+
+@code {
+    #region Constants
+
+    private const int DefaultImageHeight = 200;
+    private const int MaxDisplayIndex = 9999;
+    private const int MinDisplayIndex = 0;
+
+    #endregion
+
+    #region Injected Services
+
+    [Inject] protected ISnackbar SnackbarService { get; set; } = default!;
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] protected BlobService BlobService { get; set; } = default!;
+    [Inject] protected IDialogService DialogService { get; set; } = default!;
+    [Inject] protected IDbContextFactory<CheapContext<TUser>> ContextFactory { get; set; } = default!;
+
+    #endregion
+
+    #region Parameters
+
+    [EditorRequired]
+    [Parameter]
+    public List<FileAttachment> Files { get; set; } = [];
+
+    [Parameter]
+    public bool CanDelete { get; set; } = true;
+
+    [Parameter]
+    public bool CanEdit { get; set; } = false;
+
+    [EditorRequired]
+    [Parameter]
+    public BlobContainers BlobContainer { get; set; }
+
+    [Parameter]
+    public string Class { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Event callback for when an image is deleted. Handle database cleanup in the parent component.
+    /// </summary>
+    [Parameter]
+    public EventCallback<FileAttachment> OnDelete { get; set; }
+
+    /// <summary>
+    /// Event callback for when an image is updated (visibility or display index changed).
+    /// </summary>
+    [Parameter]
+    public EventCallback<FileAttachment> OnUpdate { get; set; }
+
+    [Parameter]
+    public int ImageHeight { get; set; } = DefaultImageHeight;
+
+    [Parameter]
+    public bool UseShortNames { get; set; } = false;
+
+    [Parameter]
+    public bool ShowEmptyState { get; set; } = true;
+
+    [Parameter]
+    public bool EnableImageAnalysis { get; set; } = false;
+
+    #endregion
+
+    #region State
+
+    private bool IsProcessing { get; set; } = false;
+
+    #endregion
+
+    #region Event Handlers
+
+    private async Task OnVisibleChanged(FileAttachment file, bool visible)
+    {
+        if (file == null || IsProcessing) return;
+
+        try
+        {
+            IsProcessing = true;
+            file.Visible = visible;
+
+            using var context = ContextFactory.CreateDbContext();
+            await context.FileAttachments
+                .Where(x => x.Id == file.Id)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.Visible, visible));
+            await OnUpdate.InvokeAsync(file);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error updating file visibility: {ex.Message}");
+            SnackbarService.Add(Loc["UpdateErrorMessage"].Value, Severity.Error);
+
+            // Revert the change on error
+            file.Visible = !visible;
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task OnDisplayIndexChanged(FileAttachment file, int displayIndex)
+    {
+        if (file == null || IsProcessing) return;
+
+        // Validate display index range
+        if (displayIndex < MinDisplayIndex || displayIndex > MaxDisplayIndex)
+        {
+            SnackbarService.Add($"Display index must be between {MinDisplayIndex} and {MaxDisplayIndex}", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            IsProcessing = true;
+            var oldIndex = file.DisplayIndex;
+            file.DisplayIndex = displayIndex;
+
+            using var context = ContextFactory.CreateDbContext();
+            await context.FileAttachments
+                .Where(x => x.Id == file.Id)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.DisplayIndex, displayIndex));
+            await OnUpdate.InvokeAsync(file);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error updating file display index: {ex.Message}");
+            SnackbarService.Add(Loc["UpdateErrorMessage"].Value, Severity.Error);
+
+            // Revert the change on error
+            file.DisplayIndex = displayIndex; // Reset to previous value
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task DeleteImageAsync(FileAttachment file)
+    {
+        if (file == null || IsProcessing) return;
+
+        try
+        {
+            var confirmed = await ShowDeleteConfirmationAsync(file);
+            if (!confirmed) return;
+
+            IsProcessing = true;
+
+            // Remove from local collection first for immediate UI feedback
+            Files.Remove(file);
+            StateHasChanged();
+
+            // Notify parent component to handle database cleanup
+            await OnDelete.InvokeAsync(file);
+
+            // Delete from Azure Blob Storage
+            await BlobService.DeleteFileAsync(file.FileName, BlobContainer);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error deleting image: {ex.Message}");
+            SnackbarService.Add(Loc["DeleteErrorMessage"].Value, Severity.Error);
+
+            // Add the file back to the collection on error
+            Files.Add(file);
+            StateHasChanged();
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    private async Task<bool> ShowDeleteConfirmationAsync(FileAttachment file)
+    {
+        var parameters = new DialogParameters
+        {
+            [nameof(file.FileName)] = UseShortNames ? file.FileName.ToShortString() : file.FileName
+        };
+
+        var result = await DialogService.ShowMessageBox(
+            title: Loc["ConfirmDeleteTitle"].Value,
+            markupMessage: (MarkupString)Loc["ConfirmDeleteMessage"].Value,
+            yesText: Loc["Delete"].Value,
+            noText: Loc["Cancel"].Value);
+
+        return result == true;
+    }
+
+    private static string GetImageAltText(FileAttachment image) =>
+        $"Image: {image.FileName}";
+
+    #endregion
+
+    #region Image Analysis (Future Enhancement)
+
+    // TODO: Implement image analysis when VisionServiceOptions configuration is available
+    // This method demonstrates how to integrate Azure Cognitive Services for image analysis
+    private async Task AnalyzeImageAsync(FileAttachment image)
+    {
+        if (!EnableImageAnalysis) return;
+
+        try
+        {
+            // Implementation would go here when VisionServiceOptions is properly configured
+            // Example structure for future implementation:
+
+            // using var imageSource = VisionSource.FromUrl(new Uri(image.BlobUrl));
+            // var analysisOptions = new ImageAnalysisOptions()
+            // {
+            //     Features = ImageAnalysisFeature.Caption | ImageAnalysisFeature.Text,
+            //     Language = "en",
+            //     GenderNeutralCaption = true
+            // };
+
+            // using var analyzer = new ImageAnalyzer(visionServiceOptions, imageSource, analysisOptions);
+            // var result = analyzer.Analyze();
+
+            // Process and store analysis results...
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error analyzing image {image.FileName}: {ex.Message}");
+        }
+    }
+
+    #endregion
+}

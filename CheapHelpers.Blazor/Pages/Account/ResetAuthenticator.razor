@@ -1,0 +1,191 @@
+﻿@page "/Account/ResetAuthenticator"
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@attribute [Authorize]
+
+<MudText Typo="Typo.h4">@Loc["ResetAuthenticator"]</MudText>
+<MudText Typo="Typo.body1" Class="mb-4">@Loc["ResetAuthenticatorDescription"]</MudText>
+
+<MudAlert Severity="Severity.Warning" Class="mb-4">
+    <MudText Typo="Typo.body1">
+        <strong>@Loc["Warning"]:</strong> @Loc["ResetAuthenticatorWarning"]
+    </MudText>
+</MudAlert>
+
+<MudPaper Class="pa-4" Elevation="2">
+    <MudText Typo="Typo.h6" Class="mb-3">@Loc["WhatHappensWhenReset"]</MudText>
+    
+    <MudList T="string">
+        <MudListItem Icon="@Icons.Material.Filled.Security" Text="@Loc["TwoFactorDisabled"]"/>
+        <MudListItem Icon="@Icons.Material.Filled.Key" Text="@Loc["AuthenticatorKeyReset"]"/>
+        <MudListItem Icon="@Icons.Material.Filled.Phone" Text="@Loc["ReconfigureAuthenticatorApp"]"/>
+        <MudListItem Icon="@Icons.Material.Filled.Shield" Text="@Loc["NewRecoveryCodesNeeded"]"/>
+    </MudList>
+</MudPaper>
+
+@if (currentTwoFactorStatus != null)
+{
+    <MudPaper Class="pa-4 mt-4" Elevation="2">
+        <MudText Typo="Typo.h6" Class="mb-3">@Loc["CurrentStatus"]</MudText>
+        
+        <MudStack Direction="Direction.Column" Spacing="2">
+            <MudChip T="string" Color="@(currentTwoFactorStatus.IsTwoFactorEnabled ? Color.Success : Color.Default)">
+                <MudIcon Icon="@(currentTwoFactorStatus.IsTwoFactorEnabled ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.RadioButtonUnchecked)"/>
+                @Loc["TwoFactorAuthentication"]: @(currentTwoFactorStatus.IsTwoFactorEnabled ? Loc["Enabled"] : Loc["Disabled"])
+            </MudChip>
+            
+            @if (currentTwoFactorStatus.RecoveryCodesCount > 0)
+            {
+                <MudChip T="string" Color="Color.Info">
+                    <MudIcon Icon="Icons.Material.Filled.Security"/>
+                    @Loc["RecoveryCodesCount"]: @currentTwoFactorStatus.RecoveryCodesCount
+                </MudChip>
+            }
+        </MudStack>
+    </MudPaper>
+}
+
+<MudPaper Class="pa-4 mt-4" Elevation="2">
+    <MudText Typo="Typo.h6" Class="mb-3">@Loc["ResetAction"]</MudText>
+    
+    @if (!showConfirmation)
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Warning" 
+                 OnClick="ShowConfirmation" Size="Size.Large">
+            <MudIcon Icon="Icons.Material.Filled.RestartAlt" Class="me-2"/>
+            @Loc["ResetAuthenticator"]
+        </MudButton>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Error" Class="mb-3">
+            <MudText Typo="Typo.body1">
+                @Loc["FinalWarning"]
+            </MudText>
+        </MudAlert>
+        
+        <MudStack Direction="Direction.Row" Spacing="3">
+            <MudButton Variant="Variant.Filled" Color="Color.Error" 
+                     OnClick="ResetAuthenticatorAsync" Disabled="isProcessing">
+                @if (isProcessing)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+                    <MudText Class="ms-2">@Loc["Resetting"]</MudText>
+                }
+                else
+                {
+                    <MudIcon Icon="Icons.Material.Filled.DeleteForever" Class="me-2"/>
+                    @Loc["ConfirmReset"]
+                }
+            </MudButton>
+            
+            <MudButton Variant="Variant.Outlined" Color="Color.Default" 
+                     OnClick="CancelReset" Disabled="isProcessing">
+                @Loc["Cancel"]
+            </MudButton>
+        </MudStack>
+    }
+</MudPaper>
+
+@code {
+    public class TwoFactorStatus
+    {
+        public bool IsTwoFactorEnabled { get; set; }
+        public int RecoveryCodesCount { get; set; }
+        public bool HasAuthenticatorKey { get; set; }
+    }
+
+    [Inject] private UserManager<IdentityUser> UserManager { get; set; } = default!;
+    [Inject] private SignInManager<IdentityUser> SignInManager { get; set; } = default!;
+    [Inject] private ISnackbar ToastService { get; set; } = default!;
+    [Inject] private IStringLocalizer Loc { get; set; } = default!;
+    [Inject] private NavigationManager Nav { get; set; } = default!;
+    
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+    
+    private TwoFactorStatus? currentTwoFactorStatus;
+    private bool showConfirmation = false;
+    private bool isProcessing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentStatusAsync();
+    }
+
+    private async Task LoadCurrentStatusAsync()
+    {
+        try
+        {
+            var user = await GetCurrentUserAsync();
+            if (user == null) return;
+
+            currentTwoFactorStatus = new TwoFactorStatus
+            {
+                IsTwoFactorEnabled = await UserManager.GetTwoFactorEnabledAsync(user),
+                RecoveryCodesCount = await UserManager.CountRecoveryCodesAsync(user),
+                HasAuthenticatorKey = !string.IsNullOrEmpty(await UserManager.GetAuthenticatorKeyAsync(user))
+            };
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error loading two-factor status: {ex.Message}");
+            ToastService.Add(Loc["ErrorLoadingStatus"], Severity.Error);
+        }
+    }
+
+    private void ShowConfirmation()
+    {
+        showConfirmation = true;
+    }
+
+    private void CancelReset()
+    {
+        showConfirmation = false;
+    }
+
+    private async Task ResetAuthenticatorAsync()
+    {
+        try
+        {
+            isProcessing = true;
+            StateHasChanged();
+
+            var user = await GetCurrentUserAsync();
+            if (user == null) return;
+
+            // Disable two-factor authentication
+            await UserManager.SetTwoFactorEnabledAsync(user, false);
+            
+            // Reset the authenticator key
+            await UserManager.ResetAuthenticatorKeyAsync(user);
+            
+            // Refresh the sign-in to update the claims
+            await SignInManager.RefreshSignInAsync(user);
+
+            System.Diagnostics.Debug.WriteLine($"User {user.UserName} has reset their authenticator key");
+
+            ToastService.Add(Loc["AuthenticatorReset"], Severity.Success);
+            
+            // Navigate to the enable authenticator page or account page
+            Nav.NavigateTo("/Account");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error resetting authenticator: {ex.Message}");
+            ToastService.Add(Loc["ErrorResettingAuthenticator"], Severity.Error);
+        }
+        finally
+        {
+            isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<IdentityUser?> GetCurrentUserAsync()
+    {
+        var authState = await AuthenticationStateTask;
+        return await UserManager.GetUserAsync(authState.User);
+    }
+}

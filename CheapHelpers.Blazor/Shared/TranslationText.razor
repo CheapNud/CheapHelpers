@@ -1,0 +1,35 @@
+﻿@using CheapHelpers.Services.Translation
+@using System.Globalization
+@using System.Diagnostics
+
+@TranslatedText
+
+@code {
+    public string TranslatedText { get; set; }
+
+    [Parameter]
+    public string InputText { get; set; }
+
+    [Parameter]
+    public string TranslateFrom { get; set; } = null;
+
+    [Inject]
+    private TranslatorService TranslatorService { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(InputText))
+            {
+                return;   
+            }
+
+            TranslatedText = await TranslatorService.DirectTranslateAsync(InputText, CultureInfo.CurrentCulture.TwoLetterISOLanguageName, TranslateFrom);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+    }
+}

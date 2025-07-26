@@ -1,0 +1,371 @@
+﻿@typeparam C where C : class, IEntityCode, new()
+@using System.Threading
+@using System.Linq.Expressions
+@using CheapHelpers.EF
+
+<MudAutocomplete Variant="@Variant" @ref="autocomplete" T="C" Label="@Label" Value="Value" SearchFunc="@Search"
+                 ShowProgressIndicator=true CoerceText=true CoerceValue=false ResetValueOnEmptyText=true
+                 InputMode=InputMode.text AnchorOrigin=@AnchorOrigin ValueChanged="OnValueChanged"
+                 ToStringFunc="@(e => e == null ? DisplayPropFallback : DisplayProp == null ? e.ToString() : $@"{DisplayProp(e)}")"
+                 TransformOrigin=@TransformOrigin Clearable=true Class="@Class" UserAttributes="CapturedAttributes"
+                 For="@For" Immediate=Immediate DebounceInterval="@SearchDelay" />
+
+@code {
+    private MudAutocomplete<C> autocomplete;
+
+    #region Configuration Parameters
+
+    /// <summary>
+    /// Dictionary for capturing unmatched attributes
+    /// </summary>
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object> CapturedAttributes { get; set; } = new();
+
+    /// <summary>
+    /// Function to determine how an entity should be displayed in the dropdown
+    /// </summary>
+    [EditorRequired]
+    [Parameter]
+    public Func<C, string> DisplayProp { get; set; }
+
+    /// <summary>
+    /// If null value is selected, display this text
+    /// </summary>
+    [Parameter]
+    public string DisplayPropFallback { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The currently selected value
+    /// </summary>
+    [Parameter]
+    public C Value { get; set; } = new();
+
+    /// <summary>
+    /// Determines where the dropdown is anchored
+    /// </summary>
+    [Parameter]
+    public Origin AnchorOrigin { get; set; } = Origin.BottomLeft;
+
+    /// <summary>
+    /// Determines the transform origin for the dropdown
+    /// </summary>
+    [Parameter]
+    public Origin TransformOrigin { get; set; } = Origin.TopLeft;
+
+    /// <summary>
+    /// The display variant for the input field
+    /// </summary>
+    [Parameter]
+    public Variant Variant { get; set; } = Variant.Outlined;
+
+    /// <summary>
+    /// Event callback when the value changes
+    /// </summary>
+    [Parameter]
+    public EventCallback<C> ValueChanged { get; set; } = new();
+
+    /// <summary>
+    /// CSS class to apply to the component
+    /// </summary>
+    [Parameter]
+    public string Class { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Label text for the input field
+    /// </summary>
+    [Parameter]
+    [EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    /// <summary>
+    /// When true, updates are immediate rather than when focus leaves the field
+    /// </summary>
+    [Parameter]
+    public bool Immediate { get; set; } = false;
+
+    /// <summary>
+    /// Delay in milliseconds before triggering a search
+    /// </summary>
+    [Parameter]
+    public int SearchDelay { get; set; } = 300;
+
+    /// <summary>
+    /// When true, fetches only id and code properties for better performance
+    /// </summary>
+    [Parameter]
+    public bool UseSelect { get; set; } = false;
+
+    /// <summary>
+    /// When true, ignores entity framework's auto-includes
+    /// </summary>
+    [Parameter]
+    public bool IgnoreAutoIncludes { get; set; } = true;
+
+    /// <summary>
+    /// When true, automatically selects the first item in results
+    /// </summary>
+    [Parameter]
+    public bool AutoSelectFirst { get; set; } = false;
+
+    /// <summary>
+    /// When specified, automatically selects the item with this ID
+    /// </summary>
+    [Parameter]
+    public int? SelectFirstWithId { get; set; } = null;
+
+    [Inject]
+    public IDbContextFactory<CheapContext<CheapUser>> Factory { get; set; }
+
+    #endregion
+
+    #region Form Binding Parameters
+
+#nullable enable
+    /// <summary>
+    /// Expression used for form validation
+    /// </summary>
+    [Parameter]
+    public Expression<Func<C>>? For { get; set; }
+#nullable disable
+
+    #endregion
+
+    #region Search Parameters
+
+#nullable enable
+    /// <summary>
+    /// Optional filter expression to apply to query
+    /// </summary>
+    [Parameter]
+    public Expression<Func<C, bool>>? Where { get; set; }
+
+    /// <summary>
+    /// Optional ordering expression
+    /// </summary>
+    [Parameter]
+    public Expression<Func<C, object>>? OrderBy { get; set; }
+
+    /// <summary>
+    /// Optional projection expression
+    /// </summary>
+    [Parameter]
+    public Expression<Func<C, int, C>>? Select { get; set; }
+
+    /// <summary>
+    /// Optional descending ordering expression
+    /// </summary>
+    [Parameter]
+    public Expression<Func<C, object>>? OrderByDescending { get; set; }
+#nullable disable
+
+    #endregion
+
+    /// <summary>
+    /// Initializes the component and loads the initial value if specified
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (SelectFirstWithId != null)
+            {
+                using var context = Factory.CreateDbContext();
+                Value = await context.Set<C>()
+                    .IgnoreAutoIncludes()
+                    .AsNoTracking()
+                    .OrderBy(x => x.Code)
+                    .FirstOrDefaultAsync(x => x.Id == SelectFirstWithId);
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error during component initialization: {ex.Message}");
+            Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+            // Consider handling the error appropriately for your application
+        }
+    }
+
+    /// <summary>
+    /// Search function called by the MudAutocomplete component
+    /// </summary>
+    /// <param name="searchText">Text to search for</param>
+    /// <param name="token">Cancellation token</param>
+    /// <returns>A collection of matching entities</returns>
+    public async Task<IEnumerable<C>> Search(string searchText, CancellationToken token)
+    {
+        return await SearchInternal(
+            searchText,
+            token,
+            IgnoreAutoIncludes,
+            Where,
+            OrderBy,
+            OrderByDescending,
+            UseSelect,
+            autocomplete.MaxItems,
+            AutoSelectFirst,
+            SelectFirstWithId);
+    }
+
+    /// <summary>
+    /// Internal implementation of search functionality
+    /// </summary>
+    private async Task<IEnumerable<C>> SearchInternal(
+        string searchText,
+        CancellationToken token,
+        bool ignoreAutoIncludes,
+        Expression<Func<C, bool>> whereClause,
+        Expression<Func<C, object>> orderByClause,
+        Expression<Func<C, object>> orderByDescendingClause,
+        bool useSelect,
+        int? maxItems,
+        bool autoSelectFirst,
+        int? selectFirstWithId)
+    {
+        try
+        {
+            using (var context = Factory.CreateDbContext())
+            {
+                // Build query
+                var query = BuildSearchQuery(
+                    context, searchText, ignoreAutoIncludes,
+                    whereClause, orderByClause, orderByDescendingClause);
+
+                // Apply limit if needed
+                if (maxItems.HasValue)
+                {
+                    query = query.Take(maxItems.Value);
+                }
+
+                // Apply projection if needed
+                if (useSelect)
+                {
+                    query = query.Select(x => new C { Code = x.Code, Id = x.Id });
+                }
+
+                // Execute query
+                var result = await query.ToListAsync(token);
+
+                // Handle auto-selection if needed
+                if (autoSelectFirst)
+                {
+                    await HandleAutoSelection(result, selectFirstWithId);
+                }
+
+                return result;
+            }
+        }
+        catch (TaskCanceledException tc)
+        {
+            Debug.WriteLine($"Search operation was canceled: {tc.Message}");
+            return Enumerable.Empty<C>(); // Return empty collection instead of null
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error during search: {ex.Message}");
+            Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Builds the database query based on search parameters
+    /// </summary>
+    private IQueryable<C> BuildSearchQuery(
+        DbContext context,
+        string searchText,
+        bool ignoreAutoIncludes,
+        Expression<Func<C, bool>> whereClause,
+        Expression<Func<C, object>> orderByClause,
+        Expression<Func<C, object>> orderByDescendingClause)
+    {
+        // Start with base query
+        IQueryable<C> query = context.Set<C>().AsNoTracking();
+
+        // Apply auto includes option
+        if (ignoreAutoIncludes)
+        {
+            query = query.IgnoreAutoIncludes();
+        }
+
+        // Apply custom where clause
+        if (whereClause != null)
+        {
+            query = query.Where(whereClause);
+        }
+
+        // Track if we've applied any ordering
+        bool isOrdered = false;
+
+        // Apply search text filter with prioritized ordering
+        if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            // Apply the basic filter - always use Contains since we prioritize in ordering
+            query = query.Where(x => x.Code.Contains(searchText));
+
+            // Prioritize results with smart ordering
+            query = query.OrderBy(x =>
+                    x.Code.Equals(searchText) ? 0 :          // Exact match
+                    x.Code.StartsWith(searchText) ? 1 :      // Starts with match
+                    2)                                       // Contains match
+                .ThenBy(x => x.Code.Length);                 // Then by length (shorter first)
+
+            isOrdered = true;
+        }
+
+        // Apply additional ordering
+        if (orderByClause != null)
+        {
+            query = isOrdered
+                ? ((IOrderedQueryable<C>)query).ThenBy(orderByClause)
+                : query.OrderBy(orderByClause);
+            isOrdered = true;
+        }
+        else if (orderByDescendingClause != null)
+        {
+            query = isOrdered
+                ? ((IOrderedQueryable<C>)query).ThenByDescending(orderByDescendingClause)
+                : query.OrderByDescending(orderByDescendingClause);
+            isOrdered = true;
+        }
+
+        // Apply default ordering if no ordering has been applied yet
+        if (!isOrdered)
+        {
+            query = query.OrderBy(x => x.Code);
+        }
+
+        return query;
+    }
+
+    /// <summary>
+    /// Handles auto-selection of an item from the result set
+    /// </summary>
+    private async Task HandleAutoSelection(IEnumerable<C> results, int? selectWithId)
+    {
+        C selectedItem = null;
+
+        if (selectWithId.HasValue)
+        {
+            selectedItem = results.FirstOrDefault(x => x.Id == selectWithId.Value);
+        }
+        else
+        {
+            selectedItem = results.FirstOrDefault();
+        }
+
+        if (selectedItem != null)
+        {
+            await OnValueChanged(selectedItem);
+        }
+    }
+
+    /// <summary>
+    /// Updates the Value property and notifies parent components of the change
+    /// </summary>
+    private async Task OnValueChanged(C p)
+    {
+        Value = p;
+        await ValueChanged.InvokeAsync(Value);
+    }
+}

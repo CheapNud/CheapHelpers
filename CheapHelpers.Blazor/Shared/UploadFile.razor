@@ -1,0 +1,415 @@
+﻿@using System.IO
+@using System.Linq.Expressions;
+@using CheapHelpers.Blazor.Helpers
+@using CheapHelpers.Extensions
+@using CheapHelpers.Helpers.Files
+@using CheapHelpers.Services.Storage
+@using CheapHelpers.Services.Storage.Configuration
+@using FileTypeChecker.Extensions;
+@using SixLabors.ImageSharp;
+@using SixLabors.ImageSharp.Processing;
+@typeparam T
+
+@if (typeof(T) == typeof(IReadOnlyList<IBrowserFile>))
+{
+    if (UseDropZone)
+    {
+        <MudStack Style="width: 100%">
+            <MudFileUpload T="IReadOnlyList<IBrowserFile>" @ref="_fileUpload" Class="mx-3"
+                           FilesChanged="(x) => OnFilesDropped(x as IReadOnlyList<IBrowserFile>)"
+                           AppendMultipleFiles
+                           Hidden="@false"
+                           InputClass="absolute mud-width-full mud-height-full overflow-hidden z-10"
+                           InputStyle="opacity:0"
+                           tabindex="-1"
+                           @ondrop="@ClearDragClass"
+                           @ondragenter="@SetDragClass"
+                           @ondragleave="@ClearDragClass"
+                           @ondragend="@ClearDragClass">
+                <ActivatorContent>
+                    <MudPaper Height="300px"
+                              Outlined="true"
+                              Class="@_dragClass">
+                        <MudText Typo="Typo.h6">
+                            Drag and drop files here or click
+                        </MudText>
+                        @foreach (var file in files)
+                        {
+                            <MudChip T="string"
+                                     Color="MudBlazor.Color.Dark"
+                                     Text="@file.Name"
+                                     tabindex="-1" />
+                        }
+                    </MudPaper>
+                </ActivatorContent>
+            </MudFileUpload>
+            <MudToolBar Gutters="@false"
+                        Class="relative d-flex justify-end gap-4">
+                <MudButton Color="MudBlazor.Color.Primary"
+                           OnClick="@OpenFilePickerAsync"
+                           Variant="Variant.Filled">
+                    Open file picker
+                </MudButton>
+                <MudButton Color="MudBlazor.Color.Primary"
+                           Disabled="@(!files.Any())"
+                           OnClick="Upload"
+                           Variant="Variant.Filled">
+                    Upload
+                </MudButton>
+                <MudButton Color="MudBlazor.Color.Error"
+                           Disabled="@(!files.Any())"
+                           OnClick="@ClearAsync"
+                           Variant="Variant.Filled">
+                    Clear
+                </MudButton>
+            </MudToolBar>
+        </MudStack>
+    }
+    else
+    {
+        <MudFileUpload T="T" FilesChanged="(x) => OnFilesUploaded(x as IReadOnlyList<IBrowserFile>)"
+                       Accept="@Accept"
+                       Validation="Validation"
+                       Required="Required"
+                       RequiredError="@Loc["RequiredError"]"
+                       Error=@Error
+                       ErrorText=@ErrorText
+                       MaximumFileCount="MaximumFileCount"
+                       Class="@Class"
+                       For=For>
+            <ActivatorContent>
+                <MudButton Variant="@Variant"
+                           Color="@Color"
+                           StartIcon="@Icons.Material.Filled.CloudUpload"
+                           for=@For>
+                    @if (processing)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="MudBlazor.Size.Small" Indeterminate="true" />
+                        <MudText Class="ms-2">@Loc["Processing"]</MudText>
+                    }
+                    else
+                    {
+                        @if (!string.IsNullOrWhiteSpace(ButtonText))
+                        {
+                            <MudText>@ButtonText</MudText>
+                        }
+                        else
+                        {
+                            <MudText>@Loc["UploadFiles"]</MudText>
+                        }
+                    }
+                </MudButton>
+            </ActivatorContent>
+        </MudFileUpload>
+    }
+}
+else
+{
+    <MudFileUpload T="T" FilesChanged="(x) => OnFileUploaded(x as IBrowserFile)"
+                   For="For"
+                   Validation="Validation"
+                   Required="Required"
+                   Class="@Class"
+                   RequiredError="@Loc["RequiredError"]"
+                   Error=@Error
+                   ErrorText=@ErrorText
+                   Accept="@Accept">
+        <ActivatorContent>
+            <MudButton Variant="@Variant"
+                       Color="@Color"
+                       StartIcon="@Icons.Material.Filled.CloudUpload"
+                       for=@For>
+                @if (processing)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="MudBlazor.Size.Small" Indeterminate="true" />
+                    <MudText Class="ms-2">@Loc["Processing"]</MudText>
+                }
+                else
+                {
+                    @if (!string.IsNullOrWhiteSpace(ButtonText))
+                    {
+                        <MudText>@ButtonText</MudText>
+                    }
+                    else
+                    {
+                        <MudText>@Loc["UploadFiles"]</MudText>
+                    }
+                }
+            </MudButton>
+        </ActivatorContent>
+    </MudFileUpload>
+}
+
+@code {
+    [Inject]
+    private IConfiguration Configuration { get; set; }
+
+    [Inject]
+    protected IStringLocalizer Loc { get; set; } = default!;
+
+    [Inject]
+    private BlobService BlobService { get; set; }
+
+    /// <summary>
+    /// extension filter for uploaded files
+    /// </summary>
+    [Parameter]
+    public string Accept { get; set; } = ".jpg,.jpeg,.png,.mov,.mp4,.pdf";
+
+    /// <summary>
+    /// Path of the file to upload, either use this or blob upload
+    /// </summary>
+    [Parameter]
+    public string UploadPath { get; set; }
+
+    /// <summary>
+    /// Variant of the button
+    /// </summary>
+    [Parameter]
+    public Variant Variant { get; set; } = Variant.Filled;
+
+    /// <summary>
+    /// Color of the button
+    /// </summary>
+    [Parameter]
+    public MudBlazor.Color Color { get; set; } = MudBlazor.Color.Info;
+
+    /// <summary>
+    /// if true, displays error
+    /// </summary>
+    [Parameter]
+    public bool Error { get; set; }
+
+    /// <summary>
+    /// if true, uses a dropzone to upload files
+    /// ONLY applicable on multiple files
+    /// </summary>
+    [Parameter]
+    public bool UseDropZone { get; set; } = false;
+
+    /// <summary>
+    /// errortext
+    /// </summary>
+    [Parameter]
+    public string ErrorText { get; set; }
+
+    /// <summary>
+    /// Triggers when files are added, triggers multiple times for more files
+    /// </summary>
+    [EditorRequired]
+    [Parameter]
+    public EventCallback<UploadFileResult> OnUpload { get; set; }
+
+    /// <summary>
+    /// Max file size in MB
+    /// </summary>
+    [Parameter]
+    public int MaxFileSizeInMB { get; set; } = 50;
+
+    /// <summary>
+    /// Append guid
+    /// </summary>
+    [Parameter]
+    public bool AppendPartialGuid { get; set; } = true;
+
+    /// <summary>
+    /// Length of guid
+    /// </summary>
+    [Parameter]
+    public int PartialGuidLength { get; set; } = 8;
+
+    /// <summary>
+    /// Max files, default = 10
+    /// </summary>
+    [Parameter]
+    public int MaximumFileCount { get; set; } = 10;
+
+    /// <summary>
+    /// Validator
+    /// </summary>
+    [Parameter]
+    public object Validation { get; set; }
+
+    [Parameter]
+    public bool Required { get; set; } = false;
+
+    /// <summary>
+    /// validation
+    /// </summary>
+    [Parameter]
+    public Expression<Func<T>> For { get; set; }
+
+    /// <summary>
+    /// set this explicitly to true to use container storage, todo: reverse this?
+    /// </summary>
+    [Parameter]
+    public bool UseBlobStorage { get; set; } = false;
+
+    /// <summary>
+    /// container
+    /// </summary>
+    [Parameter]
+    public BlobContainers BlobContainer { get; set; } = BlobContainers.TempContainer;
+
+    [Parameter]
+    public string Class { get; set; }
+
+    [Parameter]
+    public string ButtonText { get; set; }
+
+    private long ActualMaxFileSize => MaxFileSizeInMB * 1048576;
+    private string[] dangerousExtensions = { "exe", "com", "dll", "vbs", "xls", "doc", "xlsx", "docx", "ppt", "pptx", "xlsm" };
+    private bool processing = false;
+
+    #region DropZone UI
+    private MudFileUpload<IReadOnlyList<IBrowserFile>>? _fileUpload;
+    private Task OpenFilePickerAsync() => _fileUpload?.OpenFilePickerAsync() ?? Task.CompletedTask;
+    List<IBrowserFile> files = new List<IBrowserFile>();
+
+    private const string DefaultDragClass = "relative rounded-lg border-2 border-dashed pa-4 mt-4 mud-width-full mud-height-full";
+    private string _dragClass = DefaultDragClass;
+    private void SetDragClass() => _dragClass = $"{DefaultDragClass} mud-border-primary";
+    private void ClearDragClass() => _dragClass = DefaultDragClass;
+    #endregion
+
+    private async Task ClearAsync()
+    {
+        await (_fileUpload?.ClearAsync() ?? Task.CompletedTask);
+        files.Clear();
+        ClearDragClass();
+    }
+
+    private async Task Upload()
+    {
+        if (files == null || files.Count < 1)
+        {
+            return;
+        }
+
+        foreach (var file in files)
+        {
+            await OnFileUploaded(file);
+        }
+
+    }
+
+    private void OnFilesDropped(IReadOnlyList<IBrowserFile> listf)
+    {
+        if (listf == null)
+        {
+            ClearDragClass();
+        }
+        else
+        {
+            ClearDragClass();
+            files = listf.ToList();
+        }
+    }
+
+    private async Task OnFileUploaded(IBrowserFile file)
+    {
+        try
+        {
+            processing = true;
+            if (file.Size > ActualMaxFileSize)
+            {
+                throw new ArgumentException(nameof(MaxFileSizeInMB), "File too large");
+            }
+
+            if (dangerousExtensions.Any(y => Path.GetExtension(file.Name).Contains(y)))
+            {
+                throw new ArgumentException("Malicious file discovered");
+            }
+
+            if (!UseBlobStorage && string.IsNullOrWhiteSpace(UploadPath))
+            {
+                throw new ArgumentNullException(nameof(UploadPath), "no uploadpath set");
+            }
+
+            try
+            {
+                string trustedFileNameForFileStorage = file.Name;
+                if (AppendPartialGuid)
+                {
+                    trustedFileNameForFileStorage = FileHelper.GetTrustedFileName(file.Name);
+                }
+                else
+                {
+                    Debug.WriteLine("no partial guid appended, this will be forced in the future");
+                }
+
+                using Stream stream = new MemoryStream();
+                using var tempstream = file.OpenReadStream(ActualMaxFileSize);
+                await tempstream.CopyToAsync(stream);
+                using MemoryStream outStream = new MemoryStream();
+                var isimage = stream.IsImage();
+                stream.Position = 0;
+
+                if (isimage)
+                {
+                    using (SixLabors.ImageSharp.Image image = await SixLabors.ImageSharp.Image.LoadAsync(stream))
+                    {
+                        image.Mutate(x => x.AutoOrient());
+                        await image.SaveAsJpegAsync(outStream);
+                    }
+                }
+
+                stream.Position = 0;
+                outStream.Position = 0;
+
+                if (UseBlobStorage)
+                {
+                    await BlobService.UploadFileAsync(isimage ? outStream : stream, trustedFileNameForFileStorage, BlobContainer);
+                }
+                else
+                {
+                    using (FileStream fileStream = new(Path.Combine(UploadPath, trustedFileNameForFileStorage), FileMode.Create))
+                    {
+                        if (isimage)
+                        {
+                            await outStream.CopyToAsync(fileStream);
+                        }
+                        else
+                        {
+                            await stream.CopyToAsync(fileStream);
+                        }
+                    }
+                }
+
+                await OnUpload.InvokeAsync(new UploadFileResult { Exception = null, FileName = trustedFileNameForFileStorage, UploadPath = UploadPath, BlobContainer = BlobContainer.StringValue() });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                await OnUpload.InvokeAsync(new UploadFileResult { Exception = ex, FileName = null, UploadPath = UploadPath });
+            }
+        }
+        catch (Exception ex2)
+        {
+            Debug.WriteLine(ex2.Message);
+            await OnUpload.InvokeAsync(new UploadFileResult { Exception = ex2, FileName = null, UploadPath = UploadPath });
+        }
+        finally
+        {
+            processing = false;
+        }
+    }
+
+    private async Task OnFilesUploaded(IReadOnlyList<IBrowserFile> files)
+    {
+        try
+        {
+            Debug.WriteLine(files.Count);
+
+            foreach (var file in files)
+            {
+                await OnFileUploaded(file);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+            throw;
+        }
+    }
+}

@@ -1,0 +1,114 @@
+﻿@page "/Account/Register"
+@using CheapHelpers.Blazor.Shared
+@using CheapHelpers.Services;
+@using CheapHelpers.Services.Email
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities;
+@using System.Text
+@using MoreLinq;
+@using MudBlazor
+
+<MudForm @ref="form" Model="@model" @* Validation="@(validator.ValidateValue)" *@>
+    <MudTextField Class="mt-3" Label="First name" Variant="Variant.Outlined" @bind-Value=model.FirstName For="(() => model.FirstName)"></MudTextField>
+    <MudTextField Class="mt-3" Label="Last name" Variant="Variant.Outlined" @bind-Value=model.LastName For="(() => model.LastName)"></MudTextField>
+    <MudTextField Class="mt-3" Label="Email" Required=true InputMode="InputMode.email" InputType="InputType.Email" Variant="Variant.Outlined" @bind-Value=model.Email For="(() => model.Email)"></MudTextField>
+    <PasswordTextField For="(() => model.Password)" Class="mt-3" @bind-Value=model.Password></PasswordTextField>
+    <PasswordTextField For="(() => model.ConfirmPassword)" Class="mt-3" @bind-Value=model.ConfirmPassword></PasswordTextField>
+</MudForm>
+<MudCheckBox @bind-Value=sendMail Label="Registratie mail versturen" Class="mt-3" Color="Color.Primary"></MudCheckBox>
+<MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" OnClick="RegisterAccount">Create</MudButton>
+
+@code {
+    public class RegisterViewModel
+    {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string Email { get; set; }
+        public string Password { get; set; }
+        public string ConfirmPassword { get; set; }
+    }
+
+    public bool sendMail = false;
+
+    [Inject]
+    public UserManager<IdentityUser> UserManager { get; set; }
+
+    [Inject]
+    public IEmailService Mailer { get; set; }
+
+    [Inject]
+    public ISnackbar ToastService { get; set; }
+
+    [Inject]
+    public NavigationManager Nav { get; set; }
+
+    public RegisterViewModel model = new();
+    public MudForm form;
+    //public RegisterValidator validator;
+
+    protected override async Task OnInitializedAsync()
+    {
+        //validator = new RegisterValidator(Factory);
+    }
+
+    private async Task SendConfirmationMail(IdentityUser user)
+    {
+        try
+        {
+            var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+            var link = $@"{Nav.BaseUri}Account/ConfirmEmail?userid={user.Id}&code={code}";
+            await Mailer.SendEmailConfirmationAsync(user.Email, link);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+    }
+
+    public async Task RegisterAccount()
+    {
+        try
+        {
+            await form.Validate();
+            if (!form.IsValid)
+            {
+                ToastService.Add(form.Errors.ToDelimitedString("<br>"), MudBlazor.Severity.Warning);
+                return;
+            }
+
+            IdentityUser user = new IdentityUser
+                {
+                    // FirstName = model.FirstName,
+                    // LastName = model.LastName,
+                    Email = model.Email,
+                    UserName = model.Email,
+                };
+
+            var result = await UserManager.CreateAsync(user, model.Password);
+            if (result.Succeeded)
+            {
+                if (sendMail)
+                {
+                    await SendConfirmationMail(user);
+                    ToastService.Add("Confirmation email sent!", Severity.Success);
+                }
+                model = new();
+            }
+
+            if (!result.Succeeded)
+            {
+                foreach(var item in result.Errors)
+                {
+                    ToastService.Add($"{item.Description}", Severity.Warning);
+                }
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+            throw;
+        }
+    }
+}

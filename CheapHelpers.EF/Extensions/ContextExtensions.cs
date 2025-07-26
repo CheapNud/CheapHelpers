@@ -126,7 +126,7 @@ namespace CheapHelpers.EF.Extensions
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            return await BaseRepo.Add(context, value);
+            return await BaseRepo.AddIfNotExistsAsync(context, value);
         }
     }
 }

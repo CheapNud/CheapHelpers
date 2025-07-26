@@ -1,0 +1,124 @@
+﻿@page "/Account/Login"
+
+@using System.Security.Claims;
+@using Microsoft.AspNetCore.Authentication;
+@using Microsoft.AspNetCore.Authentication.Cookies;
+@using Microsoft.Extensions.Options;
+@using CheapHelpers.Blazor.Shared
+
+<form @ref=form class="justify-center d-flex mt-6" method="post" action="/Account/SignIn" contextmenu="">
+    <MudPaper Elevation=2 Class="pa-6" Style="max-width: 420px;">
+        <MudGrid>
+            <MudItem xxl="12" xl="12" md="12" xs="12">
+                <MudText Typo="Typo.h4">Log in</MudText>
+            </MudItem>
+            <MudItem xxl="12" xl="12" md="12" xs="12">
+                <MudDivider />
+            </MudItem>
+            <MudItem xxl="12" xl="12" md="12" xs="12">
+                <MudTextField @bind-Value=UserName name="UserName" Clearable=true Placeholder="example@domain.com" Label="Email" InputMode=InputMode.email InputType=InputType.Email Variant="Variant.Outlined"></MudTextField>
+            </MudItem>
+            <MudItem xxl="12" xl="12" md="12" xs="12">
+                <PasswordTextField name="Password" @onkeypress="KeySend" @bind-Value="@Password"></PasswordTextField>
+            </MudItem>
+            <MudItem xxl="12" xl="12" md="12" xs="12">
+                <MudButton Variant="Variant.Filled" FullWidth=true Color=Color.Primary ButtonType="ButtonType.Submit">Login</MudButton>
+            </MudItem>
+            <MudItem xxl="12" xl="12" md="12" xs="12">
+                <MudLink Href="Account/ForgotPassword">@Loc["ForgotPassword"]</MudLink>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+</form>
+
+@code {
+    public string UserName { get; set; }
+    public string Password { get; set; }
+    object form;
+
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+
+    [Inject]
+    private IJSRuntime Js { get; set; }
+
+    protected override void OnInitialized()
+    {
+    }
+
+    private async Task KeySend(KeyboardEventArgs? args = null)
+    {
+        if (args != null)
+        {
+            if (args.Code == "Enter" || args.Code == "NumpadEnter")
+            {
+                await Js.InvokeVoidAsync("submitForm", form);
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //for reference
+    //public async Task OnLogin()
+    //{
+    //    var user = await UserManager.FindByEmailAsync(UserName);
+    //    if (user == null)
+    //    {
+    //        //await HandleSigningInFailedAsync("Email or Password are not match");
+    //        return;
+    //    }
+
+    //    SignInResult loginResult = await SignInManager.CheckPasswordSignInAsync(user, Password, false);
+    //    if (loginResult.Succeeded == false)
+    //    {
+    //        //await HandleSigningInFailedAsync("Email or Password are not match");
+    //        return;
+    //    }
+
+    //    if (loginResult.Succeeded)
+    //    {
+    //        var cookieAuthenticationOptions = OptionsMonitor.Get(CookieAuthenticationDefaults.AuthenticationScheme);
+   //         ClaimsPrincipal principal = await SignInManager.CreateUserPrincipalAsync(user);
+
+    //        var identity = new ClaimsIdentity(principal.Claims, CookieAuthenticationDefaults.AuthenticationScheme);
+    //        principal = new ClaimsPrincipal(identity);
+    //        //this call saves it to a cookie but httpcontext is not available on blazor
+    //        SignInManager.Context.User = principal;
+    //        HostAuthentication.SetAuthenticationState(Task.FromResult(new AuthenticationState(principal)));
+
+    //        // this is where we create a ticket, encrypt it, and invoke a JS method to save the cookie
+    //        var ticket = new AuthenticationTicket(principal, null, CookieAuthenticationDefaults.AuthenticationScheme);
+    //        var value = cookieAuthenticationOptions.TicketDataFormat.Protect(ticket);
+    //        await Js.InvokeVoidAsync("writeCookie", "CheapCookie", value, cookieAuthenticationOptions.ExpireTimeSpan.TotalDays);
+
+    //        //AuthenticationState authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+    //        Nav.NavigateTo("/");
+    //    }
+    //}
+}

@@ -1,0 +1,169 @@
+﻿@typeparam T where T : class, IEntityCode, new()
+@using System.Linq.Expressions
+@using CheapHelpers.EF
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            @(Title ?? $"Search {typeof(T).Name}")
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudContainer Class="px-0">
+            <AutoSelector T="T"
+                          @bind-Value="SelectedEntity"
+                          Label="@(Label ?? typeof(T).Name)"
+                          DisplayProp="@DisplayProp"
+                          Where="@Where"
+                          OrderBy="@OrderBy"
+                          OrderByDescending="@OrderByDescending"
+                          UseSelect="@UseSelect"
+                          IgnoreAutoIncludes="@IgnoreAutoIncludes"
+                          Variant="Variant.Outlined"
+                          DebounceInterval="300"
+                          Class="mt-3 mb-3" />
+
+            @if (ShowDetails && SelectedEntity != null)
+            {
+                <MudCard>
+                    <MudCardContent>
+                        <MudText Typo="Typo.subtitle2">Selected Details:</MudText>
+                        @if (DetailsContent != null)
+                        {
+                            @DetailsContent(SelectedEntity)
+                        }
+                        else
+                        {
+                            <MudText>@($"ID: {SelectedEntity.Id}, Code: {SelectedEntity.Code}")</MudText>
+                        }
+                    </MudCardContent>
+                </MudCard>
+            }
+        </MudContainer>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Text"
+                   OnClick="Cancel">
+            @CancelText
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="Confirm"
+                   Disabled="@(SelectedEntity == null)">
+            @ConfirmText
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    #region Parameters
+
+    /// <summary>
+    /// Dialog title
+    /// </summary>
+    [Parameter]
+    public string? Title { get; set; }
+
+    /// <summary>
+    /// Label for the search field
+    /// </summary>
+    [Parameter]
+    public string? Label { get; set; }
+
+    /// <summary>
+    /// Text for the cancel button
+    /// </summary>
+    [Parameter]
+    public string CancelText { get; set; } = "Cancel";
+
+    /// <summary>
+    /// Text for the confirm button
+    /// </summary>
+    [Parameter]
+    public string ConfirmText { get; set; } = "Select";
+
+    /// <summary>
+    /// The currently selected entity
+    /// </summary>
+    [Parameter]
+    public T? SelectedEntity { get; set; }
+
+    /// <summary>
+    /// Event callback when entity selection changes
+    /// </summary>
+    [Parameter]
+    public EventCallback<T> SelectedEntityChanged { get; set; }
+
+    /// <summary>
+    /// Function to determine how entities should be displayed
+    /// </summary>
+    [Parameter]
+    public Func<T, string>? DisplayProp { get; set; }
+
+    /// <summary>
+    /// Optional filter expression
+    /// </summary>
+    [Parameter]
+    public Expression<Func<T, bool>>? Where { get; set; }
+
+    /// <summary>
+    /// Optional ordering expression
+    /// </summary>
+    [Parameter]
+    public Expression<Func<T, object>>? OrderBy { get; set; }
+
+    /// <summary>
+    /// Optional descending ordering expression
+    /// </summary>
+    [Parameter]
+    public Expression<Func<T, object>>? OrderByDescending { get; set; }
+
+    /// <summary>
+    /// When true, fetches only id and code properties for performance
+    /// </summary>
+    [Parameter]
+    public bool UseSelect { get; set; } = true;
+
+    /// <summary>
+    /// When true, ignores entity framework's auto-includes
+    /// </summary>
+    [Parameter]
+    public bool IgnoreAutoIncludes { get; set; } = true;
+
+    /// <summary>
+    /// When true, shows additional details about the selected entity
+    /// </summary>
+    [Parameter]
+    public bool ShowDetails { get; set; } = false;
+
+    /// <summary>
+    /// Custom content to show in the details section
+    /// </summary>
+    [Parameter]
+    public RenderFragment<T>? DetailsContent { get; set; }
+
+    #endregion
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private async Task Confirm()
+    {
+        if (SelectedEntity != null)
+        {
+            if (SelectedEntityChanged.HasDelegate)
+            {
+                await SelectedEntityChanged.InvokeAsync(SelectedEntity);
+            }
+
+            MudDialog.Close(DialogResult.Ok(SelectedEntity));
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+}

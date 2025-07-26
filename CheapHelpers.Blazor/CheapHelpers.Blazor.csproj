@@ -1,25 +1,63 @@
-<Project Sdk="Microsoft.NET.Sdk.Razor">
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+
+    <!-- Package metadata -->
+    <PackageId>CheapHelpers.Blazor</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>CheapNud</Authors>
+    <Description>Reusable Blazor components and services for CheapHelpers applications</Description>
+    <PackageTags>blazor;mudblazor;components;identity;cheaphelpers</PackageTags>
+    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <SupportedPlatform Include="browser" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.AI.Vision.ImageAnalysis" Version="1.0.0" />
     <PackageReference Include="BlazorDownloadFile" Version="2.4.0.2" />
-    <PackageReference Include="MudBlazor" Version="8.6.0" />
+    <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
+    <PackageReference Include="Blazored.SessionStorage" Version="2.4.0" />
+    <PackageReference Include="BlazorZXingJs" Version="0.5.13" />
+    <PackageReference Include="File.TypeChecker" Version="4.1.1" />
+    <PackageReference Include="FluentValidation" Version="12.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="9.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.3.0" />
+    <PackageReference Include="MudBlazor" Version="8.10.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CheapHelpers.EF\CheapHelpers.EF.csproj" />
+    <ProjectReference Include="..\CheapHelpers.Services\CheapHelpers.Services.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="Properties\Language.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Language.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Language.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Language.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
 
+  <ItemGroup>
+    <None Include="wwwroot\js\boot.js" />
+    <None Include="wwwroot\js\infiniteScroll.js" />
+    <None Include="wwwroot\js\pdfThumbnails.js" />
+    <None Include="wwwroot\js\site.js" />
+    <None Include="wwwroot\js\textEditor.js" />
+  </ItemGroup>
 </Project>

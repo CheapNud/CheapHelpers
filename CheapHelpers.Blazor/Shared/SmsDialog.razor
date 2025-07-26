@@ -1,0 +1,409 @@
+﻿@typeparam T where T : ISmsRecipient
+@using CheapHelpers.Blazor.Helpers
+@using CheapHelpers.EF
+@using CheapHelpers.Services.Communication.Sms
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Diagnostics
+
+<AuthorizeView>
+    <MudDialog>
+        <TitleContent>
+            <MudText Typo="Typo.h6">@Title</MudText>
+        </TitleContent>
+        
+        <DialogContent>
+            @if (Recipients?.Any() == true)
+            {
+                <MudRadioGroup @bind-Value="SelectedRecipient" T="T">
+                    <MudStack>
+                        @foreach (var recipient in Recipients)
+                        {
+                            <MudRadio Value="@recipient" T="T">
+                                @GetRecipientDisplayText(recipient)
+                            </MudRadio>
+                        }
+                    </MudStack>
+                </MudRadioGroup>
+            }
+
+            @if (ShowCustomFields && SelectedRecipient != null)
+            {
+                @CustomFieldsContent?.Invoke(SelectedRecipient)
+            }
+
+            <MudTextField Class="mt-3" 
+                          Lines="@MessageLines"
+                          @bind-Value="Message" 
+                          Label="@MessageLabel" 
+                          Variant="Variant.Outlined" 
+                          Immediate="true" 
+                          Counter="@MaxMessageLength" 
+                          MaxLength="@MaxMessageLength"
+                          Error="@(!IsMessageValid)"
+                          ErrorText="@GetMessageError()" />
+
+            @if (ShowPreview && !string.IsNullOrWhiteSpace(Message))
+            {
+                <MudCard Class="mt-3">
+                    <MudCardContent>
+                        <MudText Typo="Typo.subtitle2">Preview:</MudText>
+                        <MudText Typo="Typo.body2" Class="mt-2">@GetFinalMessage()</MudText>
+                        <MudText Typo="Typo.caption" Class="mt-1">
+                            Characters: @GetFinalMessage().Length / @MaxMessageLength
+                        </MudText>
+                    </MudCardContent>
+                </MudCard>
+            }
+        </DialogContent>
+        
+        <DialogActions>
+            <MudButton OnClick="Cancel" Variant="Variant.Text">
+                @CancelText
+            </MudButton>
+            @if (CanSendSms())
+            {
+                <MudButton Color="Color.Success" 
+                           Variant="Variant.Filled" 
+                           OnClick="SendSms"
+                           Disabled="@IsLoading">
+                    @if (IsLoading)
+                    {
+                        <MudProgressCircular Size="Size.Small" Class="mr-2" />
+                    }
+                    @SendText
+                </MudButton>
+            }
+        </DialogActions>
+    </MudDialog>
+</AuthorizeView>
+
+@code {
+    #region Constants
+    
+    private const int DefaultMaxMessageLength = 160;
+    private const int DefaultMessageLines = 4;
+    private const string DefaultTitle = "Send SMS";
+    private const string DefaultMessageLabel = "Message";
+    private const string DefaultSendText = "Send SMS";
+    private const string DefaultCancelText = "Cancel";
+    private const string NoRecipientSelectedError = "No recipient selected";
+    private const string InvalidPhoneNumberError = "Invalid phone number format";
+    private const string MessageTooLongError = "Message exceeds maximum length";
+    private const string MessageEmptyError = "Message cannot be empty";
+    
+    #endregion
+
+    #region Parameters
+
+    /// <summary>
+    /// Dialog title
+    /// </summary>
+    [Parameter]
+    public string Title { get; set; } = DefaultTitle;
+
+    /// <summary>
+    /// Available recipients for SMS
+    /// </summary>
+    [Parameter, EditorRequired]
+    public IEnumerable<T> Recipients { get; set; } = [];
+
+    /// <summary>
+    /// Currently selected recipient
+    /// </summary>
+    [Parameter]
+    public T? SelectedRecipient { get; set; }
+
+    /// <summary>
+    /// Event callback when recipient selection changes
+    /// </summary>
+    [Parameter]
+    public EventCallback<T> SelectedRecipientChanged { get; set; }
+
+    /// <summary>
+    /// SMS message content
+    /// </summary>
+    [Parameter]
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Event callback when message changes
+    /// </summary>
+    [Parameter]
+    public EventCallback<string> MessageChanged { get; set; }
+
+    /// <summary>
+    /// Message template with placeholders (e.g., "Hello {Name}, your appointment is in {Minutes} minutes")
+    /// </summary>
+    [Parameter]
+    public string? MessageTemplate { get; set; }
+
+    /// <summary>
+    /// Function to populate template placeholders
+    /// </summary>
+    [Parameter]
+    public Func<T, string, string>? TemplateReplacer { get; set; }
+
+    /// <summary>
+    /// Maximum message length
+    /// </summary>
+    [Parameter]
+    public int MaxMessageLength { get; set; } = DefaultMaxMessageLength;
+
+    /// <summary>
+    /// Number of lines for message input
+    /// </summary>
+    [Parameter]
+    public int MessageLines { get; set; } = DefaultMessageLines;
+
+    /// <summary>
+    /// Label for message input field
+    /// </summary>
+    [Parameter]
+    public string MessageLabel { get; set; } = DefaultMessageLabel;
+
+    /// <summary>
+    /// Text for send button
+    /// </summary>
+    [Parameter]
+    public string SendText { get; set; } = DefaultSendText;
+
+    /// <summary>
+    /// Text for cancel button
+    /// </summary>
+    [Parameter]
+    public string CancelText { get; set; } = DefaultCancelText;
+
+    /// <summary>
+    /// Show preview of final message
+    /// </summary>
+    [Parameter]
+    public bool ShowPreview { get; set; } = true;
+
+    /// <summary>
+    /// Show custom fields section
+    /// </summary>
+    [Parameter]
+    public bool ShowCustomFields { get; set; } = false;
+
+    /// <summary>
+    /// Custom fields content to render
+    /// </summary>
+    [Parameter]
+    public RenderFragment<T>? CustomFieldsContent { get; set; }
+
+    /// <summary>
+    /// Event callback when SMS is successfully sent
+    /// </summary>
+    [Parameter]
+    public EventCallback<SmsResult<T>> OnSmsSent { get; set; }
+
+    /// <summary>
+    /// Event callback when SMS sending fails
+    /// </summary>
+    [Parameter]
+    public EventCallback<SmsError<T>> OnSmsError { get; set; }
+
+    /// <summary>
+    /// Custom validation function for phone numbers
+    /// </summary>
+    [Parameter]
+    public Func<string, bool>? PhoneNumberValidator { get; set; }
+
+    /// <summary>
+    /// Additional data to include in SMS logs
+    /// </summary>
+    [Parameter]
+    public object? LogData { get; set; }
+
+    #endregion
+
+    #region Injected Services
+
+    [Inject] private ISmsService SmsService { get; set; } = default!;
+    [Inject] private ISnackbar ToastService { get; set; } = default!;
+    [Inject] private IDbContextFactory<CheapContext<CheapUser>> Factory { get; set; } = default!;
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    #endregion
+
+    #region State
+
+    private bool IsLoading { get; set; }
+    private string ValidationError { get; set; } = string.Empty;
+
+    #endregion
+
+    #region Computed Properties
+
+    private bool IsMessageValid => string.IsNullOrWhiteSpace(GetMessageError());
+
+    private bool CanSendSms() => 
+        SelectedRecipient != null && 
+        IsMessageValid && 
+        !IsLoading && 
+        IsValidPhoneNumber(SelectedRecipient?.PhoneNumber);
+
+    #endregion
+
+    #region Event Handlers
+
+    private async Task SendSms()
+    {
+        if (!CanSendSms() || SelectedRecipient == null)
+            return;
+
+        IsLoading = true;
+        
+        try
+        {
+            var finalMessage = GetFinalMessage();
+            var phoneNumber = SelectedRecipient.PhoneNumber;
+
+            await SmsService.SendAsync(phoneNumber, finalMessage);
+            await LogSmsAsync(phoneNumber, finalMessage, success: true);
+
+            var result = new SmsResult<T>
+            {
+                Recipient = SelectedRecipient,
+                Message = finalMessage,
+                PhoneNumber = phoneNumber,
+                SentAt = DateTime.Now
+            };
+
+            if (OnSmsSent.HasDelegate)
+                await OnSmsSent.InvokeAsync(result);
+
+            ToastService.Add("SMS sent successfully", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(result));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"SMS sending failed: {ex.Message}");
+            await HandleSmsError(ex);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    private string GetRecipientDisplayText(T recipient)
+    {
+        var phone = recipient.PhoneNumber;
+        var name = recipient.DisplayName;
+        
+        return string.IsNullOrWhiteSpace(name) 
+            ? phone 
+            : $"{name} ({phone})";
+    }
+
+    private string GetFinalMessage()
+    {
+        if (SelectedRecipient == null)
+            return Message;
+
+        if (!string.IsNullOrWhiteSpace(MessageTemplate) && TemplateReplacer != null)
+            return TemplateReplacer(SelectedRecipient, MessageTemplate);
+
+        return Message;
+    }
+
+    private string GetMessageError()
+    {
+        if (string.IsNullOrWhiteSpace(Message) && string.IsNullOrWhiteSpace(MessageTemplate))
+            return MessageEmptyError;
+
+        var finalMessage = GetFinalMessage();
+        if (finalMessage.Length > MaxMessageLength)
+            return MessageTooLongError;
+
+        return string.Empty;
+    }
+
+    private bool IsValidPhoneNumber(string? phoneNumber)
+    {
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+            return false;
+
+        if (PhoneNumberValidator != null)
+            return PhoneNumberValidator(phoneNumber);
+
+        // Basic validation - at least 10 digits
+        var digits = phoneNumber.Where(char.IsDigit).Count();
+        return digits >= 10;
+    }
+
+    private async Task HandleSmsError(Exception ex)
+    {
+        var phoneNumber = SelectedRecipient?.PhoneNumber ?? "Unknown";
+        await LogSmsAsync(phoneNumber, GetFinalMessage(), success: false, error: ex.Message);
+
+        var errorResult = new SmsError<T>
+        {
+            Recipient = SelectedRecipient,
+            Message = GetFinalMessage(),
+            PhoneNumber = phoneNumber,
+            Error = ex.Message,
+            Exception = ex
+        };
+
+        if (OnSmsError.HasDelegate)
+            await OnSmsError.InvokeAsync(errorResult);
+
+        // Handle specific error types
+        var errorMessage = ex switch
+        {
+            Twilio.Exceptions.ApiException => "Invalid phone number. Cannot deliver messages to this number.",
+            _ => "Error sending SMS"
+        };
+
+        ToastService.Add(errorMessage, Severity.Error);
+    }
+
+    private async Task LogSmsAsync(string phoneNumber, string message, bool success, string? error = null)
+    {
+        try
+        {
+            using var context = Factory.CreateDbContext();
+            var auth = await AuthenticationStateTask;
+            var user = await context.Users.FirstAsync(x => x.UserName == auth.User.Identity.Name);
+
+            var logDescription = new
+            {
+                Recipient = SelectedRecipient,
+                LogData,
+                Success = success,
+                Error = error
+            };
+
+            // Uncomment and adapt based on your SmsLog entity structure
+            // context.SmsLogs.Add(new SmsLog
+            // {
+            //     ToNumber = phoneNumber,
+            //     Message = message,
+            //     LogDescription = JsonConvert.SerializeObject(logDescription),
+            //     IdentityUser = user,
+            //     LogTime = DateTime.Now,
+            //     Success = success
+            // });
+
+            await context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to log SMS: {ex.Message}");
+        }
+    }
+
+    #endregion
+}

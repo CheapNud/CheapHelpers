@@ -1,0 +1,187 @@
+﻿// CheapHelpers.Models/Entities/CheapUser.cs (Truly generic for library consumers)
+using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
+
+namespace CheapHelpers.Models.Entities
+{
+    /// <summary>
+    /// Base user class with common properties for CheapHelpers applications
+    /// Extend this in your application for additional properties
+    /// </summary>
+    public abstract class CheapUser : IdentityUser
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public bool IsDarkMode { get; set; } = false;
+
+        // Only truly generic navigation state - no assumptions about specific sections
+        /// <summary>
+        /// Generic navigation state storage. Use GetExpandState/SetExpandState methods to interact with this.
+        /// Library consumers can store any navigation states they need.
+        /// </summary>
+        public string? NavigationStateJson { get; set; }
+
+        // Computed properties
+        public string FullName => $"{FirstName} {LastName}".Trim();
+        public string Initials => $"{FirstName.FirstOrDefault()}{LastName.FirstOrDefault()}".ToUpper();
+
+        // User preferences
+        public string? PreferredLanguage { get; set; } = "en-US";
+        public DateTime? LastLoginDate { get; set; }
+        public bool IsFirstLogin { get; set; } = true;
+        public string? TimeZoneInfoId { get; set; } = null;
+
+        [NotMapped]
+        public TimeZoneInfo TimeZoneInfo => TimeZoneInfoId != null ?
+            System.TimeZoneInfo.FindSystemTimeZoneById(TimeZoneInfoId) :
+            TimeZoneInfo.Local;
+
+        /// <summary>
+        /// Save the hash of the pin code for this user, used to verify the pin code when needed (only factor for now)
+        /// </summary>
+        public string? PinCodeHash { get; set; }
+
+        // Generic navigation state management
+        private Dictionary<string, object>? _navigationStateCache;
+
+        [NotMapped]
+        private Dictionary<string, object> NavigationState
+        {
+            get
+            {
+                if (_navigationStateCache == null)
+                {
+                    if (string.IsNullOrEmpty(NavigationStateJson))
+                    {
+                        _navigationStateCache = new Dictionary<string, object>();
+                    }
+                    else
+                    {
+                        try
+                        {
+                            _navigationStateCache = JsonSerializer.Deserialize<Dictionary<string, object>>(NavigationStateJson)
+                                ?? new Dictionary<string, object>();
+                        }
+                        catch
+                        {
+                            _navigationStateCache = new Dictionary<string, object>();
+                        }
+                    }
+                }
+                return _navigationStateCache;
+            }
+        }
+
+        /// <summary>
+        /// Gets the expansion state for any navigation section
+        /// Library consumers can use any keys they want
+        /// </summary>
+        /// <param name="key">Navigation section key (e.g., "Admin", "Reports", "Settings", etc.)</param>
+        /// <returns>True if expanded, false if collapsed</returns>
+        public bool GetExpandState(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key)) return false;
+
+            if (NavigationState.TryGetValue($"Expand{key}", out var value))
+            {
+                return value switch
+                {
+                    bool boolValue => boolValue,
+                    JsonElement jsonElement when jsonElement.ValueKind == JsonValueKind.True => true,
+                    JsonElement jsonElement when jsonElement.ValueKind == JsonValueKind.False => false,
+                    string strValue => bool.TryParse(strValue, out var parsed) && parsed,
+                    _ => false
+                };
+            }
+
+            return false; // Default to collapsed
+        }
+
+        /// <summary>
+        /// Sets the expansion state for any navigation section
+        /// Library consumers can use any keys they want
+        /// </summary>
+        /// <param name="key">Navigation section key</param>
+        /// <param name="expanded">True to expand, false to collapse</param>
+        public void SetExpandState(string key, bool expanded)
+        {
+            if (string.IsNullOrWhiteSpace(key)) return;
+
+            NavigationState[$"Expand{key}"] = expanded;
+
+            // Update JSON representation
+            try
+            {
+                NavigationStateJson = JsonSerializer.Serialize(NavigationState);
+            }
+            catch
+            {
+                // If serialization fails, clear the problematic state
+                NavigationState.Clear();
+                NavigationStateJson = "{}";
+            }
+        }
+
+        /// <summary>
+        /// Gets all navigation states as a dictionary
+        /// </summary>
+        /// <returns>Dictionary of all navigation states</returns>
+        public Dictionary<string, bool> GetAllExpandStates()
+        {
+            var states = new Dictionary<string, bool>();
+
+            foreach (var kvp in NavigationState)
+            {
+                if (kvp.Key.StartsWith("Expand") && kvp.Value is bool boolValue)
+                {
+                    var key = kvp.Key.Substring(6); // Remove "Expand" prefix
+                    states[key] = boolValue;
+                }
+            }
+
+            return states;
+        }
+
+        /// <summary>
+        /// Clears all navigation states
+        /// </summary>
+        public void ClearNavigationState()
+        {
+            _navigationStateCache?.Clear();
+            NavigationStateJson = "{}";
+        }
+    }
+}
+
+// Example: How library consumers would extend it in their applications
+/*
+// YourApp/Models/ApplicationUser.cs
+using CheapHelpers.Models.Entities;
+
+namespace YourApp.Models
+{
+    public class ApplicationUser : CheapUser
+    {
+        // Add any app-specific properties here
+        public string? Department { get; set; }
+        
+        // If you want strongly-typed navigation properties (optional), add them:
+        public bool IsAdminNavExpanded
+        {
+            get => GetExpandState("Admin");
+            set => SetExpandState("Admin", value);
+        }
+        
+        public bool IsReportsNavExpanded
+        {
+            get => GetExpandState("Reports");
+            set => SetExpandState("Reports", value);
+        }
+        
+        // Or just use the generic methods directly:
+        // user.GetExpandState("Admin")
+        // user.SetExpandState("Admin", true)
+    }
+}
+*/

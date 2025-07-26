@@ -36,7 +36,7 @@ namespace CheapHelpers.Blazor.Extensions
         public async static Task<PaginatedList<T>> GetAllPaginated<T>(this BaseRepo repo, TableState state, CancellationToken token = default) where T : class, IEntityId
         {
             ArgumentNullException.ThrowIfNull(state);
-            return await repo.GetAllPaginated<T>(state.Page + 1, state.PageSize, token);
+            return await repo.GetAllPaginated<T>(state, token);
         }
 
         public async static Task<TableData<T>> GetAllTableData<T>(this BaseRepo repo, TableState state, CancellationToken token = default) where T : class, IEntityId

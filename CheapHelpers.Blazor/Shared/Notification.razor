@@ -1,0 +1,29 @@
+﻿@* @using MoreLinq
+
+@foreach (var context in UnreadServiceChats)
+{
+    <MudPaper Class="pa-3 mt-1">
+        <MudGrid>
+            <MudItem xs="3">
+                <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" Class="mt-3" Href=@(@$"/Service/Details/{context.Service.Id}")>@context.Service.ServiceNumber</MudButton>
+            </MudItem>
+            <MudItem xs="9">
+                <MudText Typo="Typo.caption">@(@$"{@context.From.FullName} op {context.SendDate.ToString("dd/MM/yyyy HH:mm", CultureInfo.CurrentCulture)}:")</MudText>
+                <MudText Class="ml-1" Typo="Typo.body2">@context.ChatMessage.Split(" ").Take(20).ToDelimitedString(" ")</MudText>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+}
+
+@code {
+    [EditorRequired]
+    [Parameter]
+    public List<ServiceChat> UnreadServiceChats { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+
+}
+ *@

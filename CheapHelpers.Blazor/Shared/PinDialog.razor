@@ -1,0 +1,122 @@
+﻿@using CheapHelpers.Blazor.Services
+@using Microsoft.AspNetCore.Components.Authorization
+<MudDialog>
+    <DialogContent>
+        <MudStack AlignItems="AlignItems.Center" Class="my-4" Spacing="3">
+            <MudTextField @ref="_pinField" T=string Immediate
+                          Value="_pin"
+                          ValueChanged="OnPinChanged"
+                          OnKeyDown="HandleKeyDown"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Password"
+                          MaxLength="4"
+                          Style="width: 200px; font-size: 2rem; text-align: center; letter-spacing: 1rem; font-weight: bold;"
+                          Placeholder="••••"
+                          HelperText="Enter 4-digit PIN" />
+        </MudStack>
+
+        @if (_errorMessage is not null)
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-2">@_errorMessage</MudAlert>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+@code {
+    // This is not a security feature, but an ui convenience/gimmick. Never use this to protect real data.
+    // However lost pin codes should be reset through the admin panel. the mail account is shared but this should be secret (no real danger if it leaks, merely inconvenience) so do not use reset tokens.
+
+    private string _pin = "";
+    private string _errorMessage;
+    private MudTextField<string> _pinField;
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationState { get; set; }
+
+    [Inject] protected UserService UserService { get; set; } = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await _pinField.FocusAsync();
+        }
+    }
+
+    private async Task OnPinChanged(string newValue)
+    {
+        // Update the pin value
+        _pin = newValue ?? "";
+
+        // Auto-submit when 4 digits are entered
+        if (_pin.Length == 4 && _pin.All(char.IsDigit))
+        {
+            await SubmitAsync();
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        // Handle Enter key for manual submission
+        if (e.Key == "Enter" && _pin.Length >= 1)
+        {
+            await SubmitAsync();
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_pin.Length != 4)
+        {
+            _errorMessage = "Please enter all 4 digits.";
+            return;
+        }
+
+        // Validate that all characters are digits
+        if (!_pin.All(char.IsDigit))
+        {
+            _errorMessage = "PIN must contain only numbers.";
+            _pin = "";
+            await _pinField.FocusAsync();
+            return;
+        }
+
+        var user = await UserService.GetUserAsync(AuthenticationState);
+
+        if (user is not null && ValidatePinAsync(user, _pin))
+        {
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        else
+        {
+            _errorMessage = "Incorrect PIN. Please try again.";
+            _pin = "";
+            await _pinField.FocusAsync();
+            StateHasChanged();
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private bool ValidatePinAsync(IdentityUser user, string pin)
+    {
+        if (user is CheapUser appUser && !string.IsNullOrWhiteSpace(appUser.PinCodeHash))
+        {
+            var hasher = new PasswordHasher<CheapUser>();
+            var result = hasher.VerifyHashedPassword(appUser, appUser.PinCodeHash, pin);
+            return result == PasswordVerificationResult.Success;
+        }
+
+        return false;
+    }
+}

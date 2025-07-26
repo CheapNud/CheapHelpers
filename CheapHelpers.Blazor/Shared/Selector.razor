@@ -1,0 +1,219 @@
+﻿@using System.Linq.Expressions
+@typeparam C where C : class, IEntityId, new()
+
+@if (ListItems != null)
+{
+    <MudSelect Class="@Class" T="C" Label="@Label" Value="Value" ValueChanged="OnValueChanged" Variant="@Variant" For="@For" FullWidth=@FullWidth
+               ToStringFunc="@(e => e == null ? DisplayPropFallback : DisplayProp == null ? e.ToString() : @$"{DisplayProp(e)}")">
+        @if (!OnlyDBValues)
+        {
+            <MudSelectItem T="C" Value="null">@DisplayPropFallback</MudSelectItem>
+        }
+        @foreach (var type in ListItems)
+        {
+            <MudSelectItem T="C" Value="type">@DisplayProp(type)</MudSelectItem>
+        }
+    </MudSelect>
+}
+
+@code {
+    public List<C> ListItems { get; private set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object> CapturedAttributes { get; set; }
+
+    [Parameter]
+    public C Value { get; set; }
+
+    [Parameter]
+    public bool IgnoreAutoIncludes { get; set; } = false;
+
+    /// <summary>
+    /// Select prop to display
+    /// </summary>
+    [EditorRequired]
+    [Parameter]
+    public Func<C, string> DisplayProp { get; set; }
+
+    /// <summary>
+    /// If null value is selected, display this
+    /// </summary>
+    [Parameter]
+    public string DisplayPropFallback { get; set; } = "Geen";
+
+    [Parameter]
+    public Origin AnchorOrigin { get; set; } = Origin.BottomCenter;
+
+    [Parameter]
+    public Variant Variant { get; set; } = Variant.Outlined;
+
+    [Parameter]
+    public List<C> Items { get; set; }
+
+    [Parameter]
+    public bool FullWidth { get; set; } = false;
+
+    [Parameter]
+    [EditorRequired]
+    public string Label { get; set; }
+
+    [Parameter]
+    public EventCallback<C> ValueChanged { get; set; }
+
+    [Parameter]
+    public string Class { get; set; }
+
+#nullable enable
+    [Parameter]
+    public Expression<Func<C>>? For { get; set; }
+
+    [Parameter]
+    public Expression<Func<C, int, C>>? Select { get; set; }
+
+    [Parameter]
+    public Expression<Func<C, object>>? OrderBy { get; set; }
+
+    [Parameter]
+    public Expression<Func<C, object>>? Include { get; set; }
+
+    [Parameter]
+    public string[]? Includes { get; set; }
+
+    [Parameter]
+    public Expression<Func<C, object>>? OrderByDescending { get; set; }
+
+    [Parameter]
+    public Expression<Func<C, bool>>? Where { get; set; }
+
+    [Inject]
+    public IDbContextFactory<CheapContext<CheapUser>> Factory { get; set; }
+#nullable disable
+
+    /// <summary>
+    /// no extra null value addded
+    /// </summary>
+    [Parameter]
+    public bool OnlyDBValues { get; set; } = false;
+
+    /// <summary>
+    /// Fteches only id and code
+    /// </summary>
+    [Parameter]
+    public bool UseSelect { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (Items == null)
+            {
+                using (var context = Factory.CreateDbContext())
+                {
+                    var query = context.Set<C>().AsNoTracking();
+
+                    if (IgnoreAutoIncludes)
+                    {
+                        query = query.IgnoreAutoIncludes();
+                    }
+
+                    if (Include != null)
+                    {
+                        query = query.Include(Include);
+                    }
+
+                    if (Includes != null)
+                    {
+                        foreach (var inc in Includes)
+                        {
+                            query = query.Include(inc);
+                        }
+                    }
+
+                    //collection has no code property
+                    // if (this.GetType() == IEntityCode)
+                    // {
+                    //     if (UseSelect)
+                    //     {
+                    //         query = query.Select(x => new C { Code = x.Code, Id = x.Id });
+                    //     }
+                    // }
+
+                    if (Where != null)
+                    {
+                        query = query.Where(Where);
+                    }
+
+                    if (OrderBy != null)
+                    {
+                        query = query.OrderBy(OrderBy);
+                    }
+
+                    if (OrderByDescending != null)
+                    {
+                        query = query.OrderByDescending(OrderByDescending);
+                    }
+
+                    if (Select != null)
+                    {
+                        query = query.Select(Select);
+                    }
+
+                    ListItems = await query.ToListAsync();
+
+                    if (OnlyDBValues)
+                    {
+                        if (ListItems.Any())
+                        {
+                            if (Value == null)
+                            {
+                                await OnValueChanged(ListItems.First());
+                            }
+                            else
+                            {
+                                // Check if there's a match for the current Value.Id
+                                var matchingItem = ListItems.FirstOrDefault(x => x.Id == Value.Id);
+                                if (matchingItem != null)
+                                {
+                                    await OnValueChanged(matchingItem);
+                                }
+                                else
+                                {
+                                    // If no match found, default to first item
+                                    await OnValueChanged(ListItems.First());
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Debug.WriteLine("Warning: no results");
+                        }
+                    }
+
+                }
+            }
+            else
+            {
+                ListItems = Items;
+                await OnValueChanged(ListItems.FirstOrDefault());
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+    }
+
+    private async Task OnValueChanged(C p)
+    {
+        try
+        {
+            Value = p;
+            await ValueChanged.InvokeAsync(Value);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
+
+    }
+}

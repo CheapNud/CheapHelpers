@@ -1,0 +1,213 @@
+﻿@* Account/Index.razor - Refactored for extensibility *@
+@page "/Account"
+@page "/Account/{TabIndex:int}"
+@typeparam TUser where TUser : IdentityUser
+@using CheapHelpers.Blazor.Helpers
+@using CheapHelpers.Blazor.Services
+@using CheapHelpers.Services.Email
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using System.Text
+@attribute [Authorize]
+
+<MudText Typo="Typo.h5">@Title</MudText>
+
+@if (CurrentUser != null)
+{
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" Class="mt-3" PanelClass="pa-6" @bind-ActivePanelIndex=TabIndex>
+        @* Built-in General Tab *@
+        <MudTabPanel Text="@Loc["General"]">
+            <CascadingValue Value="CurrentUser">
+                @if (GeneralTabContent != null)
+                {
+                    @GeneralTabContent
+                }
+                else
+                {
+                    @* Default General Tab Content *@
+                    <MudPaper Class="pa-3">
+                        <MudTooltip Text="@Loc["DarkTheme"]">
+                            <MudSwitch Class="mt-1" Color=Color.Success UncheckedColor=Color.Info 
+                                     Label="@Loc["DarkTheme"]" T="bool?" 
+                                     Value="@CurrentUser.IsDarkMode" 
+                                     ValueChanged="@DarkModeChanged" />
+                        </MudTooltip>
+                        
+                        @if (ShowEmailSection)
+                        {
+                            <MudTextField Class="mt-3" Label="Email" Value="@CurrentUser.Email" 
+                                        Disabled="true" Variant="Variant.Outlined" />
+                            @if (!CurrentUser.EmailConfirmed)
+                            {
+                                <MudButton Class="mt-2" Color="Color.Warning" Variant="Variant.Filled" 
+                                         OnClick="SendConfirmationMail">
+                                    @Loc["SendConfirmationEmail"]
+                                </MudButton>
+                            }
+                        }
+                        
+                        @* Additional default content can be added here *@
+                        @if (AdditionalGeneralContent != null)
+                        {
+                            @AdditionalGeneralContent
+                        }
+                        
+                        <MudButton Class="mt-3" Variant="Variant.Filled" Color=Color.Primary 
+                                 FullWidth=true OnClick="Save">@Loc["Save"]</MudButton>
+                    </MudPaper>
+                }
+            </CascadingValue>
+        </MudTabPanel>
+        
+        @* Built-in Security Tab (optional) *@
+        @if (ShowSecurityTab)
+        {
+            <MudTabPanel Text="@Loc["Security"]">
+                <CascadingValue Value="CurrentUser">
+                    @if (SecurityTabContent != null)
+                    {
+                        @SecurityTabContent
+                    }
+                    else
+                    {
+                        <ChangePassword />
+                        @if (ShowTwoFactorSection)
+                        {
+                            <MudDivider Class="my-4" />
+                            <LoginWith2fa />
+                        }
+                    }
+                </CascadingValue>
+            </MudTabPanel>
+        }
+        
+        @* Custom Tabs *@
+@*         @if (CustomTabs != null)
+        {
+            @foreach (var tab in CustomTabs.Where(t => IsTabAuthorized(t)))
+            {
+                <MudTabPanel Text="@tab.Title">
+                    <CascadingValue Value="CurrentUser">
+                        @tab.Content
+                    </CascadingValue>
+                </MudTabPanel>
+            }
+        } *@
+    </MudTabs>
+}
+
+@code {
+    [Inject] protected UserService UserService { get; set; } = default!;
+    [Inject] protected UserManager<CheapUser> UserManager { get; set; } = default!;
+    [Inject] protected NavigationManager Nav { get; set; } = default!;
+    [Inject] protected ISnackbar ToastService { get; set; } = default!;
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] protected IEmailService? Mailer { get; set; }
+    [Inject] protected IAuthorizationService AuthorizationService { get; set; } = default!;
+    
+    [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
+    
+    [Parameter] public int TabIndex { get; set; }
+    [Parameter] public string Title { get; set; } = "Manage Your Account";
+    [Parameter] public bool ShowEmailSection { get; set; } = true;
+    [Parameter] public bool ShowSecurityTab { get; set; } = true;
+    [Parameter] public bool ShowTwoFactorSection { get; set; } = false;
+    
+    [Parameter] public RenderFragment? GeneralTabContent { get; set; }
+    [Parameter] public RenderFragment? SecurityTabContent { get; set; }
+    [Parameter] public RenderFragment? AdditionalGeneralContent { get; set; }
+    [Parameter] public List<AccountTabDefinition>? CustomTabs { get; set; }
+    [Parameter] public EventCallback<CheapUser> OnUserSaved { get; set; }
+    [Parameter] public EventCallback<bool?> OnDarkModeChanged { get; set; }
+
+    protected CheapUser? CurrentUser { get; set; }
+    private bool wasDarkMode;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = await UserService.GetUserAsync(AuthenticationState);
+        if (CurrentUser != null)
+        {
+            wasDarkMode = CurrentUser.IsDarkMode;
+        }
+    }
+
+    private async Task<bool> IsTabAuthorized(AccountTabDefinition tab)
+    {
+        if (string.IsNullOrEmpty(tab.Policy))
+            return true;
+            
+        var authState = await AuthenticationState;
+        var result = await AuthorizationService.AuthorizeAsync(authState.User, tab.Policy);
+        return result.Succeeded;
+    }
+
+    protected virtual async Task DarkModeChanged(bool? b)
+    {
+        if (CurrentUser == null) return;
+        
+        try
+        {
+            CurrentUser.IsDarkMode = b.GetValueOrDefault();
+            await UserService.UpdateUserAsync(CurrentUser);
+            
+            if (OnDarkModeChanged.HasDelegate)
+            {
+                await OnDarkModeChanged.InvokeAsync(b);
+            }
+
+            // Reload if dark mode actually changed
+            if (wasDarkMode != CurrentUser.IsDarkMode)
+            {
+                Nav.NavigateTo(Nav.Uri, true);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Add(Loc["ErrorMessage"], Severity.Error);
+            Debug.WriteLine(ex.Message);
+        }
+    }
+
+    protected virtual async Task Save()
+    {
+        if (CurrentUser == null) return;
+        
+        try
+        {
+            await UserService.UpdateUserAsync(CurrentUser);
+            ToastService.Add(Loc["Saved"], Severity.Success);
+            
+            if (OnUserSaved.HasDelegate)
+            {
+                await OnUserSaved.InvokeAsync(CurrentUser);
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.Add(Loc["ErrorMessage"], Severity.Error);
+            Debug.WriteLine(ex.Message);
+        }
+    }
+
+    protected virtual async Task SendConfirmationMail()
+    {
+        if (CurrentUser == null || Mailer == null) return;
+        
+        try
+        {
+            var code = await UserManager.GenerateEmailConfirmationTokenAsync(CurrentUser);
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+            var link = $"{Nav.BaseUri}Account/ConfirmEmail?userid={CurrentUser.Id}&code={code}";
+            await Mailer.SendEmailConfirmationAsync(CurrentUser.Email, link);
+            ToastService.Add(Loc["ConfirmationEmailSent"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            ToastService.Add(Loc["ErrorMessage"], Severity.Error);
+            Debug.WriteLine(ex.Message);
+        }
+    }
+}

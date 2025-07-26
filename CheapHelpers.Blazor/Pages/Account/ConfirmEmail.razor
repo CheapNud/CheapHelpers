@@ -1,0 +1,59 @@
+﻿@page "/Account/ConfirmEmail"
+
+@using System.Text;
+@using Microsoft.AspNetCore.WebUtilities;
+
+@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <MudText>@Message</MudText>
+}
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "userid")]
+    public string UserId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "code")]
+    public string Code { get; set; }
+
+    public string Message { get; set; }
+
+    [Inject]
+    private UserManager<CheapUser> UserManager { get; set; }
+
+    [Inject] protected ISnackbar ToastService { get; set; } = default!;
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] protected NavigationManager Nav { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(Code) || string.IsNullOrWhiteSpace(UserId))
+            {
+                ToastService.Add("wrong codes", Severity.Error);
+            }
+
+
+            var user = await UserManager.FindByIdAsync(UserId);
+            if (user == null)
+            {
+                Debug.WriteLine($"Unable to load user with ID '{UserId}'.");
+                ToastService.Add(Loc["ConfirmError"]);
+                Nav.NavigateTo("/");
+                return;
+            }
+
+            var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
+            var result = await UserManager.ConfirmEmailAsync(user, code);
+            Message = result.Succeeded ? Loc["ConfirmSuccess"] : Loc["ConfirmError"];
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+            ToastService.Add(Loc["ConfirmError"]);
+        }
+    }
+
+}

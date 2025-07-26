@@ -29,7 +29,7 @@
                 if (!editor._inputTimeout) {
                     editor._inputTimeout = setTimeout(function () {
                         editor._inputTimeout = null;
-                        DotNet.invokeMethodAsync('MecamApplication.Blazor', 'UpdateContent', editor.innerHTML);
+                        DotNet.invokeMethodAsync('CheapHelpers.Blazor', 'UpdateContent', editor.innerHTML);
                     }, 300);
                 }
             });
@@ -58,7 +58,7 @@
             // Manually trigger content update
             const editor = document.getElementById('richTextEditor');
             if (editor) {
-                DotNet.invokeMethodAsync('MecamApplication.Blazor', 'UpdateContent', editor.innerHTML);
+                DotNet.invokeMethodAsync('CheapHelpers.Blazor', 'UpdateContent', editor.innerHTML);
             }
             return true;
         } catch (e) {

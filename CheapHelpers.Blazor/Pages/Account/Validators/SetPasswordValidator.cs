@@ -1,8 +1,5 @@
 ﻿using CheapHelpers.Blazor.Helpers;
-using CheapHelpers.Blazor.Pages.Account;
-using CheapHelpers.Blazor.Shared;
 using FluentValidation;
-using static CheapHelpers.Blazor.Pages.Account.ResetPassword;
 using static CheapHelpers.Blazor.Pages.Account.SetPassword;
 
 namespace CheapHelpers.Blazor.Pages.Account

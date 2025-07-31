@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CheapHelpers.Services.Vision
+﻿namespace CheapHelpers.Services.Vision
 {
     /// <summary>
     /// Vision service tag with confidence

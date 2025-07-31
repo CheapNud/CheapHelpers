@@ -44,15 +44,15 @@
     <PackageReference Include="Duende.IdentityModel" Version="7.1.0" />
     <PackageReference Include="Fluid.Core" Version="2.25.0" />
     <PackageReference Include="ILove_PDF" Version="1.6.2" />
+    <PackageReference Include="itext" Version="9.2.0" />
     <PackageReference Include="itext.pdfoptimizer" Version="4.0.2" />
-    <PackageReference Include="itext7" Version="9.2.0" />
     <PackageReference Include="MailKit" Version="4.13.0" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Connections" Version="1.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="9.0.7" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.7" />
-    <PackageReference Include="Microsoft.Graph" Version="5.87.0" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.10" />
+    <PackageReference Include="Microsoft.Graph" Version="5.88.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
     <PackageReference Include="Twilio" Version="7.12.0" />
     <PackageReference Include="UblSharp" Version="1.1.1" />

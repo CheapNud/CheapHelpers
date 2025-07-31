@@ -1,9 +1,8 @@
-﻿using FluentValidation;
-using CheapHelpers.Blazor.Shared;
-using Microsoft.EntityFrameworkCore;
+﻿using CheapHelpers.Blazor.Helpers;
 using CheapHelpers.EF;
-using CheapHelpers.Blazor.Helpers;
 using CheapHelpers.Models.Entities;
+using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 
 namespace CheapHelpers.Blazor.Pages.Account
 {

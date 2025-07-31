@@ -20,7 +20,7 @@ namespace CheapHelpers.Models.Entities
         /// Generic navigation state storage. Use GetExpandState/SetExpandState methods to interact with this.
         /// Library consumers can store any navigation states they need.
         /// </summary>
-        public string? NavigationStateJson { get; set; }
+        public string? NavigationStateJson { get; set; } = "{}";
 
         // Computed properties
         public string FullName => $"{FirstName} {LastName}".Trim();

@@ -1,11 +1,9 @@
-﻿using CheapHelpers.EF.Extensions;
-using CheapHelpers.EF.Infrastructure;
+﻿using CheapHelpers.EF.Infrastructure;
 using CheapHelpers.Models.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Linq.Expressions;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace CheapHelpers.EF.Repositories
 {

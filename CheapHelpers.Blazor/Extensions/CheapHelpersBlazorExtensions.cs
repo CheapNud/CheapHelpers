@@ -57,7 +57,7 @@ namespace CheapHelpers.Blazor.Extensions
                     config.SnackbarConfiguration.ShowTransitionDuration = 300;
                     config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
                 });
-         
+
 
             // Add localization support
             if (options.EnableLocalization)

@@ -1,8 +1,8 @@
-﻿using System;
+﻿using CheapHelpers.Helpers.Encryption;
+using System;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-using CheapHelpers.Helpers.Encryption;
 
 namespace CheapHelpers.Helpers.Security
 {

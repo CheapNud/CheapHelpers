@@ -1,6 +1,4 @@
-﻿using Azure.AI.Vision.ImageAnalysis;
-
-namespace CheapHelpers.Services.Vision
+﻿namespace CheapHelpers.Services.Vision
 {
     /// <summary>
     /// Configuration options for Azure Vision Service

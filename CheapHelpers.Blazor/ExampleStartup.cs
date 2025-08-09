@@ -366,7 +366,7 @@
 //            services.AddScoped<PurchasingRepo>();
 //            services.AddScoped<ArticleRepo>();
 
-//            services.AddAutoMapper(typeof(MappingProfile));
+//            services.AddScoped<IMapper, ServiceMapper>(provider => new ServiceMapper());
 
 //            services.AddMudServices(config =>
 //            {

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Hosting;
 
 namespace CheapHelpers.EF
@@ -16,20 +17,41 @@ namespace CheapHelpers.EF
     {
         private readonly CheapContextOptions _contextOptions = contextOptions ?? new CheapContextOptions();
 
+        private bool _timeoutSet = false;
+
+        public override DatabaseFacade Database
+        {
+            get
+            {
+                var db = base.Database;
+                if (!_timeoutSet && IsInDev())
+                {
+                    try
+                    {
+                        db.SetCommandTimeout(_contextOptions.DevCommandTimeoutMs);
+                        _timeoutSet = true;
+                    }
+                    catch
+                    {
+                        // Ignore if not ready yet
+                    }
+                }
+                return db;
+            }
+        }
+
         private bool IsInDev()
         {
             var environmentName = Environment.GetEnvironmentVariable(_contextOptions.EnvironmentVariable);
             return string.Equals(environmentName, Environments.Development, StringComparison.OrdinalIgnoreCase);
         }
 
-        public string? ConnectionString => Database?.GetConnectionString();
+        public string? ConnectionString => base.Database?.GetConnectionString();
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (IsInDev())
             {
-                Database.SetCommandTimeout(_contextOptions.DevCommandTimeoutMs);
-
                 if (_contextOptions.EnableSensitiveDataLogging)
                 {
                     optionsBuilder.EnableSensitiveDataLogging();
@@ -140,16 +162,19 @@ namespace CheapHelpers.EF
             //        CountryId = 1
             //    });
 
-            modelBuilder.Entity<CheapUser>(entity =>
+            modelBuilder.Entity<TUser>(entity =>
             {
-                // Configure the NavigationStateJson column
-                entity.Property(e => e.NavigationStateJson)
-                    .HasColumnType("TEXT") // Works for both SQLite and SQL Server
-                    .HasDefaultValue("{}");
+                // Configure the NavigationStateJson column if the user type has it
+                if (typeof(TUser).GetProperty("NavigationStateJson") != null)
+                {
+                    entity.Property("NavigationStateJson")
+                        .HasColumnType("TEXT") // Works for both SQLite and SQL Server
+                        .HasDefaultValue("{}");
 
-                // Index for performance if needed
-                // entity.HasIndex(e => e.NavigationStateJson)
-                //     .HasDatabaseName("IX_Users_NavigationState");
+                    // Index for performance if needed
+                    // entity.HasIndex("NavigationStateJson")
+                    //     .HasDatabaseName("IX_Users_NavigationState");
+                }
             });
 
             // Configure FileAttachment entities

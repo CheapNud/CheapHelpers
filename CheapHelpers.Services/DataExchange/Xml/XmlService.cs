@@ -2,6 +2,7 @@
 using System.Dynamic;
 using System.Text;
 using System.Xml.Linq;
+using System.Xml.Serialization;
 
 namespace CheapHelpers.Services.DataExchange.Xml;
 
@@ -16,7 +17,9 @@ public class XmlService : IXmlService
     private const string FallbackElementName = "Element";
     private const string ElementNameSeparator = "_";
 
-    public async Task Export(string filePath, dynamic data)
+    #region Dynamic Object Serialization
+
+    public async Task ExportDynamic(string filePath, dynamic data)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         ArgumentNullException.ThrowIfNull(data);
@@ -136,4 +139,108 @@ public class XmlService : IXmlService
                type == typeof(Guid) ||
                type == typeof(decimal);
     }
+
+    #endregion
+
+    #region Strongly-Typed Serialization
+
+    /// <summary>
+    /// Deserialize XML from a file using XmlSerializer
+    /// </summary>
+    public async Task<T?> DeserializeAsync<T>(string filePath) where T : class
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+
+        try
+        {
+            return await Task.Run(() =>
+            {
+                var serializer = new XmlSerializer(typeof(T));
+                using var reader = new StreamReader(filePath);
+                return serializer.Deserialize(reader) as T;
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to deserialize XML file '{filePath}': {ex.Message}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Serialize an object to XML file using XmlSerializer
+    /// </summary>
+    public async Task SerializeAsync<T>(string filePath, T data) where T : class
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        ArgumentNullException.ThrowIfNull(data);
+
+        try
+        {
+            await Task.Run(() =>
+            {
+                var serializer = new XmlSerializer(typeof(T));
+
+                // Ensure output directory exists
+                var directory = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                using var writer = new StreamWriter(filePath);
+                serializer.Serialize(writer, data);
+            });
+
+            Debug.WriteLine($"Successfully serialized to XML file: {filePath}");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to serialize to XML file '{filePath}': {ex.Message}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Deserialize XML from a string using XmlSerializer
+    /// </summary>
+    public T? DeserializeFromString<T>(string xml) where T : class
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(xml);
+
+        try
+        {
+            var serializer = new XmlSerializer(typeof(T));
+            using var reader = new StringReader(xml);
+            return serializer.Deserialize(reader) as T;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to deserialize XML string: {ex.Message}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Serialize an object to XML string using XmlSerializer
+    /// </summary>
+    public string SerializeToString<T>(T data) where T : class
+    {
+        ArgumentNullException.ThrowIfNull(data);
+
+        try
+        {
+            var serializer = new XmlSerializer(typeof(T));
+            using var writer = new StringWriter();
+            serializer.Serialize(writer, data);
+            return writer.ToString();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to serialize to XML string: {ex.Message}");
+            throw;
+        }
+    }
+
+    #endregion
 }

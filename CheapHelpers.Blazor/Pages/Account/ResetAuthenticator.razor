@@ -28,12 +28,12 @@
     <MudPaper Class="pa-4 mt-4" Elevation="2">
         <MudText Typo="Typo.h6" Class="mb-3">@Loc["CurrentStatus"]</MudText>
         
-        <MudStack Direction="Direction.Column" Spacing="2">
+        <MudStack Spacing="2">
             <MudChip T="string" Color="@(currentTwoFactorStatus.IsTwoFactorEnabled ? Color.Success : Color.Default)">
                 <MudIcon Icon="@(currentTwoFactorStatus.IsTwoFactorEnabled ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.RadioButtonUnchecked)"/>
                 @Loc["TwoFactorAuthentication"]: @(currentTwoFactorStatus.IsTwoFactorEnabled ? Loc["Enabled"] : Loc["Disabled"])
             </MudChip>
-            
+
             @if (currentTwoFactorStatus.RecoveryCodesCount > 0)
             {
                 <MudChip T="string" Color="Color.Info">
@@ -64,8 +64,8 @@
             </MudText>
         </MudAlert>
         
-        <MudStack Direction="Direction.Row" Spacing="3">
-            <MudButton Variant="Variant.Filled" Color="Color.Error" 
+        <MudStack Row="true" Spacing="3">
+            <MudButton Variant="Variant.Filled" Color="Color.Error"
                      OnClick="ResetAuthenticatorAsync" Disabled="isProcessing">
                 @if (isProcessing)
                 {
@@ -78,8 +78,8 @@
                     @Loc["ConfirmReset"]
                 }
             </MudButton>
-            
-            <MudButton Variant="Variant.Outlined" Color="Color.Default" 
+
+            <MudButton Variant="Variant.Outlined" Color="Color.Default"
                      OnClick="CancelReset" Disabled="isProcessing">
                 @Loc["Cancel"]
             </MudButton>

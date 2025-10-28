@@ -49,8 +49,8 @@ else
 <MudPaper Class="pa-4 mt-4" Elevation="2">
     <MudText Typo="Typo.h6" Class="mb-3">@Loc["ManageRecoveryCodes"]</MudText>
     
-    <MudStack Direction="Direction.Row" Spacing="3">
-        <MudButton Variant="Variant.Filled" Color="Color.Warning" 
+    <MudStack Row="true" Spacing="3">
+        <MudButton Variant="Variant.Filled" Color="Color.Warning"
                  OnClick="ShowGenerateCodesDialog" Disabled="isProcessing">
             @if (isProcessing)
             {

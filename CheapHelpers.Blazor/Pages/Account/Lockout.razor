@@ -5,13 +5,13 @@
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
     <MudPaper Class="pa-8" Elevation="4">
-        <MudStack Direction="Direction.Column" Spacing="4" AlignItems="AlignItems.Center">
+        <MudStack Spacing="4" AlignItems="AlignItems.Center">
             <MudIcon Icon="Icons.Material.Filled.Lock" Size="Size.Large" Color="Color.Error"/>
-            
+
             <MudText Typo="Typo.h3" Align="Align.Center" Color="Color.Error">
                 @Loc["AccountLocked"]
             </MudText>
-            
+
             <MudText Typo="Typo.h6" Align="Align.Center" Class="text-muted">
                 @Loc["AccountLockedSubtitle"]
             </MudText>
@@ -32,11 +32,11 @@
                 
                 @if (lockoutInfo.LockoutEnd.HasValue)
                 {
-                    <MudStack Direction="Direction.Column" Spacing="2">
+                    <MudStack Spacing="2">
                         <MudText Typo="Typo.body2">
                             <strong>@Loc["LockoutUntil"]:</strong> @lockoutInfo.LockoutEnd.Value.ToString("yyyy-MM-dd HH:mm:ss")
                         </MudText>
-                        
+
                         @if (timeRemaining.HasValue && timeRemaining.Value > TimeSpan.Zero)
                         {
                             <MudText Typo="Typo.body2" Color="Color.Warning">
@@ -78,11 +78,11 @@
             </MudList>
         </MudPaper>
 
-        <MudStack Direction="Direction.Column" Spacing="3">
+        <MudStack Spacing="3">
             @if (timeRemaining.HasValue && timeRemaining.Value <= TimeSpan.Zero)
             {
-                <MudButton Variant="Variant.Filled" 
-                         Color="Color.Primary" 
+                <MudButton Variant="Variant.Filled"
+                         Color="Color.Primary"
                          Size="Size.Large"
                          FullWidth="true"
                          OnClick="TryLoginAgain">
@@ -92,8 +92,8 @@
             }
             else
             {
-                <MudButton Variant="Variant.Filled" 
-                         Color="Color.Primary" 
+                <MudButton Variant="Variant.Filled"
+                         Color="Color.Primary"
                          Size="Size.Large"
                          FullWidth="true"
                          OnClick="RefreshStatus">
@@ -102,8 +102,8 @@
                 </MudButton>
             }
 
-            <MudButton Variant="Variant.Outlined" 
-                     Color="Color.Secondary" 
+            <MudButton Variant="Variant.Outlined"
+                     Color="Color.Secondary"
                      Size="Size.Large"
                      FullWidth="true"
                      OnClick="GoToForgotPassword">
@@ -111,8 +111,8 @@
                 @Loc["ForgotPassword"]
             </MudButton>
 
-            <MudButton Variant="Variant.Text" 
-                     Color="Color.Default" 
+            <MudButton Variant="Variant.Text"
+                     Color="Color.Default"
                      Size="Size.Medium"
                      FullWidth="true"
                      OnClick="GoHome">

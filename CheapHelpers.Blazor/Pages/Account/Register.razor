@@ -8,7 +8,7 @@
 @using MoreLinq;
 @using MudBlazor
 
-<MudForm @ref="form" Model="@model" @* Validation="@(validator.ValidateValue)" *@>
+<MudForm @ref="form" Model="@model">
     <MudTextField Class="mt-3" Label="First name" Variant="Variant.Outlined" @bind-Value=model.FirstName For="(() => model.FirstName)"></MudTextField>
     <MudTextField Class="mt-3" Label="Last name" Variant="Variant.Outlined" @bind-Value=model.LastName For="(() => model.LastName)"></MudTextField>
     <MudTextField Class="mt-3" Label="Email" Required=true InputMode="InputMode.email" InputType="InputType.Email" Variant="Variant.Outlined" @bind-Value=model.Email For="(() => model.Email)"></MudTextField>

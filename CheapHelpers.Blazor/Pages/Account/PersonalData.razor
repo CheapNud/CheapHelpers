@@ -31,7 +31,7 @@
         </MudTable>
     }
 
-    <MudStack Direction="Direction.Row" Spacing="3" Class="mt-4">
+    <MudStack Row="true" Spacing="3" Class="mt-4">
         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                    OnClick="DownloadPersonalDataAsync" Disabled="isDownloading">
             @if (isDownloading)

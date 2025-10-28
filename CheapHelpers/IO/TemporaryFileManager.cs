@@ -22,11 +22,11 @@ public class TemporaryFileManager : IDisposable
     /// </summary>
     public string BaseDirectory => _baseDirectory;
 
-    public TemporaryFileManager(string? customBaseDirectory = null)
+    public TemporaryFileManager(string? customBaseDirectory = null, string applicationName = "CheapHelpers")
     {
         _baseDirectory = customBaseDirectory ?? Path.Combine(
             Path.GetTempPath(),
-            "ShotcutRandomizer",
+            applicationName,
             Guid.NewGuid().ToString());
 
         Directory.CreateDirectory(_baseDirectory);

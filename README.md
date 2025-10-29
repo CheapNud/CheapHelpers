@@ -14,8 +14,7 @@ Manages temporary files and directories with automatic cleanup. Ensures proper c
 - Track multiple directories and files
 - Get directory size with human-readable formatting
 - Exception-safe cleanup
-
-See [USAGE_EXAMPLES.md](USAGE_EXAMPLES.md#temporaryfilemanager) for detailed examples.
+- Configurable application name for temp directory organization
 
 ### Process Utilities
 
@@ -30,14 +29,6 @@ Generic process execution wrapper with progress tracking, timeout handling, and 
 - Full cancellation support
 - Captured output (stdout/stderr)
 - Environment variable configuration
-
-See [USAGE_EXAMPLES.md](USAGE_EXAMPLES.md#processexecutor) for detailed examples.
-
-## Documentation
-
-- [USAGE_EXAMPLES.md](USAGE_EXAMPLES.md) - Comprehensive usage examples for all utilities
-- [MIGRATION_NOTES.md](MIGRATION_NOTES.md) - Migration guide from ShotcutRandomizer
-- [REFACTORING_OPPORTUNITIES.md](REFACTORING_OPPORTUNITIES.md) - Identified refactoring opportunities in ShotcutRandomizer
 
 ## Installation
 
@@ -56,7 +47,12 @@ Add a project reference to your project:
 ```csharp
 using CheapHelpers.IO;
 
+// Default: uses "CheapHelpers" as application name
 using var tempManager = new TemporaryFileManager();
+
+// Or specify custom application name for organization
+// using var tempManager = new TemporaryFileManager(applicationName: "MyApp");
+
 var workDir = tempManager.CreateTempDirectory("processing");
 var outputFile = tempManager.CreateTempFile("output.mp4");
 
@@ -88,8 +84,8 @@ if (result.Success)
 
 ## Requirements
 
-- .NET 9.0
-- C# 13
+- .NET 10
+- C# 14
 
 ## License
 

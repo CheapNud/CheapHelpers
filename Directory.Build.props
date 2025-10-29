@@ -1,0 +1,120 @@
+<!--
+  ============================================================================
+  CheapHelpers Solution - Centralized Build Configuration
+  ============================================================================
+
+  This file provides centralized version management and common build properties
+  for all projects in the CheapHelpers solution.
+
+  HOW VERSION MANAGEMENT WORKS:
+  =============================
+
+  1. UPDATING VERSIONS:
+     - Change VersionPrefix below to update all project versions simultaneously
+     - Example: <VersionPrefix>1.2.3</VersionPrefix>
+     - All projects will automatically use this version
+
+  2. PRE-RELEASE VERSIONS:
+     - Set VersionSuffix for pre-release versions
+     - Examples:
+       * <VersionSuffix>-alpha</VersionSuffix>  → 1.0.0-alpha
+       * <VersionSuffix>-beta.1</VersionSuffix> → 1.0.0-beta.1
+       * <VersionSuffix>-rc.2</VersionSuffix>   → 1.0.0-rc.2
+     - Leave empty for stable releases
+
+  3. ASSEMBLY VERSIONING:
+     - AssemblyVersion: Strong name version (use for breaking changes only)
+     - FileVersion: File system version (matches VersionPrefix by default)
+     - InformationalVersion: Automatically combines VersionPrefix + VersionSuffix
+
+  4. VERSION STRATEGY:
+     - Semantic Versioning (SemVer 2.0): MAJOR.MINOR.PATCH
+     - MAJOR: Breaking changes
+     - MINOR: New features (backward-compatible)
+     - PATCH: Bug fixes (backward-compatible)
+
+  5. OVERRIDING IN INDIVIDUAL PROJECTS:
+     - Individual projects can override specific properties if needed
+     - Example: CheapHelpers.Blazor can set custom PackageVersion if required
+     - Not recommended unless there's a specific reason
+
+  ============================================================================
+-->
+<Project>
+
+  <!-- ================================================================ -->
+  <!-- CENTRALIZED VERSION MANAGEMENT                                   -->
+  <!-- ================================================================ -->
+  <PropertyGroup Label="Version Management">
+    <!-- Main version number - UPDATE THIS to change all project versions -->
+    <VersionPrefix>1.0.0</VersionPrefix>
+
+    <!-- Pre-release suffix (empty for stable releases) -->
+    <!-- Examples: -alpha, -beta, -beta.1, -rc.1 -->
+    <VersionSuffix></VersionSuffix>
+
+    <!-- Assembly version (for strong naming) - Only increment for breaking changes -->
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+
+    <!-- File version (shown in file properties) -->
+    <FileVersion>1.0.0.0</FileVersion>
+  </PropertyGroup>
+
+  <!-- ================================================================ -->
+  <!-- PACKAGE METADATA (Common to all projects)                        -->
+  <!-- ================================================================ -->
+  <PropertyGroup Label="Package Metadata">
+    <Authors>CheapNud</Authors>
+    <Company>CheapNud</Company>
+    <Copyright>Copyright (c) 2025 CheapNud</Copyright>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <!-- ================================================================ -->
+  <!-- BUILD CONFIGURATION                                              -->
+  <!-- ================================================================ -->
+  <PropertyGroup Label="Build Configuration">
+    <!-- Use latest C# language version -->
+    <LangVersion>latest</LangVersion>
+
+    <!-- Enable nullable reference types -->
+    <Nullable>enable</Nullable>
+
+    <!-- Enable implicit usings -->
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Generate XML documentation files -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- ================================================================ -->
+  <!-- SOURCE LINK CONFIGURATION (For debugging NuGet packages)         -->
+  <!-- ================================================================ -->
+  <PropertyGroup Label="Source Link" Condition="'$(Configuration)' == 'Release'">
+    <!-- Publish repository URL to package -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+    <!-- Embed untracked sources in PDB -->
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+    <!-- Use embedded PDB for debugging -->
+    <DebugType>embedded</DebugType>
+
+    <!-- Include symbols in package -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- ================================================================ -->
+  <!-- PACKAGE REFERENCES (Common to all projects)                      -->
+  <!-- ================================================================ -->
+  <ItemGroup Label="Source Link Package" Condition="'$(Configuration)' == 'Release'">
+    <!-- Source Link for GitHub repositories -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>

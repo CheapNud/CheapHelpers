@@ -32,6 +32,16 @@ Generic process execution wrapper with progress tracking, timeout handling, and 
 
 ## Core Features
 
+## Packages
+
+| Package | Version | Description |
+|---------|---------|-------------|
+| [CheapHelpers](https://www.nuget.org/packages/CheapHelpers) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.svg) | Core utilities, extensions, and helpers |
+| [CheapHelpers.Models](https://www.nuget.org/packages/CheapHelpers.Models) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Models.svg) | Shared data models and DTOs |
+| [CheapHelpers.EF](https://www.nuget.org/packages/CheapHelpers.EF) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.EF.svg) | Entity Framework repository pattern |
+| [CheapHelpers.Services](https://www.nuget.org/packages/CheapHelpers.Services) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Services.svg) | Business services and integrations |
+| [CheapHelpers.Blazor](https://www.nuget.org/packages/CheapHelpers.Blazor) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Blazor.svg) | Blazor components and UI utilities |
+
 ### Services
 
 #### Email Service with Templates
@@ -144,7 +154,36 @@ Async clipboard operations via JS interop.
 
 ## Installation
 
-Add a project reference to your project:
+### Via NuGet Package Manager
+
+```bash
+# Core utilities and extensions
+dotnet add package CheapHelpers
+
+# Entity Framework repository pattern
+dotnet add package CheapHelpers.EF
+
+# Business services (email, PDF, Azure)
+dotnet add package CheapHelpers.Services
+
+# Blazor components and UI utilities
+dotnet add package CheapHelpers.Blazor
+
+# Shared models and DTOs
+dotnet add package CheapHelpers.Models
+```
+
+### Via Package Manager Console (Visual Studio)
+
+```powershell
+Install-Package CheapHelpers
+Install-Package CheapHelpers.EF
+Install-Package CheapHelpers.Services
+Install-Package CheapHelpers.Blazor
+Install-Package CheapHelpers.Models
+```
+
+### Via Project Reference (for development)
 
 ```xml
 <ItemGroup>
@@ -251,9 +290,37 @@ using CheapHelpers.Extensions;
 
 ## Requirements
 
-- .NET 10
-- C# 14
+- .NET 10.0 or later
+- C# 14.0 or later
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+### Building from Source
+
+```bash
+git clone https://github.com/CheapNud/CheapHelpers.git
+cd CheapHelpers
+dotnet restore
+dotnet build
+```
+
+### Running Tests
+
+```bash
+dotnet test
+```
+
+### Creating a Release
+
+Releases are automatically published to NuGet.org when a version tag is pushed:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
 
 ## License
 
-See [LICENSE.txt](LICENSE.txt)
+This project is licensed under the MIT License - see the [LICENSE.txt](LICENSE.txt) file for details.

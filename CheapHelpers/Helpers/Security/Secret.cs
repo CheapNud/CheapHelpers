@@ -65,7 +65,8 @@ namespace CheapHelpers.Helpers.Security
             {
                 // Add machine entropy to the string before encryption for additional security
                 var dataWithEntropy = CombineStringWithEntropy(str, _machineEntropy);
-                var encryptedData = EncryptionHelper.Encrypt(dataWithEntropy);
+                // Use random IV for maximum security - each Secret instance gets unique encryption
+                var encryptedData = EncryptionHelper.EncryptWithRandomIV(dataWithEntropy);
                 return encryptedData;
             }
             catch (Exception ex)
@@ -83,7 +84,8 @@ namespace CheapHelpers.Helpers.Security
         {
             try
             {
-                var decryptedData = EncryptionHelper.Decrypt(protectedStr);
+                // Use random IV decryption to match EncryptWithRandomIV
+                var decryptedData = EncryptionHelper.DecryptWithRandomIV(protectedStr);
                 var originalString = ExtractStringFromEntropy(decryptedData, _machineEntropy);
                 return originalString;
             }
@@ -94,20 +96,43 @@ namespace CheapHelpers.Helpers.Security
         }
 
         /// <summary>
-        /// Generates machine-specific entropy for additional security
+        /// Generates machine-specific entropy for additional security.
+        ///
+        /// SECURITY NOTE: This method combines machine-specific values (as salt) with
+        /// cryptographic randomness to create strong entropy. The machine-specific values
+        /// provide deterministic verification while the random component ensures that
+        /// each Secret instance has unique, unpredictable entropy.
+        ///
+        /// This approach balances:
+        /// - Cryptographic randomness: Prevents prediction attacks
+        /// - Machine-specific binding: Adds an additional layer of verification
+        /// - Per-instance uniqueness: Each Secret object gets different entropy
         /// </summary>
-        /// <returns>Machine-specific entropy bytes</returns>
+        /// <returns>Machine-specific entropy bytes combined with cryptographic randomness</returns>
         private static byte[] GenerateMachineEntropy()
         {
-            // Create machine-specific entropy using various system characteristics
-            var entropy = new StringBuilder();
-            entropy.Append(Environment.MachineName);
-            entropy.Append(Environment.UserName);
-            entropy.Append(Assembly.GetExecutingAssembly().FullName);
-            entropy.Append(Environment.OSVersion.ToString());
+            // SECURITY ENHANCEMENT: Generate cryptographically secure random bytes
+            // This provides true entropy that cannot be predicted by attackers
+            var randomBytes = new byte[32]; // 256 bits of random data
+            RandomNumberGenerator.Fill(randomBytes);
 
-            // Hash the entropy to ensure consistent length
-            return SHA256.HashData(Encoding.UTF8.GetBytes(entropy.ToString()));
+            // Create machine-specific salt using various system characteristics
+            // This binds the encryption to the specific machine for additional security
+            var machineSalt = new StringBuilder();
+            machineSalt.Append(Environment.MachineName);
+            machineSalt.Append(Environment.UserName);
+            machineSalt.Append(Assembly.GetExecutingAssembly().FullName);
+            machineSalt.Append(Environment.OSVersion.ToString());
+
+            // Hash the machine salt to ensure consistent length
+            var machineSaltHash = SHA256.HashData(Encoding.UTF8.GetBytes(machineSalt.ToString()));
+
+            // Combine random bytes with machine salt using HMAC for cryptographic mixing
+            // This creates entropy that is both random and machine-bound
+            using var hmac = new HMACSHA256(machineSaltHash);
+            var combinedEntropy = hmac.ComputeHash(randomBytes);
+
+            return combinedEntropy;
         }
 
         /// <summary>

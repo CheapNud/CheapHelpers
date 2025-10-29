@@ -1,7 +1,8 @@
 ﻿@page "/Account/PersonalData"
+@using CheapHelpers.Extensions
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
-@using System.Text.Json
+@using MimeMapping
 @attribute [Authorize]
 
 <MudText Typo="Typo.h4">@Loc["PersonalData"]</MudText>
@@ -107,16 +108,13 @@
                 return;
             }
 
-            var json = JsonSerializer.Serialize(personalData, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
+            var json = personalData.ToJson();
 
             var fileName = $"PersonalData_{DateTime.Now:yyyyMMdd_HHmmss}.json";
             var fileBytes = System.Text.Encoding.UTF8.GetBytes(json);
             var base64 = Convert.ToBase64String(fileBytes);
 
-            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, "application/json", base64);
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, KnownMimeTypes.Json, base64);
             ToastService.Add(Loc["DataDownloaded"], Severity.Success);
         }
         catch (Exception ex)

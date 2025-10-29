@@ -1,11 +1,13 @@
-﻿namespace CheapHelpers.EF.Infrastructure
+﻿using CheapHelpers;
+
+namespace CheapHelpers.EF.Infrastructure
 {
     public class CheapSeedOptions
     {
-        public string AdminEmailConfigKey { get; set; } = "UserEmail";
-        public string AdminPasswordConfigKey { get; set; } = "UserPassword";
-        public string AdminRoleName { get; set; } = "Admin";
-        public string[] DefaultRoles { get; set; } = ["Admin", "User"];
+        public string AdminEmailConfigKey { get; set; } = Constants.Configuration.UserEmail;
+        public string AdminPasswordConfigKey { get; set; } = Constants.Configuration.UserPassword;
+        public string AdminRoleName { get; set; } = Constants.Authentication.AdminRole;
+        public string[] DefaultRoles { get; set; } = [Constants.Authentication.AdminRole, Constants.Authentication.UserRole];
         public bool CreateDefaultAdmin { get; set; } = true;
         public bool SeedRoles { get; set; } = true;
     }

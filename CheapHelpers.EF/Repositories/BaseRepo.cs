@@ -1,9 +1,9 @@
 ﻿using CheapHelpers.EF.Extensions;
 using CheapHelpers.EF.Infrastructure;
+using CheapHelpers.Extensions;
 using CheapHelpers.Models.Contracts;
 using CheapHelpers.Models.Entities;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Linq.Expressions;
 
@@ -213,7 +213,7 @@ namespace CheapHelpers.EF.Repositories
                 {
                     if (string.IsNullOrEmpty(entity.Code))
                     {
-                        Debug.WriteLine($"Warning: Adding entity with null/empty code: {JsonConvert.SerializeObject(entity)}");
+                        Debug.WriteLine($"Warning: Adding entity with null/empty code: {entity.ToJson()}");
                     }
 
                     dbSet.Add(entity);
@@ -446,7 +446,7 @@ namespace CheapHelpers.EF.Repositories
                 {
                     if (string.IsNullOrEmpty(entity.Code))
                     {
-                        Debug.WriteLine($"Warning: Adding entity with null/empty code: {JsonConvert.SerializeObject(entity)}");
+                        Debug.WriteLine($"Warning: Adding entity with null/empty code: {entity.ToJson()}");
                     }
 
                     dbSet.Add(entity);

@@ -1,4 +1,5 @@
-﻿using CheapHelpers.EF.Infrastructure;
+﻿using CheapHelpers;
+using CheapHelpers.EF.Infrastructure;
 using CheapHelpers.Models.Contracts;
 using CheapHelpers.Models.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -165,15 +166,15 @@ namespace CheapHelpers.EF
             modelBuilder.Entity<TUser>(entity =>
             {
                 // Configure the NavigationStateJson column if the user type has it
-                if (typeof(TUser).GetProperty("NavigationStateJson") != null)
+                if (typeof(TUser).GetProperty(Constants.Authentication.NavigationStateJsonColumn) != null)
                 {
-                    entity.Property("NavigationStateJson")
-                        .HasColumnType("TEXT") // Works for both SQLite and SQL Server
-                        .HasDefaultValue("{}");
+                    entity.Property(Constants.Authentication.NavigationStateJsonColumn)
+                        .HasColumnType(Constants.Database.TextColumnType) // Works for both SQLite and SQL Server
+                        .HasDefaultValue(Constants.Authentication.EmptyJsonObject);
 
                     // Index for performance if needed
-                    // entity.HasIndex("NavigationStateJson")
-                    //     .HasDatabaseName("IX_Users_NavigationState");
+                    // entity.HasIndex(Constants.Authentication.NavigationStateJsonColumn)
+                    //     .HasDatabaseName(Constants.Database.UsersNavigationStateIndex);
                 }
             });
 
@@ -193,19 +194,19 @@ namespace CheapHelpers.EF
                 entity.Property(e => e.UpdatedById).HasMaxLength(450);
 
                 // Indexes for performance
-                entity.HasIndex(e => e.CreatedAt).HasDatabaseName("IX_FileAttachments_CreatedAt");
-                entity.HasIndex(e => e.Visible).HasDatabaseName("IX_FileAttachments_Visible");
-                entity.HasIndex(e => e.MimeType).HasDatabaseName("IX_FileAttachments_MimeType");
+                entity.HasIndex(e => e.CreatedAt).HasDatabaseName(Constants.Database.FileAttachmentsCreatedAtIndex);
+                entity.HasIndex(e => e.Visible).HasDatabaseName(Constants.Database.FileAttachmentsVisibleIndex);
+                entity.HasIndex(e => e.MimeType).HasDatabaseName(Constants.Database.FileAttachmentsMimeTypeIndex);
 
                 // Default values
                 entity.Property(e => e.Visible).HasDefaultValue(true);
                 entity.Property(e => e.DisplayIndex).HasDefaultValue(0);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("DATETIME('now')"); // SQLite
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("DATETIME('now')"); // SQLite
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql(Constants.Database.SqliteUtcNowFunction); // SQLite
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql(Constants.Database.SqliteUtcNowFunction); // SQLite
 
                 // For SQL Server, use these instead:
-                // entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
-                // entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+                // entity.Property(e => e.CreatedAt).HasDefaultValueSql(Constants.Database.SqlServerUtcNowFunction);
+                // entity.Property(e => e.UpdatedAt).HasDefaultValueSql(Constants.Database.SqlServerUtcNowFunction);
             });
 
 
@@ -213,7 +214,7 @@ namespace CheapHelpers.EF
             {
                 entity.Property(e => e.EntityType).HasMaxLength(50);
                 entity.HasIndex(e => new { e.EntityId, e.EntityType })
-                      .HasDatabaseName("IX_FileAttachments_Entity");
+                      .HasDatabaseName(Constants.Database.FileAttachmentsEntityIndex);
             });
 
         }

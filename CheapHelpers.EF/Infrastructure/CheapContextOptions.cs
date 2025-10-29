@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using CheapHelpers;
+using Microsoft.AspNetCore.Identity;
 
 namespace CheapHelpers.EF.Infrastructure
 {
     public class CheapContextOptions
     {
-        public string EnvironmentVariable { get; set; } = "ASPNETCORE_ENVIRONMENT";
+        public string EnvironmentVariable { get; set; } = Constants.Environment.AspNetCoreEnvironment;
         public int DevCommandTimeoutMs { get; set; } = 150000;
         public bool EnableAuditing { get; set; } = true;
         public bool EnableSensitiveDataLogging { get; set; } = true;
@@ -33,7 +34,7 @@ namespace CheapHelpers.EF.Infrastructure
             },
             User = new UserOptions
             {
-                AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+",
+                AllowedUserNameCharacters = Constants.Authentication.AllowedUserNameCharacters,
                 RequireUniqueEmail = true
             }
         };

@@ -1,4 +1,5 @@
-﻿using CheapHelpers.EF;
+﻿using CheapHelpers;
+using CheapHelpers.EF;
 using CheapHelpers.EF.Repositories;
 using CheapHelpers.Models.Entities;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -200,7 +201,7 @@ namespace CheapHelpers.Blazor.Services
         {
             if (!IsAuthenticated(principal))
             {
-                throw new InvalidOperationException("user not authenticated");
+                throw new InvalidOperationException(Constants.Authentication.UserNotAuthenticatedMessage);
             }
 
             return principal.IsInRole(role);
@@ -216,7 +217,7 @@ namespace CheapHelpers.Blazor.Services
         {
             if (!IsAuthenticated(principal))
             {
-                throw new InvalidOperationException("user not authenticated");
+                throw new InvalidOperationException(Constants.Authentication.UserNotAuthenticatedMessage);
             }
 
             return principal.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -232,7 +233,7 @@ namespace CheapHelpers.Blazor.Services
         {
             if (!IsAuthenticated(principal))
             {
-                throw new InvalidOperationException("user not authenticated");
+                throw new InvalidOperationException(Constants.Authentication.UserNotAuthenticatedMessage);
             }
 
             return principal.FindFirstValue(ClaimTypes.Name);

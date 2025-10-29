@@ -111,8 +111,12 @@ namespace CheapHelpers.Blazor.Services
                     {
                         try
                         {
-                            // Encrypt the parameter
+                            // Encrypt the parameter for URL navigation
+                            // Using deterministic Encrypt() is intentional here - URL parameters need deterministic encryption
+                            // so the same parameter values produce consistent URLs for navigation matching.
+#pragma warning disable CS0618 // Type or member is obsolete
                             var encryptedValue = EncryptionHelper.Encrypt(value.ToString()!);
+#pragma warning restore CS0618 // Type or member is obsolete
                             finalParams.Add(key, encryptedValue);
                             Debug.WriteLine($"Encrypted parameter: {key}");
                         }
@@ -193,8 +197,12 @@ namespace CheapHelpers.Blazor.Services
                     {
                         try
                         {
-                            // Decrypt the parameter
+                            // Decrypt the parameter from URL
+                            // Using deterministic Decrypt() is intentional here - URL parameters are encrypted with
+                            // the deterministic approach for navigation matching.
+#pragma warning disable CS0618 // Type or member is obsolete
                             var decryptedValue = EncryptionHelper.Decrypt(value);
+#pragma warning restore CS0618 // Type or member is obsolete
                             decryptedParams[key] = decryptedValue;
                             Debug.WriteLine($"Decrypted parameter: {key}");
                         }

@@ -23,7 +23,11 @@ namespace CheapHelpers.Blazor.Helpers
             try
             {
                 // Decrypt the parameter value when route is matched
+                // Using deterministic Decrypt() is intentional here - route parameters need deterministic encryption
+                // to match URLs correctly. This is a valid use case for the static IV approach.
+#pragma warning disable CS0618 // Type or member is obsolete
                 var decryptedValue = EncryptionHelper.Decrypt(encryptedValue);
+#pragma warning restore CS0618 // Type or member is obsolete
                 values[routeKey] = decryptedValue;
                 return true;
             }

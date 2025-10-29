@@ -1,11 +1,15 @@
 ﻿@using System.IO
 @using System.Linq.Expressions;
+@using System.Security;
 @using CheapHelpers.Blazor.Helpers
+@using CheapHelpers
 @using CheapHelpers.Extensions
 @using CheapHelpers.Helpers.Files
 @using CheapHelpers.Services.Storage
 @using CheapHelpers.Services.Storage.Configuration
+@using FileTypeChecker;
 @using FileTypeChecker.Extensions;
+@using MimeMapping;
 @using SixLabors.ImageSharp;
 @using SixLabors.ImageSharp.Processing;
 @typeparam T
@@ -154,10 +158,13 @@ else
     /// extension filter for uploaded files
     /// </summary>
     [Parameter]
-    public string Accept { get; set; } = ".jpg,.jpeg,.png,.mov,.mp4,.pdf";
+    public string Accept { get; set; } = Constants.File.DefaultUploadAcceptFilter;
 
     /// <summary>
-    /// Path of the file to upload, either use this or blob upload
+    /// Path of the file to upload, either use this or blob upload.
+    /// WARNING: SECURITY CRITICAL - This path MUST be validated to prevent directory traversal attacks.
+    /// Ensure this parameter points to a trusted, controlled directory. The component validates that
+    /// resolved file paths stay within this directory, but the base path itself must be secure.
     /// </summary>
     [Parameter]
     public string UploadPath { get; set; }
@@ -204,7 +211,7 @@ else
     /// Max file size in MB
     /// </summary>
     [Parameter]
-    public int MaxFileSizeInMB { get; set; } = 50;
+    public int MaxFileSizeInMB { get; set; } = Constants.File.SizeLimits.DefaultMaxFileSizeMB;
 
     /// <summary>
     /// Append guid
@@ -216,7 +223,7 @@ else
     /// Length of guid
     /// </summary>
     [Parameter]
-    public int PartialGuidLength { get; set; } = 8;
+    public int PartialGuidLength { get; set; } = Constants.File.DefaultPartialGuidLength;
 
     /// <summary>
     /// Max files, default = 10
@@ -257,8 +264,43 @@ else
     [Parameter]
     public string ButtonText { get; set; }
 
-    private long ActualMaxFileSize => MaxFileSizeInMB * 1048576;
-    private string[] dangerousExtensions = { "exe", "com", "dll", "vbs", "xls", "doc", "xlsx", "docx", "ppt", "pptx", "xlsm" };
+    private long ActualMaxFileSize => MaxFileSizeInMB * Constants.File.SizeLimits.BytesPerMB;
+
+    // SECURITY: Primary defense - Whitelist of allowed MIME types based on actual file content analysis
+    // This list defines the ONLY file types that can be uploaded. All others are rejected.
+    // Uses FileTypeChecker library to validate actual file content, not just extensions.
+    private static readonly HashSet<string> AllowedMimeTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // Images - common formats
+        KnownMimeTypes.Jpeg,           // .jpg, .jpeg
+        KnownMimeTypes.Png,            // .png
+        KnownMimeTypes.Gif,            // .gif
+        KnownMimeTypes.Webp,           // .webp
+        KnownMimeTypes.Bmp,            // .bmp
+        KnownMimeTypes.Tiff,           // .tif, .tiff
+        KnownMimeTypes.Svg,            // .svg
+
+        // Documents
+        KnownMimeTypes.Pdf,            // .pdf
+
+        // Videos - common formats
+        KnownMimeTypes.Mp4,            // .mp4
+        KnownMimeTypes.Mov,            // .mov
+        KnownMimeTypes.Avi,            // .avi
+        "video/x-matroska",            // .mkv - NOTE: Not available in KnownMimeTypes
+        KnownMimeTypes.Webm,           // .webm
+
+        // Archives (if needed)
+        KnownMimeTypes.Zip,            // .zip
+        "application/x-rar-compressed",  // .rar - NOTE: Not available in KnownMimeTypes
+        "application/x-7z-compressed",   // .7z - NOTE: Not available in KnownMimeTypes
+    };
+
+    // SECURITY: Secondary defense - Blacklist of known dangerous extensions (defense in depth)
+    // This provides an additional layer even if MIME validation is bypassed.
+    // Uses exact extension matching with proper string comparison, not substring matching.
+    private static readonly HashSet<string> DangerousExtensions = Constants.File.DangerousExtensions.GetAll();
+
     private bool processing = false;
 
     #region DropZone UI
@@ -306,24 +348,204 @@ else
         }
     }
 
+    /// <summary>
+    /// Validates that the resolved upload path stays within the intended base directory to prevent path traversal attacks.
+    /// </summary>
+    /// <param name="uploadPath">The base upload directory path</param>
+    /// <param name="fileName">The filename to be combined with the upload path</param>
+    /// <exception cref="SecurityException">Thrown when path traversal is detected</exception>
+    private void ValidateUploadPath(string uploadPath, string fileName)
+    {
+        var baseDir = Path.GetFullPath(uploadPath);
+        var resolvedPath = Path.GetFullPath(Path.Combine(uploadPath, fileName));
+
+        // Ensure the resolved path starts with the base directory path
+        // DirectorySeparatorChar ensures we match complete directory names (prevents "C:\upload" matching "C:\upload2")
+        if (!resolvedPath.StartsWith(baseDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+            && !resolvedPath.Equals(baseDir, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new SecurityException(string.Format(Constants.Validation.PathTraversalMessageTemplate, baseDir, resolvedPath));
+        }
+
+        // Check for symbolic links on supported platforms (Windows Vista+ and Unix-based systems)
+        try
+        {
+            var fileInfo = new FileInfo(resolvedPath);
+            if (fileInfo.Exists && fileInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
+            {
+                throw new SecurityException(Constants.Validation.SymbolicLinkMessage);
+            }
+        }
+        catch (SecurityException)
+        {
+            throw; // Re-throw security exceptions
+        }
+        catch
+        {
+            // Ignore other exceptions from symlink check (e.g., file doesn't exist yet)
+        }
+    }
+
+    /// <summary>
+    /// Validates file type using a multi-layered approach for maximum security.
+    /// SECURITY LAYERS:
+    /// 1. Extension blacklist check - Blocks known dangerous extensions (.exe, .bat, .ps1, etc.)
+    /// 2. MIME type whitelist check - Only allows explicitly approved file types based on actual content
+    /// 3. Content-based validation - Uses FileTypeChecker library to verify actual file type from magic bytes
+    ///
+    /// This prevents attacks like:
+    /// - Double extension bypass (.exe.jpg)
+    /// - Extension spoofing (malicious.exe renamed to safe.jpg)
+    /// - MIME type manipulation
+    /// </summary>
+    /// <param name="fileName">The filename to validate</param>
+    /// <param name="fileStream">The file content stream to analyze</param>
+    /// <exception cref="SecurityException">Thrown when file type validation fails</exception>
+    private async Task ValidateFileType(string fileName, Stream fileStream)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            throw new ArgumentException(Constants.Validation.FilenameNullOrEmptyMessage, Constants.Validation.FilenameParameter);
+        }
+
+        // LAYER 1: Extension blacklist check (defense in depth)
+        // Extract actual file extension using Path.GetExtension which handles edge cases properly
+        var fileExtension = Path.GetExtension(fileName);
+
+        if (string.IsNullOrEmpty(fileExtension))
+        {
+            throw new SecurityException(Constants.Validation.NoExtensionMessage);
+        }
+
+        // Use HashSet.Contains with exact matching instead of vulnerable substring matching
+        // This prevents bypass attacks like "malicious.exe.jpg" where ".exe" appears in the middle
+        if (DangerousExtensions.Contains(fileExtension))
+        {
+            throw new SecurityException(string.Format(Constants.Validation.DangerousExtensionMessageTemplate, fileExtension));
+        }
+
+        // LAYER 2 & 3: MIME type whitelist check with content-based validation
+        // FileTypeChecker analyzes the actual file content (magic bytes) to determine the true file type
+        // This prevents attacks where a .exe is renamed to .jpg - the library will detect it's still an executable
+        try
+        {
+            fileStream.Position = 0;
+
+            // Check if the file type is recognizable by the library
+            if (!FileTypeValidator.IsTypeRecognizable(fileStream))
+            {
+                throw new SecurityException(string.Format(Constants.Validation.UnrecognizableFileTypeMessageTemplate, fileName));
+            }
+
+            fileStream.Position = 0;
+
+            // Use FileTypeChecker to detect actual file type from content (magic bytes)
+            var detectedFileType = FileTypeValidator.GetFileType(fileStream);
+
+            if (detectedFileType == null)
+            {
+                throw new SecurityException(string.Format(Constants.Validation.FileTypeDetectionFailedMessageTemplate, fileName));
+            }
+
+            // Get the MIME type from the detected file type
+            // Note: FileTypeChecker uses Name property for the file type name, not necessarily a standard MIME type
+            var detectedTypeName = detectedFileType.Name ?? "unknown";
+            var detectedExtension = detectedFileType.Extension ?? "unknown";
+
+            // Build MIME type string - FileTypeChecker doesn't provide MIME directly, so we map from extension
+            var detectedMimeType = GetMimeTypeFromExtension(detectedExtension);
+
+            // Validate detected MIME type against whitelist
+            // Only files with explicitly allowed MIME types can be uploaded
+            if (!AllowedMimeTypes.Contains(detectedMimeType))
+            {
+                throw new SecurityException(string.Format(Constants.Validation.DisallowedFileTypeMessageTemplate,
+                    detectedTypeName, detectedMimeType, detectedExtension, string.Join(", ", AllowedMimeTypes)));
+            }
+
+            // Additional validation: Check for MIME type / extension mismatch
+            // This catches cases where someone might try to upload a PNG with a .jpg extension
+            if (!string.IsNullOrEmpty(detectedExtension) &&
+                !fileExtension.Equals($".{detectedExtension}", StringComparison.OrdinalIgnoreCase))
+            {
+                // Log mismatch but don't necessarily fail - some formats have multiple valid extensions
+                Debug.WriteLine(string.Format(Constants.Validation.ExtensionMismatchWarningTemplate,
+                    fileName, fileExtension, detectedExtension, detectedTypeName));
+            }
+
+            Debug.WriteLine(string.Format(Constants.Validation.FileValidationSuccessTemplate,
+                fileName, detectedTypeName, detectedMimeType, detectedExtension));
+        }
+        catch (SecurityException)
+        {
+            throw; // Re-throw security exceptions
+        }
+        catch (Exception ex)
+        {
+            throw new SecurityException(string.Format(Constants.Validation.FileValidationFailedMessageTemplate, fileName, ex.Message), ex);
+        }
+        finally
+        {
+            fileStream.Position = 0; // Reset stream position for subsequent operations
+        }
+    }
+
+    /// <summary>
+    /// Maps file extension to MIME type for validation purposes.
+    /// This is used because FileTypeChecker provides extension, not MIME type.
+    /// </summary>
+    private static string GetMimeTypeFromExtension(string extension)
+    {
+        // Normalize extension to lowercase without leading dot
+        var ext = extension?.ToLowerInvariant().TrimStart('.') ?? "";
+
+        return ext switch
+        {
+            // Images
+            "jpg" or "jpeg" => KnownMimeTypes.Jpeg,
+            "png" => KnownMimeTypes.Png,
+            "gif" => KnownMimeTypes.Gif,
+            "webp" => KnownMimeTypes.Webp,
+            "bmp" => KnownMimeTypes.Bmp,
+            "tif" or "tiff" => KnownMimeTypes.Tiff,
+            "svg" => KnownMimeTypes.Svg,
+
+            // Documents
+            "pdf" => KnownMimeTypes.Pdf,
+
+            // Videos
+            "mp4" => KnownMimeTypes.Mp4,
+            "mov" => KnownMimeTypes.Mov,
+            "avi" => KnownMimeTypes.Avi,
+            "mkv" => "video/x-matroska",  // NOTE: Not available in KnownMimeTypes
+            "webm" => KnownMimeTypes.Webm,
+
+            // Archives
+            "zip" => KnownMimeTypes.Zip,
+            "rar" => "application/x-rar-compressed",  // NOTE: Not available in KnownMimeTypes
+            "7z" => "application/x-7z-compressed",    // NOTE: Not available in KnownMimeTypes
+
+            // Unknown/default
+            _ => "application/octet-stream"  // NOTE: Generic binary - keeping as string for clarity
+        };
+    }
+
     private async Task OnFileUploaded(IBrowserFile file)
     {
         try
         {
             processing = true;
+
+            // Validation 1: File size check
             if (file.Size > ActualMaxFileSize)
             {
-                throw new ArgumentException(nameof(MaxFileSizeInMB), "File too large");
+                throw new ArgumentException(Constants.Validation.FileTooLargeMessage, Constants.Validation.MaxFileSizeParameter);
             }
 
-            if (dangerousExtensions.Any(y => Path.GetExtension(file.Name).Contains(y)))
-            {
-                throw new ArgumentException("Malicious file discovered");
-            }
-
+            // Validation 2: Ensure upload path is configured
             if (!UseBlobStorage && string.IsNullOrWhiteSpace(UploadPath))
             {
-                throw new ArgumentNullException(nameof(UploadPath), "no uploadpath set");
+                throw new ArgumentNullException(Constants.Validation.UploadPathParameter, Constants.Validation.NoUploadPathMessage);
             }
 
             try
@@ -338,9 +560,23 @@ else
                     Debug.WriteLine("no partial guid appended, this will be forced in the future");
                 }
 
+                // Validation 3: Path traversal attack prevention
+                if (!UseBlobStorage)
+                {
+                    ValidateUploadPath(UploadPath, trustedFileNameForFileStorage);
+                }
+
+                // Load file content into memory for validation and processing
                 using Stream stream = new MemoryStream();
                 using var tempstream = file.OpenReadStream(ActualMaxFileSize);
                 await tempstream.CopyToAsync(stream);
+                stream.Position = 0;
+
+                // Validation 4: CRITICAL SECURITY - Multi-layered file type validation
+                // This must happen BEFORE any file processing or storage
+                await ValidateFileType(file.Name, stream);
+
+                // File type validation passed - proceed with processing
                 using MemoryStream outStream = new MemoryStream();
                 var isimage = stream.IsImage();
                 stream.Position = 0;

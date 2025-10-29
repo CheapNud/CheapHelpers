@@ -1,4 +1,5 @@
 ﻿using CheapHelpers.Blazor.Services;
+using CheapHelpers.Extensions;
 using CheapHelpers.Models.Entities;
 using CheapHelpers.Services.Email;
 using Microsoft.AspNetCore.Authentication;
@@ -6,10 +7,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using MimeMapping;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Encodings.Web;
-using System.Text.Json;
 
 namespace CheapHelpers.Blazor.Pages.Account
 {
@@ -222,10 +223,11 @@ namespace CheapHelpers.Blazor.Pages.Account
             }
 
             var personalData = await BuildPersonalDataDictionary(user);
-            var jsonBytes = JsonSerializer.SerializeToUtf8Bytes(personalData);
+            var json = personalData.ToJson();
+            var jsonBytes = Encoding.UTF8.GetBytes(json);
 
             Response.Headers.Append("Content-Disposition", "attachment; filename=PersonalData.json");
-            return new FileContentResult(jsonBytes, "application/json");
+            return new FileContentResult(jsonBytes, KnownMimeTypes.Json);
         }
 
         #region Private Helper Methods

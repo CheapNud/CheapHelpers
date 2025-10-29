@@ -2,6 +2,7 @@
 @using CheapHelpers.Services.Storage
 @using CheapHelpers.Services.Storage.Configuration
 @using Microsoft.AspNetCore.Components.Web
+@using MimeMapping
 @using MudBlazor
 @using Blazored.LocalStorage
 
@@ -13,7 +14,7 @@
                     || ext.Contains(".mov", StringComparison.OrdinalIgnoreCase))
             {
                 <video style="@Style" width="400" height="@Height" controls>
-                    <source src="@url" type="video/mp4">
+                    <source src="@url" type="@KnownMimeTypes.Mp4">
                 </video>
             }
             else if (ext.Contains(".pdf", StringComparison.OrdinalIgnoreCase))

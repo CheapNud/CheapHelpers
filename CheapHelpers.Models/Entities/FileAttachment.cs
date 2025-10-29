@@ -1,4 +1,6 @@
-﻿using CheapHelpers.Models.Contracts;
+﻿using CheapHelpers.Extensions;
+using CheapHelpers.Models.Contracts;
+using MimeMapping;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -64,7 +66,7 @@ namespace CheapHelpers.Models.Entities
 
         [NotMapped]
         public bool IsDocument => !string.IsNullOrEmpty(MimeType) &&
-            (MimeType.StartsWith("application/") || MimeType == "text/plain");
+            (MimeType.StartsWith("application/") || MimeType == KnownMimeTypes.Text);
 
         // Helper methods remain the same...
         public void MarkAsUpdated(string? userId = null)
@@ -104,7 +106,7 @@ namespace CheapHelpers.Models.Entities
 
             try
             {
-                return System.Text.Json.JsonSerializer.Deserialize<List<string>>(Tags) ?? new List<string>();
+                return Tags.FromJson<List<string>>() ?? new List<string>();
             }
             catch
             {
@@ -115,7 +117,7 @@ namespace CheapHelpers.Models.Entities
         public void SetTags(IEnumerable<string> tags)
         {
             var tagList = tags?.Where(t => !string.IsNullOrWhiteSpace(t)).Distinct().ToList() ?? new List<string>();
-            Tags = tagList.Count > 0 ? System.Text.Json.JsonSerializer.Serialize(tagList) : null;
+            Tags = tagList.Count > 0 ? tagList.ToJson() : null;
         }
     }
 }

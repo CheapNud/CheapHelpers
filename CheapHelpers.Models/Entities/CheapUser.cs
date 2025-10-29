@@ -1,4 +1,6 @@
-﻿// CheapHelpers.Models/Entities/CheapUser.cs (Truly generic for library consumers)
+// CheapHelpers.Models/Entities/CheapUser.cs (Truly generic for library consumers)
+using CheapHelpers;
+using CheapHelpers.Extensions;
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
@@ -20,7 +22,7 @@ namespace CheapHelpers.Models.Entities
         /// Generic navigation state storage. Use GetExpandState/SetExpandState methods to interact with this.
         /// Library consumers can store any navigation states they need.
         /// </summary>
-        public string? NavigationStateJson { get; set; } = "{}";
+        public string? NavigationStateJson { get; set; } = Constants.Authentication.EmptyJsonObject;
 
         // Computed properties
         public string FullName => $"{FirstName} {LastName}".Trim();
@@ -60,7 +62,7 @@ namespace CheapHelpers.Models.Entities
                     {
                         try
                         {
-                            _navigationStateCache = JsonSerializer.Deserialize<Dictionary<string, object>>(NavigationStateJson)
+                            _navigationStateCache = NavigationStateJson.FromJson<Dictionary<string, object>>()
                                 ?? new Dictionary<string, object>();
                         }
                         catch
@@ -83,7 +85,7 @@ namespace CheapHelpers.Models.Entities
         {
             if (string.IsNullOrWhiteSpace(key)) return false;
 
-            if (NavigationState.TryGetValue($"Expand{key}", out var value))
+            if (NavigationState.TryGetValue($"{Constants.Authentication.ExpandPrefix}{key}", out var value))
             {
                 return value switch
                 {
@@ -108,18 +110,18 @@ namespace CheapHelpers.Models.Entities
         {
             if (string.IsNullOrWhiteSpace(key)) return;
 
-            NavigationState[$"Expand{key}"] = expanded;
+            NavigationState[$"{Constants.Authentication.ExpandPrefix}{key}"] = expanded;
 
             // Update JSON representation
             try
             {
-                NavigationStateJson = JsonSerializer.Serialize(NavigationState);
+                NavigationStateJson = NavigationState.ToJson();
             }
             catch
             {
                 // If serialization fails, clear the problematic state
                 NavigationState.Clear();
-                NavigationStateJson = "{}";
+                NavigationStateJson = Constants.Authentication.EmptyJsonObject;
             }
         }
 
@@ -133,9 +135,9 @@ namespace CheapHelpers.Models.Entities
 
             foreach (var kvp in NavigationState)
             {
-                if (kvp.Key.StartsWith("Expand") && kvp.Value is bool boolValue)
+                if (kvp.Key.StartsWith(Constants.Authentication.ExpandPrefix) && kvp.Value is bool boolValue)
                 {
-                    var key = kvp.Key.Substring(6); // Remove "Expand" prefix
+                    var key = kvp.Key[Constants.Authentication.ExpandPrefix.Length..];
                     states[key] = boolValue;
                 }
             }
@@ -149,7 +151,7 @@ namespace CheapHelpers.Models.Entities
         public void ClearNavigationState()
         {
             _navigationStateCache?.Clear();
-            NavigationStateJson = "{}";
+            NavigationStateJson = Constants.Authentication.EmptyJsonObject;
         }
     }
 }

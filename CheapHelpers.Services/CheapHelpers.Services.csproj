@@ -76,7 +76,7 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="9.0.10" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.10" />
     <PackageReference Include="Microsoft.Graph" Version="5.95.0" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
     <PackageReference Include="Twilio" Version="7.13.5" />
     <PackageReference Include="UblSharp" Version="1.1.1" />
     <PackageReference Include="ZXing.Net" Version="0.16.11" />

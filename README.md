@@ -4,6 +4,25 @@ A collection of C# utility classes and extension methods for common development 
 
 ## Latest Additions
 
+### Caching
+
+#### Memory Cache System
+Modern, thread-safe memory caching with flexible expiration strategies using `Microsoft.Extensions.Caching.Memory`.
+
+**Features:**
+- Three expiration strategies: Absolute, Sliding, and Flexible (both)
+- Full async/await support with cancellation
+- Generic type-safe implementation
+- Factory pattern for cache-miss scenarios
+- Proper disposal pattern (IDisposable)
+- TryGet pattern for optional retrieval
+- Thread-safe operations
+
+**Cache Types:**
+- **AbsoluteExpirationCache\<T>**: Items expire at a fixed time after creation
+- **SlidingExpirationCache\<T>**: Items expire after inactivity (timer resets on access)
+- **FlexibleExpirationCache\<T>**: Supports both absolute and sliding expiration simultaneously
+
 ### IO Utilities
 
 #### TemporaryFileManager
@@ -231,6 +250,44 @@ if (result.Success)
 {
     Debug.WriteLine($"Completed in {result.Duration}");
 }
+```
+
+### Memory Caching
+
+```csharp
+using CheapHelpers.Caching;
+
+// Absolute expiration - items expire exactly 1 hour after creation
+using var userCache = new AbsoluteExpirationCache<User>("UserCache", TimeSpan.FromHours(1));
+
+// Fetch user or get from cache
+var user = await userCache.GetOrAddAsync("user:123", async key =>
+    await database.GetUserAsync(key));
+
+// Sliding expiration - items expire after 30 minutes of inactivity
+using var sessionCache = new SlidingExpirationCache<Session>("SessionCache", TimeSpan.FromMinutes(30));
+var session = sessionCache.GetOrAdd("session:abc", key => CreateNewSession(key));
+
+// Flexible - max 24 hours absolute, but extends on access (1 hour sliding)
+using var apiCache = new FlexibleExpirationCache<ApiResponse>(
+    cacheName: "ApiCache",
+    absoluteExpiration: TimeSpan.FromHours(24),
+    slidingExpiration: TimeSpan.FromHours(1));
+
+var apiData = await apiCache.GetOrAddAsync("endpoint:/users", async key =>
+{
+    var response = await httpClient.GetAsync(key);
+    return await response.Content.ReadFromJsonAsync<ApiResponse>();
+});
+
+// Manual operations
+apiCache.Set("key", value);
+if (apiCache.TryGet("key", out var cachedValue))
+{
+    Debug.WriteLine($"Found: {cachedValue}");
+}
+apiCache.Remove("key");
+apiCache.Clear(); // Remove all items
 ```
 
 ### XmlService

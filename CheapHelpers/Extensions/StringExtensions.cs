@@ -149,12 +149,15 @@ namespace CheapHelpers.Extensions
                     sb.Append(c);
                 }
             }
-            while (sb.ToString().Contains("--"))
+
+            // Collapse consecutive dashes efficiently
+            string result = sb.ToString();
+            while (result.Contains("--"))
             {
-                sb = sb.Replace("--", "-");
+                result = result.Replace("--", "-");
             }
 
-            return sb.ToString();
+            return result;
         }
 
         /// <summary>

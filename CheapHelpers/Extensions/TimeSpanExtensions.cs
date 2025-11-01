@@ -18,7 +18,7 @@ namespace CheapHelpers.Extensions
         /// </example>
         public static string ToReadableString(this TimeSpan t)
         {
-            string result = null;
+            string result;
             if (t.TotalSeconds <= 1)
             {
                 result = $@"{t:s\.ff} seconds";

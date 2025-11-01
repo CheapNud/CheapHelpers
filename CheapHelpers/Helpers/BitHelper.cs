@@ -47,8 +47,10 @@ namespace CheapHelpers.Helpers
         /// <exception cref="ArgumentOutOfRangeException">Thrown if more than 4 bytes or less than 1 byte provided</exception>
         public static int ConcatBytesToInt(params byte[] bytes)
         {
-            if (bytes.Length > 4) { throw new ArgumentOutOfRangeException("only 1 to 4 bytes allowed to avoid dataloss in converting to int"); }
-            if (bytes.Length < 1) { throw new ArgumentOutOfRangeException("provide at least a single byte"); }
+            if (bytes.Length > 4)
+                throw new ArgumentOutOfRangeException(nameof(bytes), "Only 1 to 4 bytes allowed to avoid data loss when converting to int.");
+            if (bytes.Length < 1)
+                throw new ArgumentOutOfRangeException(nameof(bytes), "At least one byte must be provided.");
             int returnValue = bytes[0];
             for (int i = 1; i < bytes.Length; i++)
             {

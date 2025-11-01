@@ -96,6 +96,96 @@ namespace CheapHelpers.Extensions
             return @$"{input[..chars]}...";
         }
 
+        /// <summary>
+        /// Trims the string to a specified maximum length and appends "..." if it exceeds that length.
+        /// </summary>
+        /// <param name="input">The string to trim</param>
+        /// <param name="maxLength">The maximum text length (ellipsis will be added after this length)</param>
+        /// <returns>Trimmed string with ellipsis if needed</returns>
+        public static string TrimWithEllipsis(this string input, int maxLength)
+        {
+            if (string.IsNullOrEmpty(input) || input.Length <= maxLength)
+            {
+                return input;
+            }
+            return string.Concat(input.AsSpan(0, maxLength), "...");
+        }
 
+        /// <summary>
+        /// Removes all special characters from a string, keeping only alphanumeric characters.
+        /// </summary>
+        /// <param name="str">The string to process</param>
+        /// <returns>String with only alphanumeric characters</returns>
+        public static string RemoveSpecialCharacters(this string str)
+        {
+            if (string.IsNullOrEmpty(str)) return str;
+
+            var sb = new System.Text.StringBuilder();
+            foreach (char c in str)
+            {
+                if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+                {
+                    sb.Append(c);
+                }
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Removes special characters from a string, keeping alphanumeric characters and dashes.
+        /// Consecutive dashes are collapsed to a single dash.
+        /// </summary>
+        /// <param name="str">The string to process</param>
+        /// <returns>String with alphanumeric characters and single dashes</returns>
+        public static string RemoveSpecialCharactersKeepDash(this string str)
+        {
+            if (string.IsNullOrEmpty(str)) return str;
+
+            var sb = new System.Text.StringBuilder();
+            foreach (char c in str)
+            {
+                if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '-'))
+                {
+                    sb.Append(c);
+                }
+            }
+            while (sb.ToString().Contains("--"))
+            {
+                sb = sb.Replace("--", "-");
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Sanitizes a string for safe usage (spaces to underscores, slashes to dashes, keeps alphanumeric and common safe characters).
+        /// </summary>
+        /// <param name="str">The string to sanitize</param>
+        /// <returns>Sanitized string safe for general use</returns>
+        public static string Sanitize(this string str)
+        {
+            if (string.IsNullOrEmpty(str)) return str;
+
+            var sb = new System.Text.StringBuilder(str.Length);
+
+            foreach (char c in str)
+            {
+                switch (c)
+                {
+                    case ' ':
+                        sb.Append('_');
+                        break;
+                    case '/':
+                        sb.Append('-');
+                        break;
+                    default:
+                        if (char.IsLetterOrDigit(c) || c == '_' || c == '-' || c == '.')
+                            sb.Append(c);
+                        break;
+                }
+            }
+
+            return sb.ToString();
+        }
     }
 }

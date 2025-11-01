@@ -1,10 +1,34 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <!-- Documentation and Symbols -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn> <!-- Suppress missing XML comment warnings -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- NuGet Package Metadata -->
+    <PackageId>CheapHelpers.Models</PackageId>
+    <Authors>CheapNud</Authors>
+    <Company>CheapNud</Company>
+    <Product>CheapHelpers</Product>
+    <Description>Shared data models, DTOs, and entity interfaces for CheapHelpers projects</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>models;dto;entities;data;dotnet</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="9.0.10" />

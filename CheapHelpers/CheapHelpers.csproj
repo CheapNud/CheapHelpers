@@ -1,8 +1,32 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
+
+    <!-- Documentation and Symbols -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn> <!-- Suppress missing XML comment warnings -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- NuGet Package Metadata -->
+    <PackageId>CheapHelpers</PackageId>
+    <Authors>CheapNud</Authors>
+    <Company>CheapNud</Company>
+    <Product>CheapHelpers</Product>
+    <Description>Core utilities, extension methods, and helpers for .NET development including encryption, file operations, and process execution</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>utilities;helpers;extensions;encryption;dotnet;csharp</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MimeMapping" Version="3.1.0" />

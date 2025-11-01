@@ -1,20 +1,35 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
 
-    <!-- Package metadata -->
+    <!-- NuGet Package Metadata -->
     <PackageId>CheapHelpers.Blazor</PackageId>
-    <PackageVersion>1.0.0</PackageVersion>
     <Authors>CheapNud</Authors>
-    <Description>Reusable Blazor components and services for CheapHelpers applications</Description>
-    <PackageTags>blazor;mudblazor;components;identity;cheaphelpers</PackageTags>
+    <Company>CheapNud</Company>
+    <Product>CheapHelpers</Product>
+    <Description>Blazor Server components, services, and utilities with MudBlazor integration and authentication support</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
     <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>blazor;mudblazor;components;identity;ui</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <!-- Documentation and Symbols -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn> <!-- Suppress missing XML comment warnings -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <SupportedPlatform Include="browser" />

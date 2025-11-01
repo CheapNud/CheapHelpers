@@ -112,9 +112,15 @@ Machine-specific AES-256-CBC encryption with PBKDF2 key derivation.
 Secure filename generation to prevent overwrite attacks.
 
 **Features:**
-- `GetTrustedFileName()`: Generate secure filenames with GUID suffixes
+- `GetTrustedFileName()`: Generate secure filenames with GUID suffixes, optional timestamp support
 - `GetTrustedFileNameFromPath()`: Secure naming from full paths
 - `GetTrustedFileNameFromTempPath()`: Secure temp file handling
+- **Date-based filename generators:**
+  - `GetDailyFilename()`: Daily pattern (yyyy-MM-dd)
+  - `GetWeeklyFilename()`: Weekly pattern (yyyy-wN)
+  - `GetMonthlyFilename()`: Monthly pattern (yyyy-MM)
+  - `GetYearlyFilename()`: Yearly pattern (yyyy)
+  - `GetCustomDateFilename()`: Custom date format patterns
 
 ### Database
 
@@ -138,20 +144,70 @@ Generic repository pattern with comprehensive CRUD operations.
 - `IsDigitsOnly()`: Validate digit-only strings
 - `ToInternationalPhoneNumber()`: Convert to international format (NL/BE support)
 - `ToShortString()`: Truncate with ellipsis
+- `TrimWithEllipsis()`: Trim to max length with ellipsis
+- `RemoveSpecialCharacters()`: Keep only alphanumeric characters
+- `RemoveSpecialCharactersKeepDash()`: Keep alphanumeric and dashes
+- `Sanitize()`: Sanitize for safe usage (spaces to underscores, slashes to dashes)
 
 #### DateTime Extensions
 - `GetDateTime()`: Timezone conversion (bidirectional)
 - `GetWorkingDays()`: Calculate business days with exclusions
 
+#### DateTimeOffset Extensions
+- `Floor()`: Round down to specified interval
+- `Round()`: Round to nearest interval
+- `Ceiling()`: Round up to specified interval
+- `PerMinute()`: Zero out seconds
+- `PerHour()`: Zero out minutes and seconds
+- `PerDay()`: Zero out time component
+- `ToZeroTime()`: Convert to midnight UTC
+
 #### Collection Extensions
 - `Replace<T>()`: Replace items with predicates
 - `ToBindingList()` / `ToObservableCollection()`: WPF/UI binding
 - `IsNullOrEmpty()`: Safe null/empty check
+- `OrderByDynamic()`: Dynamic LINQ ordering by property name
+- `OrderByDescendingDynamic()`: Dynamic LINQ descending ordering
 
 #### Core Extensions
 - `ToJson<T>()` / `FromJson<T>()`: JSON serialization with loop handling
 - `DeepClone<T>()`: Deep object cloning via JSON
 - `AddQueryParm()`: URI query string building
+
+#### TimeSpan Extensions
+- `ToReadableString()`: Human-readable formatting (auto-selects appropriate unit)
+
+#### Uri Extensions
+- `GetUrlBase()`: Extract base URL (scheme + authority) from full URL
+
+#### Type Extensions
+- `GetCachedAttributes<T>()`: Cached attribute reflection for performance
+
+#### BinaryReader/Writer Extensions
+- `ReadDateTimeOffset()` / `WriteDateTimeOffset()`: Binary DateTimeOffset serialization
+
+### Helpers
+
+#### BitHelper
+**Package**: CheapHelpers
+
+Bit manipulation and endian conversion utilities.
+
+**Features:**
+- `GetBit()`: Extract bit values from byte/short/ushort
+- `ConcatBytesToInt()`: Concatenate 1-4 bytes into integer
+- Little-endian parsing (Int16, UInt16, Int32, UInt32)
+- Bit-level extraction from little-endian values
+- Hex string conversions (HexStringToByteArray, ByteArrayToHexString)
+
+#### HashHelper
+**Package**: CheapHelpers
+
+Hashing utilities for data integrity and comparison.
+
+**Features:**
+- `GetMD5Hash()`: MD5 hashing for strings and byte arrays
+- `GetFnvHash()`: FNV-1a 32-bit hashing (fast non-cryptographic)
 
 ### Blazor Utilities
 
@@ -335,6 +391,30 @@ var activeProducts = await productRepo.GetWhereAsync(p => p.IsActive);
 await productRepo.AddAsync(newProduct);
 ```
 
+### FileHelper - Date-Based Filenames
+
+```csharp
+using CheapHelpers.Helpers.Files;
+
+// Generate secure filenames with timestamps
+var daily = FileHelper.GetDailyFilename(DateTime.Now, "backup.dat");
+// Returns: "backup_2025-01-15_a1b2c3d4.dat"
+
+var weekly = FileHelper.GetWeeklyFilename(DateTime.Now, "report.csv");
+// Returns: "report_2025-w3_a1b2c3d4.csv"
+
+var monthly = FileHelper.GetMonthlyFilename(DateTime.Now, "summary.json");
+// Returns: "summary_2025-01_a1b2c3d4.json"
+
+// Custom date format
+var custom = FileHelper.GetCustomDateFilename(DateTime.Now, "log.txt", "yyyyMMdd-HHmmss");
+// Returns: "log_20250115-143022_a1b2c3d4.txt"
+
+// Enhanced GetTrustedFileName with optional timestamp
+var trusted = FileHelper.GetTrustedFileName("document.pdf", DateTime.Now, "yyyy-MM-dd");
+// Returns: "document_2025-01-15_a1b2c3d4.pdf"
+```
+
 ### String Extensions
 
 ```csharp
@@ -343,6 +423,43 @@ using CheapHelpers.Extensions;
 "hello world".Capitalize();  // "Hello world"
 "0474123456".ToInternationalPhoneNumber("BE");  // "+32474123456"
 "Very long text...".ToShortString(10);  // "Very lo..."
+
+// New sanitization methods
+"Hello@World!".RemoveSpecialCharacters();  // "HelloWorld"
+"Hello--World".RemoveSpecialCharactersKeepDash();  // "Hello-World"
+"My File/Name".Sanitize();  // "My_File-Name"
+"Very long text here".TrimWithEllipsis(10);  // "Very long ..."
+```
+
+### DateTimeOffset Extensions
+
+```csharp
+using CheapHelpers.Extensions;
+
+var timestamp = DateTimeOffset.Now;
+
+// Round to intervals
+timestamp.Floor(TimeSpan.FromMinutes(15));    // Round down to 15-min intervals
+timestamp.Round(TimeSpan.FromMinutes(15));    // Round to nearest 15-min
+timestamp.Ceiling(TimeSpan.FromMinutes(15));  // Round up to 15-min intervals
+
+// Truncate to specific precision
+timestamp.PerMinute();  // Zero out seconds
+timestamp.PerHour();    // Zero out minutes and seconds
+timestamp.PerDay();     // Zero out time component
+```
+
+### Collection Extensions - Dynamic Ordering
+
+```csharp
+using CheapHelpers.Extensions;
+using System.Linq;
+
+var products = dbContext.Products.AsQueryable();
+
+// Dynamic ordering by property name
+var sorted = products.OrderByDynamic("Name");
+var sortedDesc = products.OrderByDescendingDynamic("Price");
 ```
 
 ## Requirements

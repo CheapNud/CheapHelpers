@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Linq.Expressions;
 
 namespace CheapHelpers.Extensions
 {
@@ -50,5 +51,54 @@ namespace CheapHelpers.Extensions
         }
 
         public static bool IsNullOrEmpty<T>(this IEnumerable<T> enumerable) => enumerable == null || !enumerable.Any();
+
+        /// <summary>
+        /// Dynamically orders a queryable collection by a property name in ascending order using reflection.
+        /// Useful for sorting based on runtime-determined property names.
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the query</typeparam>
+        /// <param name="query">The queryable collection to order</param>
+        /// <param name="orderByMember">The property name to order by</param>
+        /// <returns>An ordered queryable collection in ascending order</returns>
+        /// <example>
+        /// var users = dbContext.Users.AsQueryable();
+        /// var sortedUsers = users.OrderByDynamic("LastName");
+        /// </example>
+        public static IQueryable<T> OrderByDynamic<T>(this IQueryable<T> query, string orderByMember)
+            => OrderByDynamicInternal(query, orderByMember, "OrderBy");
+
+        /// <summary>
+        /// Dynamically orders a queryable collection by a property name in descending order using reflection.
+        /// Useful for sorting based on runtime-determined property names.
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the query</typeparam>
+        /// <param name="query">The queryable collection to order</param>
+        /// <param name="orderByMember">The property name to order by</param>
+        /// <returns>An ordered queryable collection in descending order</returns>
+        /// <example>
+        /// var users = dbContext.Users.AsQueryable();
+        /// var sortedUsers = users.OrderByDescendingDynamic("LastName");
+        /// </example>
+        public static IQueryable<T> OrderByDescendingDynamic<T>(this IQueryable<T> query, string orderByMember)
+            => OrderByDynamicInternal(query, orderByMember, "OrderByDescending");
+
+        private static IQueryable<T> OrderByDynamicInternal<T>(
+            IQueryable<T> query,
+            string orderByMember,
+            string methodName)
+        {
+            var queryElementTypeParam = Expression.Parameter(typeof(T));
+            var memberAccess = Expression.PropertyOrField(queryElementTypeParam, orderByMember);
+            var keySelector = Expression.Lambda(memberAccess, queryElementTypeParam);
+
+            var orderBy = Expression.Call(
+                typeof(Queryable),
+                methodName,
+                [typeof(T), memberAccess.Type],
+                query.Expression,
+                Expression.Quote(keySelector));
+
+            return query.Provider.CreateQuery<T>(orderBy);
+        }
     }
 }

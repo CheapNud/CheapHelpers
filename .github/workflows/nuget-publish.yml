@@ -28,6 +28,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: 'preview'
 
     - name: Restore dependencies
       run: dotnet restore
@@ -63,6 +64,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: 'preview'
 
     - name: Restore dependencies
       run: dotnet restore
@@ -94,6 +96,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: 'preview'
 
     - name: Publish to NuGet.org
       run: dotnet nuget push "./nupkgs/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

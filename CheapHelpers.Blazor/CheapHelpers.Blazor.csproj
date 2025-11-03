@@ -12,12 +12,12 @@
     <Authors>CheapNud</Authors>
     <Company>CheapNud</Company>
     <Product>CheapHelpers</Product>
-    <Description>Blazor Server components, services, and utilities with MudBlazor integration and authentication support</Description>
+    <Description>Blazor Server components, services, and utilities with MudBlazor integration, authentication support, and Blazor Hybrid features (WebView bridge, push notifications for MAUI/Photino/Avalonia)</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
     <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>blazor;mudblazor;components;identity;ui</PackageTags>
+    <PackageTags>blazor;mudblazor;components;identity;ui;blazor-hybrid;maui;webview;push-notifications;photino;avalonia</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 

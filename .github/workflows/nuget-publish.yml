@@ -29,10 +29,16 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Restore dependencies (excluding MAUI on Linux)
-      run: dotnet restore --property:ExcludeMauiProjects=true || dotnet restore
+    - name: Restore dependencies (non-MAUI projects only)
+      run: |
+        dotnet restore CheapHelpers/CheapHelpers.csproj
+        dotnet restore CheapHelpers.Models/CheapHelpers.Models.csproj
+        dotnet restore CheapHelpers.EF/CheapHelpers.EF.csproj
+        dotnet restore CheapHelpers.Services/CheapHelpers.Services.csproj
+        dotnet restore CheapHelpers.Blazor/CheapHelpers.Blazor.csproj
+        dotnet restore CheapHelpers.Networking/CheapHelpers.Networking.csproj
 
-    - name: Build solution (excluding MAUI on Linux)
+    - name: Build solution (non-MAUI projects only)
       run: |
         dotnet build CheapHelpers/CheapHelpers.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
         dotnet build CheapHelpers.Models/CheapHelpers.Models.csproj --configuration ${{ env.CONFIGURATION }} --no-restore

@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheapHelpers.Models", "Chea
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheapHelpers.Networking", "CheapHelpers.Networking\CheapHelpers.Networking.csproj", "{07AA03C2-4EC4-4B57-A398-7C69801F8A29}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheapHelpers.MAUI", "CheapHelpers.MAUI\CheapHelpers.MAUI.csproj", "{54CDFAA6-812D-43EE-80B4-CFF73AE38F6C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -97,6 +99,18 @@ Global
 		{07AA03C2-4EC4-4B57-A398-7C69801F8A29}.Release|x64.Build.0 = Release|Any CPU
 		{07AA03C2-4EC4-4B57-A398-7C69801F8A29}.Release|x86.ActiveCfg = Release|Any CPU
 		{07AA03C2-4EC4-4B57-A398-7C69801F8A29}.Release|x86.Build.0 = Release|Any CPU
+		{54CDFAA6-812D-43EE-80B4-CFF73AE38F6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54CDFAA6-812D-43EE-80B4-CFF73AE38F6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54CDFAA6-812D-43EE-80B4-CFF73AE38F6C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{54CDFAA6-812D-43EE-80B4-CFF73AE38F6C}.Debug|x64.Build.0 = Debug|Any CPU
+		{54CDFAA6-812D-43EE-80B4-CFF73AE38F6C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{54CDFAA6-812D-43EE-80B4-CFF73AE38F6C}.Debug|x86.Build.0 = Debug|Any CPU
+		{54CDFAA6-812D-43EE-80B4-CFF73AE38F6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54CDFAA6-812D-43EE-80B4-CFF73AE38F6C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54CDFAA6-812D-43EE-80B4-CFF73AE38F6C}.Release|x64.ActiveCfg = Release|Any CPU
+		{54CDFAA6-812D-43EE-80B4-CFF73AE38F6C}.Release|x64.Build.0 = Release|Any CPU
+		{54CDFAA6-812D-43EE-80B4-CFF73AE38F6C}.Release|x86.ActiveCfg = Release|Any CPU
+		{54CDFAA6-812D-43EE-80B4-CFF73AE38F6C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

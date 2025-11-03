@@ -59,8 +59,9 @@ Generic process execution wrapper with progress tracking, timeout handling, and 
 | [CheapHelpers.Models](https://www.nuget.org/packages/CheapHelpers.Models) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Models.svg) | Shared data models and DTOs |
 | [CheapHelpers.EF](https://www.nuget.org/packages/CheapHelpers.EF) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.EF.svg) | Entity Framework repository pattern |
 | [CheapHelpers.Services](https://www.nuget.org/packages/CheapHelpers.Services) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Services.svg) | Business services and integrations |
-| [CheapHelpers.Blazor](https://www.nuget.org/packages/CheapHelpers.Blazor) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Blazor.svg) | Blazor components and UI utilities |
+| [CheapHelpers.Blazor](https://www.nuget.org/packages/CheapHelpers.Blazor) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Blazor.svg) | Blazor components, UI utilities, and Hybrid features |
 | [CheapHelpers.Networking](https://www.nuget.org/packages/CheapHelpers.Networking) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Networking.svg) | Network scanning and device discovery |
+| [CheapHelpers.MAUI](https://www.nuget.org/packages/CheapHelpers.MAUI) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.MAUI.svg) | MAUI platform implementations (iOS APNS, Android FCM) |
 
 ### Services
 
@@ -267,6 +268,64 @@ Client-side file downloads with multiple formats.
 
 Async clipboard operations via JS interop.
 
+### Blazor Hybrid
+
+**Packages**: CheapHelpers.Blazor + CheapHelpers.MAUI
+
+Complete push notification and WebView bridge solution for Blazor Hybrid apps (MAUI, Photino, Avalonia). Supports iOS APNS, Android FCM, and Desktop Web Push with a unified abstraction layer.
+
+#### Push Notifications
+
+**Architecture:**
+- **CheapHelpers.Blazor**: Platform-agnostic abstractions, models, and smart registration manager
+- **CheapHelpers.MAUI**: iOS and Android platform-specific implementations
+
+**Core Abstractions:**
+- `IDeviceInstallationService`: Platform-specific device registration (APNS/FCM/WebPush)
+- `ILocalNotificationService`: Show local notifications when app is in foreground
+- `IPushNotificationBackend`: Swappable backend (Azure NH, Firebase, OneSignal, custom API)
+
+**Smart Permission Flow:**
+- Checks backend for existing registration before requesting permissions
+- Prevents annoying users with unnecessary permission prompts
+- Tracks permission denial to never ask again
+- Device fingerprinting for persistent identification
+
+**Platform Support:**
+- iOS: APNS (Apple Push Notification Service)
+- Android: FCM (Firebase Cloud Messaging)
+- Desktop: Web Push (Photino, Avalonia)
+
+**Key Features:**
+- Unified API across all platforms
+- Token refresh handling with events
+- Device installation with tags (targeting specific users/groups)
+- Multi-device support per user
+- Background token waiting with timeout
+- Permission status tracking
+- Automatic retry on token failure
+
+#### WebView Bridge
+
+**Package**: CheapHelpers.Blazor
+
+Generic JavaScript bridge for extracting data from WebView storage (localStorage, sessionStorage, cookies, DOM).
+
+**Features:**
+- Configurable data sources (localStorage, sessionStorage, cookies, DOM elements, URL params, global variables)
+- Multi-level JSON escaping handling (WebView-specific)
+- Type-safe data extraction
+- Automatic JSON parsing with fallback
+- Regex key filtering
+- Deep object flattening
+
+**Use Cases:**
+- Extract authentication tokens from WebView
+- Retrieve user data from web applications
+- Access session information
+- Parse cookies and local storage
+- DOM element data extraction
+
 ## Installation
 
 ### Via NuGet Package Manager
@@ -289,6 +348,9 @@ dotnet add package CheapHelpers.Models
 
 # Network scanning and device discovery
 dotnet add package CheapHelpers.Networking
+
+# MAUI platform implementations (iOS APNS, Android FCM)
+dotnet add package CheapHelpers.MAUI
 ```
 
 ### Via Package Manager Console (Visual Studio)
@@ -300,6 +362,7 @@ Install-Package CheapHelpers.Services
 Install-Package CheapHelpers.Blazor
 Install-Package CheapHelpers.Models
 Install-Package CheapHelpers.Networking
+Install-Package CheapHelpers.MAUI
 ```
 
 ### Via Project Reference (for development)
@@ -555,6 +618,226 @@ var products = dbContext.Products.AsQueryable();
 // Dynamic ordering by property name
 var sorted = products.OrderByDynamic("Name");
 var sortedDesc = products.OrderByDescendingDynamic("Price");
+```
+
+### Blazor Hybrid - Push Notifications (MAUI)
+
+```csharp
+using CheapHelpers.Blazor.Hybrid.Extensions;
+using CheapHelpers.MAUI.Extensions;
+
+// In MauiProgram.cs
+var builder = MauiApp.CreateBuilder();
+
+// Add Blazor Hybrid push notification abstractions
+builder.Services.AddBlazorHybridPushNotifications(options =>
+{
+    options.CheckBackendBeforeRequestingPermissions = true;
+    options.AutoRegisterOnStartup = false;
+});
+
+// Add platform-specific implementations (iOS APNS, Android FCM)
+builder.Services.AddMauiPushNotifications();
+
+// Register your backend implementation
+builder.Services.AddSingleton<IPushNotificationBackend, YourBackendService>();
+
+var app = builder.Build();
+
+// In your Blazor component or service
+@inject DeviceRegistrationManager RegistrationManager
+@inject IDeviceInstallationService DeviceService
+
+// Smart permission flow - checks backend before requesting permissions
+var status = await RegistrationManager.CheckDeviceStatusAsync(userId);
+
+if (status == DeviceRegistrationState.NotRegistered)
+{
+    // Only request permissions if device is not registered
+    var registered = await RegistrationManager.RegisterDeviceAsync(userId);
+
+    if (registered)
+    {
+        Console.WriteLine($"Device registered with token: {DeviceService.Token}");
+    }
+}
+else if (status == DeviceRegistrationState.Registered)
+{
+    Console.WriteLine("Device already registered - no permission prompt needed");
+}
+else if (status == DeviceRegistrationState.PermissionDenied)
+{
+    Console.WriteLine("User previously denied permissions");
+}
+
+// Listen for notification events
+DeviceService.TokenRefreshed += (token) =>
+{
+    Console.WriteLine($"Token refreshed: {token}");
+};
+```
+
+#### iOS APNS Setup
+
+```csharp
+// In Platforms/iOS/AppDelegate.cs
+using CheapHelpers.MAUI.Platforms.iOS;
+
+[Register("AppDelegate")]
+public class AppDelegate : ApnsDelegate
+{
+    protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
+
+    // Optional: Handle notification received events
+    protected override void OnNotificationReceived(string title, string body, Dictionary<string, string> data)
+    {
+        Console.WriteLine($"Notification received: {title}");
+    }
+}
+
+// In Info.plist, ensure you have:
+// <key>UIBackgroundModes</key>
+// <array>
+//   <string>remote-notification</string>
+// </array>
+```
+
+#### Android FCM Setup
+
+```csharp
+// In Platforms/Android/MainApplication.cs
+using CheapHelpers.MAUI.Platforms.Android;
+
+[Application]
+public class MainApplication : MauiApplication
+{
+    public override void OnCreate()
+    {
+        base.OnCreate();
+
+        // Initialize Firebase
+        FirebaseInitializer.Initialize(this);
+
+        if (FirebaseInitializer.IsFirebaseAvailable)
+        {
+            Console.WriteLine("Firebase initialized successfully");
+        }
+    }
+}
+
+// In Platforms/Android/FcmService.cs
+using CheapHelpers.MAUI.Platforms.Android;
+
+[Service(Exported = true)]
+[IntentFilter(new[] { "com.google.firebase.MESSAGING_EVENT" })]
+public class MyFcmService : FcmService
+{
+    // Optional: Handle notification received events
+    protected override void OnNotificationReceived(string title, string body, Dictionary<string, string> data)
+    {
+        Console.WriteLine($"FCM notification received: {title}");
+    }
+}
+
+// Ensure google-services.json is in your Android project with Build Action: GoogleServicesJson
+```
+
+### Blazor Hybrid - WebView Bridge
+
+```csharp
+// In your Blazor component
+@inject IJSRuntime JS
+
+// Configure the bridge
+var bridge = await JS.InvokeAsync<IJSObjectReference>(
+    "createWebViewBridge",
+    new
+    {
+        sources = new[]
+        {
+            "localStorage",
+            "sessionStorage",
+            "cookies"
+        },
+        keyFilter = "^(auth|user|session).*", // Regex filter for keys
+        includeUrl = true,
+        includeDOM = new[] { "#user-data", ".auth-token" }
+    });
+
+// Extract data from WebView
+var extractedData = await bridge.InvokeAsync<Dictionary<string, object>>("extractData");
+
+// Parse authentication data
+if (extractedData.TryGetValue("authToken", out var tokenObj))
+{
+    var token = tokenObj.ToString();
+    Console.WriteLine($"Auth token: {token}");
+}
+
+// Handle WebView JSON escaping
+using CheapHelpers.Blazor.Hybrid.WebView;
+
+var webViewJson = "\\\"escaped\\\\json\\\\data\\\"";
+var clean = WebViewJsonParser.UnescapeWebViewJson(webViewJson);
+var parsed = JsonSerializer.Deserialize<MyModel>(clean);
+```
+
+### Blazor Hybrid - Custom Backend Implementation
+
+```csharp
+using CheapHelpers.Blazor.Hybrid.Abstractions;
+using CheapHelpers.Blazor.Hybrid.Models;
+
+public class AzureNotificationHubBackend : IPushNotificationBackend
+{
+    private readonly NotificationHubClient _hubClient;
+
+    public async Task<bool> RegisterDeviceAsync(DeviceInstallation device)
+    {
+        var installation = new Installation
+        {
+            InstallationId = device.InstallationId,
+            Platform = device.Platform switch
+            {
+                "apns" => NotificationPlatform.Apns,
+                "fcmv1" => NotificationPlatform.FcmV1,
+                _ => throw new ArgumentException("Unknown platform")
+            },
+            PushChannel = device.PushChannel,
+            Tags = device.Tags
+        };
+
+        await _hubClient.CreateOrUpdateInstallationAsync(installation);
+        return true;
+    }
+
+    public async Task<SendNotificationResult> SendNotificationAsync(NotificationPayload payload)
+    {
+        var notification = new Dictionary<string, string>
+        {
+            { "title", payload.Title },
+            { "body", payload.Body }
+        };
+
+        if (payload.Data != null)
+        {
+            foreach (var kvp in payload.Data)
+                notification[kvp.Key] = kvp.Value;
+        }
+
+        var outcome = payload.Tags?.Any() == true
+            ? await _hubClient.SendTemplateNotificationAsync(notification, payload.Tags)
+            : await _hubClient.SendTemplateNotificationAsync(notification);
+
+        return new SendNotificationResult
+        {
+            Success = outcome.State == NotificationOutcomeState.Completed,
+            MessageId = outcome.NotificationId
+        };
+    }
+
+    // Implement other interface members...
+}
 ```
 
 ## Requirements

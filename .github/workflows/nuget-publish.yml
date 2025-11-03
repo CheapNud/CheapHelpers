@@ -29,11 +29,17 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Restore dependencies
-      run: dotnet restore
+    - name: Restore dependencies (excluding MAUI on Linux)
+      run: dotnet restore --property:ExcludeMauiProjects=true || dotnet restore
 
-    - name: Build solution
-      run: dotnet build --configuration ${{ env.CONFIGURATION }} --no-restore
+    - name: Build solution (excluding MAUI on Linux)
+      run: |
+        dotnet build CheapHelpers/CheapHelpers.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
+        dotnet build CheapHelpers.Models/CheapHelpers.Models.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
+        dotnet build CheapHelpers.EF/CheapHelpers.EF.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
+        dotnet build CheapHelpers.Services/CheapHelpers.Services.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
+        dotnet build CheapHelpers.Blazor/CheapHelpers.Blazor.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
+        dotnet build CheapHelpers.Networking/CheapHelpers.Networking.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
 
     - name: Run tests (if test projects exist)
       run: dotnet test --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal || echo "No test projects found"
@@ -50,7 +56,7 @@ jobs:
   pack:
     name: Pack NuGet Packages
     needs: build-and-test
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
@@ -63,6 +69,12 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Install MAUI workload (iOS + Android)
+      run: |
+        dotnet workload install maui --skip-manifest-update
+        dotnet workload install ios --skip-manifest-update
+        dotnet workload install android --skip-manifest-update
 
     - name: Restore dependencies
       run: dotnet restore

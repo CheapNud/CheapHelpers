@@ -20,9 +20,15 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 10.0.x
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore
+    - name: Restore dependencies (excluding MAUI on Linux)
+      run: dotnet restore --property:ExcludeMauiProjects=true || dotnet restore
+    - name: Build (excluding MAUI on Linux)
+      run: |
+        dotnet build CheapHelpers/CheapHelpers.csproj --no-restore
+        dotnet build CheapHelpers.Models/CheapHelpers.Models.csproj --no-restore
+        dotnet build CheapHelpers.EF/CheapHelpers.EF.csproj --no-restore
+        dotnet build CheapHelpers.Services/CheapHelpers.Services.csproj --no-restore
+        dotnet build CheapHelpers.Blazor/CheapHelpers.Blazor.csproj --no-restore
+        dotnet build CheapHelpers.Networking/CheapHelpers.Networking.csproj --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal

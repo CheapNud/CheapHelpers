@@ -60,6 +60,7 @@ Generic process execution wrapper with progress tracking, timeout handling, and 
 | [CheapHelpers.EF](https://www.nuget.org/packages/CheapHelpers.EF) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.EF.svg) | Entity Framework repository pattern |
 | [CheapHelpers.Services](https://www.nuget.org/packages/CheapHelpers.Services) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Services.svg) | Business services and integrations |
 | [CheapHelpers.Blazor](https://www.nuget.org/packages/CheapHelpers.Blazor) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Blazor.svg) | Blazor components and UI utilities |
+| [CheapHelpers.Networking](https://www.nuget.org/packages/CheapHelpers.Networking) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Networking.svg) | Network scanning and device discovery |
 
 ### Services
 
@@ -92,6 +93,45 @@ XML serialization supporting both dynamic objects and strongly-typed models.
 - **PdfOptimizationService**: Dual optimization (iLovePDF API + iText fallback)
 - **UblService**: UBL 2.0 (Universal Business Language) order document generation
 - **PdfTemplateService**: Template-based PDF generation
+
+### Networking
+
+#### NetworkScanner
+**Package**: CheapHelpers.Networking
+
+Comprehensive network scanning and device discovery with cross-platform support.
+
+**Features:**
+- Subnet scanning with configurable IP ranges
+- Ping-based host discovery
+- Multi-detector device type identification with priority system
+- Cross-platform MAC address resolution (Windows/Linux/macOS)
+- Device persistence with JSON storage
+- Background scanning with configurable intervals
+- Thread-safe operations with SemaphoreSlim
+- Dependency injection ready
+
+**Device Detectors:**
+- **UPnP/SSDP Detector**: Custom implementation for discovering smart devices, media servers, routers, and IoT devices
+- **mDNS/Zeroconf Detector**: Bonjour/Avahi service discovery for Apple devices, printers, and network services
+- **HTTP Detector**: Web server detection via headers (IIS, Apache, nginx)
+- **SSH Detector**: Banner-based detection for Linux/Unix systems
+- **Windows Services Detector**: RDP, SMB, WinRM, NetBIOS port scanning
+- **Service Endpoint Detector**: Known device endpoints and patterns
+
+**UPnP/SSDP Features:**
+- Custom protocol implementation with zero external dependencies
+- Proper multicast support (239.255.255.250:1900)
+- Multi-interface UDP listening for comprehensive discovery
+- XML device description parsing
+- Device type classification (Media Server, Smart TV, Printer, etc.)
+- Background periodic discovery
+
+**mDNS/Zeroconf Features:**
+- 25+ service type discovery (_http, _printer, _airplay, _homekit, etc.)
+- Instance name extraction
+- Service type classification
+- Actively maintained library (Makaretu.Dns.Multicast.New)
 
 ### Security
 
@@ -246,6 +286,9 @@ dotnet add package CheapHelpers.Blazor
 
 # Shared models and DTOs
 dotnet add package CheapHelpers.Models
+
+# Network scanning and device discovery
+dotnet add package CheapHelpers.Networking
 ```
 
 ### Via Package Manager Console (Visual Studio)
@@ -256,6 +299,7 @@ Install-Package CheapHelpers.EF
 Install-Package CheapHelpers.Services
 Install-Package CheapHelpers.Blazor
 Install-Package CheapHelpers.Models
+Install-Package CheapHelpers.Networking
 ```
 
 ### Via Project Reference (for development)
@@ -306,6 +350,57 @@ if (result.Success)
 {
     Debug.WriteLine($"Completed in {result.Duration}");
 }
+```
+
+### NetworkScanner
+
+```csharp
+using CheapHelpers.Networking.Core;
+using CheapHelpers.Networking.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+
+// Configure services
+var services = new ServiceCollection();
+
+// Add network scanning with all detectors
+services.AddNetworkScanning(scanner =>
+{
+    scanner.ScanIntervalMinutes = 5;
+    scanner.MaxConcurrentConnections = 20;
+})
+.AddAllDetectors()  // UPnP, mDNS, HTTP, SSH, Windows Services
+.AddJsonStorage();  // Persist discovered devices
+
+// Add logging
+services.AddLogging(builder => builder.AddConsole());
+
+var serviceProvider = services.BuildServiceProvider();
+var scanner = serviceProvider.GetRequiredService<INetworkScanner>();
+
+// Start background scanning
+scanner.Start();
+
+// Listen for device discovery events
+scanner.DeviceDiscovered += (device) =>
+{
+    Console.WriteLine($"Found: {device.Name} ({device.IPv4Address}) - {device.Type}");
+};
+
+// Trigger manual scan
+await scanner.ScanAsync();
+
+// Get all discovered devices
+var devices = await scanner.GetAllDevicesAsync();
+foreach (var device in devices)
+{
+    Console.WriteLine($"{device.Name}: {device.MacAddress}");
+}
+
+// Custom detector configuration
+services.AddNetworkScanning()
+    .AddUpnpDetector()      // Only UPnP/SSDP
+    .AddMdnsDetector()      // Only mDNS/Zeroconf
+    .AddDefaultDetectors(); // HTTP, SSH, Windows Services
 ```
 
 ### Memory Caching

@@ -71,16 +71,19 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Install MAUI workload (iOS + Android)
+    - name: Install MAUI workloads
       run: |
-        dotnet workload install maui --skip-manifest-update
-        dotnet workload install ios --skip-manifest-update
-        dotnet workload install android --skip-manifest-update
+        dotnet workload restore
+        dotnet workload install maui
+        dotnet workload list
 
     - name: Restore dependencies
       run: dotnet restore

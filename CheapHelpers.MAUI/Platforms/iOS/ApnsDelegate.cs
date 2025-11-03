@@ -1,5 +1,6 @@
 using CheapHelpers.Blazor.Hybrid.Abstractions;
 using Foundation;
+using Microsoft.Maui;
 using System.Diagnostics;
 using UIKit;
 using UserNotifications;

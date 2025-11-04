@@ -1,0 +1,65 @@
+name: CodeQL Security Scanning
+
+on:
+  push:
+    branches: [ master, dev ]
+  pull_request:
+    branches: [ master, dev ]
+  schedule:
+    - cron: '0 8 * * 1'  # Weekly on Monday at 8:00 UTC
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'csharp' ]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET 10.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+        dotnet-quality: 'preview'
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        queries: security-and-quality
+
+    - name: Restore dependencies (non-MAUI projects)
+      run: |
+        dotnet restore CheapHelpers/CheapHelpers.csproj
+        dotnet restore CheapHelpers.Models/CheapHelpers.Models.csproj
+        dotnet restore CheapHelpers.EF/CheapHelpers.EF.csproj
+        dotnet restore CheapHelpers.Services/CheapHelpers.Services.csproj
+        dotnet restore CheapHelpers.Blazor/CheapHelpers.Blazor.csproj
+        dotnet restore CheapHelpers.Networking/CheapHelpers.Networking.csproj
+
+    - name: Build for CodeQL (non-MAUI projects)
+      run: |
+        dotnet build CheapHelpers/CheapHelpers.csproj --configuration Release --no-restore
+        dotnet build CheapHelpers.Models/CheapHelpers.Models.csproj --configuration Release --no-restore
+        dotnet build CheapHelpers.EF/CheapHelpers.EF.csproj --configuration Release --no-restore
+        dotnet build CheapHelpers.Services/CheapHelpers.Services.csproj --configuration Release --no-restore
+        dotnet build CheapHelpers.Blazor/CheapHelpers.Blazor.csproj --configuration Release --no-restore
+        dotnet build CheapHelpers.Networking/CheapHelpers.Networking.csproj --configuration Release --no-restore
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{ matrix.language }}"

@@ -42,6 +42,55 @@ namespace CheapHelpers.Helpers.Encryption
 
         #endregion
 
+        #region SHA256 Hashing
+
+        /// <summary>
+        /// Calculates SHA256 hash from a byte array.
+        /// </summary>
+        /// <param name="input">Byte array to hash</param>
+        /// <returns>SHA256 hash as lowercase hexadecimal string</returns>
+        public static string CalculateSHA256Hash(byte[] input)
+        {
+            using var sha256 = SHA256.Create();
+            byte[] hash = sha256.ComputeHash(input);
+            return ByteArrayToHexString(hash);
+        }
+
+        /// <summary>
+        /// Calculates SHA256 hash from a string.
+        /// </summary>
+        /// <param name="input">String to hash</param>
+        /// <returns>SHA256 hash as lowercase hexadecimal string</returns>
+        public static string CalculateSHA256Hash(string input)
+        {
+            var byteArray = Encoding.UTF8.GetBytes(input);
+            return CalculateSHA256Hash(byteArray);
+        }
+
+        /// <summary>
+        /// Calculates SHA256 hash from a byte array and returns the raw bytes.
+        /// </summary>
+        /// <param name="input">Byte array to hash</param>
+        /// <returns>SHA256 hash as byte array</returns>
+        public static byte[] CalculateSHA256HashBytes(byte[] input)
+        {
+            using var sha256 = SHA256.Create();
+            return sha256.ComputeHash(input);
+        }
+
+        /// <summary>
+        /// Calculates SHA256 hash from a string and returns the raw bytes.
+        /// </summary>
+        /// <param name="input">String to hash</param>
+        /// <returns>SHA256 hash as byte array</returns>
+        public static byte[] CalculateSHA256HashBytes(string input)
+        {
+            var byteArray = Encoding.UTF8.GetBytes(input);
+            return CalculateSHA256HashBytes(byteArray);
+        }
+
+        #endregion
+
         #region FNV Hashing
 
         /// <summary>

@@ -47,8 +47,7 @@ namespace CheapHelpers.Helpers.Encryption
             seed.Append(System.Reflection.Assembly.GetExecutingAssembly().FullName);
 
             // Hash the seed to create consistent key material
-            using var sha256 = SHA256.Create();
-            var seedHash = sha256.ComputeHash(Encoding.UTF8.GetBytes(seed.ToString()));
+            var seedHash = HashHelper.CalculateSHA256HashBytes(seed.ToString());
 
             // Use PBKDF2 to derive key and IV from the seed
             // 10000 iterations provide some computational cost but can still be brute-forced

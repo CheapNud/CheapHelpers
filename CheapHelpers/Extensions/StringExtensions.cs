@@ -43,6 +43,21 @@ namespace CheapHelpers.Extensions
             return str.Equals("j", StringComparison.CurrentCultureIgnoreCase);
         }
 
+        /// <summary>
+        /// Normalizes a string for case-insensitive comparison by trimming whitespace and converting to lowercase invariant.
+        /// </summary>
+        /// <param name="str">The string to normalize.</param>
+        /// <returns>Trimmed lowercase invariant string, or empty string if input is null or whitespace.</returns>
+        public static string NormalizeForComparison(this string? str)
+        {
+            if (string.IsNullOrWhiteSpace(str))
+            {
+                return string.Empty;
+            }
+
+            return str.Trim().ToLowerInvariant();
+        }
+
         public static string ToInternationalPhoneNumber(this string phonenumber)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(phonenumber);

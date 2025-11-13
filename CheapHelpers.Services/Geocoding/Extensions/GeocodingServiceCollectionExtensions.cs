@@ -53,11 +53,8 @@ public static class GeocodingServiceCollectionExtensions
             client.Timeout = TimeSpan.FromSeconds(configuration.PtvMaps.TimeoutSeconds);
         });
 
-        // Register provider services as transient
-        services.AddTransient<MapboxGeocodingService>();
-        services.AddTransient<AzureMapsGeocodingService>();
+        // Register GoogleMaps provider (doesn't use HttpClient, uses GoogleApi package)
         services.AddTransient<GoogleMapsGeocodingService>();
-        services.AddTransient<PtvMapsGeocodingService>();
 
         // Register factory as singleton
         services.AddSingleton<IGeocodingServiceFactory, GeocodingServiceFactory>();

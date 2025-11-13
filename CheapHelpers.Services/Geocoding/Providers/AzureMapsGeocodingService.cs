@@ -180,9 +180,10 @@ public class AzureMapsGeocodingService : IGeocodingService
 
     private string BuildGeocodeUrl(string address, GeocodingOptions? options)
     {
-        var countryCodes = options?.Countries != null && options.Countries.Length > 0
-            ? string.Join(",", options.Countries)
-            : "BE,NL";
+        if (options?.Countries == null || options.Countries.Length == 0)
+            throw new ArgumentException("Country codes must be provided in GeocodingOptions.Countries", nameof(options));
+
+        var countryCodes = string.Join(",", options.Countries);
 
         var query = $"api-version={ApiVersion}" +
                     $"&query={Uri.EscapeDataString(address)}" +
@@ -212,9 +213,10 @@ public class AzureMapsGeocodingService : IGeocodingService
 
     private string BuildFuzzySearchUrl(string searchQuery, GeocodingOptions? options)
     {
-        var countryCodes = options?.Countries != null && options.Countries.Length > 0
-            ? string.Join(",", options.Countries)
-            : "BE,NL";
+        if (options?.Countries == null || options.Countries.Length == 0)
+            throw new ArgumentException("Country codes must be provided in GeocodingOptions.Countries", nameof(options));
+
+        var countryCodes = string.Join(",", options.Countries);
 
         var query = $"api-version={ApiVersion}" +
                     $"&query={Uri.EscapeDataString(searchQuery)}" +

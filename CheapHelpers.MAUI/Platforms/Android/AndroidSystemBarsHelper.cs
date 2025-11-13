@@ -7,7 +7,7 @@ using WindowManagerFlags = Android.Views.WindowManagerFlags;
 using SystemUiFlags = Android.Views.SystemUiFlags;
 using StatusBarVisibility = Android.Views.StatusBarVisibility;
 
-namespace CheapHelpers.MAUI.Helpers;
+namespace CheapHelpers.MAUI.Platforms.Android;
 
 /// <summary>
 /// Comprehensive helper utility for configuring Android system bars (status bar and navigation bar).

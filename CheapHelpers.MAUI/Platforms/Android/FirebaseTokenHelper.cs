@@ -3,7 +3,7 @@ using Android.App;
 using CheapHelpers.Blazor.Hybrid.Abstractions;
 using Firebase.Messaging;
 
-namespace CheapHelpers.MAUI.Helpers;
+namespace CheapHelpers.MAUI.Platforms.Android;
 
 /// <summary>
 /// Helper utility for safely retrieving Firebase Cloud Messaging (FCM) tokens.

@@ -11,6 +11,22 @@ Business services including email with templates, PDF generation, Azure integrat
 
 ## Available Services
 
+### [Geocoding Services](Geocoding.md)
+Unified geocoding interface with support for 4 major providers.
+
+**Features:**
+- Forward geocoding (address to coordinates)
+- Reverse geocoding (coordinates to address)
+- Fuzzy search/autocomplete
+- Multi-provider support (Mapbox, Azure Maps, Google Maps, PTV Maps)
+- Unified models and options
+- Factory pattern for provider switching
+
+**Key Classes:**
+- `IGeocodingService` - Main geocoding interface
+- `IGeocodingServiceFactory` - Provider factory
+- `MapboxGeocodingService`, `AzureMapsGeocodingService`, `GoogleMapsGeocodingService`, `PtvMapsGeocodingService`
+
 ### [Email Services](Email.md)
 Complete email solution with MailKit SMTP and Fluid templating.
 
@@ -82,6 +98,39 @@ dotnet add package CheapHelpers.Services
 ```
 
 ### Basic Usage Examples
+
+#### Geocoding
+
+```csharp
+using CheapHelpers.Services.Geocoding.Extensions;
+
+// Configure services
+builder.Services.AddGeocodingServices(options =>
+{
+    options.DefaultProvider = GeocodingProvider.Mapbox;
+    options.Mapbox.AccessToken = "your-mapbox-token";
+    options.AzureMaps.SubscriptionKey = "your-azure-key";
+    options.AzureMaps.ClientId = "your-client-id";
+    options.GoogleMaps.ApiKey = "your-google-key";
+    options.PtvMaps.ApiKey = "your-ptv-key";
+});
+
+// Forward geocoding
+var result = await geocodingService.GeocodeAsync(
+    "1600 Amphitheatre Parkway, Mountain View, CA");
+Console.WriteLine($"Coordinates: {result.Coordinate.Latitude}, {result.Coordinate.Longitude}");
+
+// Reverse geocoding
+var address = await geocodingService.ReverseGeocodeAsync(37.4224764, -122.0842499);
+Console.WriteLine($"Address: {address.FormattedAddress}");
+
+// Fuzzy search
+var results = await geocodingService.SearchAsync("main st", new GeocodingOptions
+{
+    Limit = 5,
+    Countries = new[] { "US" }
+});
+```
 
 #### Email
 
@@ -214,6 +263,7 @@ await db.Images.UpdateAsync(imageId, new {
 
 Key NuGet packages used:
 
+- **Geocoding**: GoogleApi (4.6.0) for Google Maps integration
 - **Email**: MailKit (4.14.1), Fluid.Core (2.30.0)
 - **PDF**: itext (9.3.0), itext.pdfoptimizer (4.1.0), ILove_PDF (1.6.2)
 - **XML**: Built-in System.Xml
@@ -288,6 +338,7 @@ Key NuGet packages used:
 
 For in-depth guides, examples, and API reference:
 
+- [Geocoding Services Documentation](Geocoding.md)
 - [Email Services Documentation](Email.md)
 - [PDF Services Documentation](PDF.md)
 - [XML Services Documentation](XML.md)

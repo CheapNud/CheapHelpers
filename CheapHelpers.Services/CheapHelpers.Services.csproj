@@ -68,6 +68,7 @@
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="Duende.IdentityModel" Version="7.1.0" />
     <PackageReference Include="Fluid.Core" Version="2.30.0" />
+    <PackageReference Include="GoogleApi" Version="4.6.0" />
     <PackageReference Include="ILove_PDF" Version="1.6.2" />
     <PackageReference Include="itext" Version="9.3.0" />
     <PackageReference Include="itext.pdfoptimizer" Version="4.1.0" />

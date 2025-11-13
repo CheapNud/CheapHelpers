@@ -1,0 +1,162 @@
+/*
+ * CheapHelpers Blazor App Bar Styles
+ * Default styling for the app bar component
+ */
+
+.cheap-appbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end;
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 8px;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+.cheap-appbar-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 48px;
+}
+
+.cheap-appbar-title {
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.6;
+    letter-spacing: 0.0125em;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cheap-appbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .cheap-appbar {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .cheap-appbar-title {
+        font-size: 18px;
+    }
+
+    .cheap-appbar-actions {
+        gap: 4px;
+    }
+}
+
+/* Hidden state */
+.cheap-appbar.hidden {
+    transform: translateY(-100%);
+}
+
+/* Elevated style (with shadow) */
+.cheap-appbar.elevated {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Material Design elevation levels */
+.cheap-appbar.elevation-1 {
+    box-shadow: 0 2px 1px -1px rgba(0,0,0,.2), 0 1px 1px 0 rgba(0,0,0,.14), 0 1px 3px 0 rgba(0,0,0,.12);
+}
+
+.cheap-appbar.elevation-2 {
+    box-shadow: 0 3px 1px -2px rgba(0,0,0,.2), 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12);
+}
+
+.cheap-appbar.elevation-3 {
+    box-shadow: 0 3px 3px -2px rgba(0,0,0,.2), 0 3px 4px 0 rgba(0,0,0,.14), 0 1px 8px 0 rgba(0,0,0,.12);
+}
+
+.cheap-appbar.elevation-4 {
+    box-shadow: 0 2px 4px -1px rgba(0,0,0,.2), 0 4px 5px 0 rgba(0,0,0,.14), 0 1px 10px 0 rgba(0,0,0,.12);
+}
+
+/* Theme variants */
+.cheap-appbar.primary {
+    background-color: #6200EE;
+    color: #FFFFFF;
+}
+
+.cheap-appbar.secondary {
+    background-color: #03DAC6;
+    color: #000000;
+}
+
+.cheap-appbar.dark {
+    background-color: #121212;
+    color: #FFFFFF;
+}
+
+.cheap-appbar.light {
+    background-color: #FFFFFF;
+    color: #000000;
+}
+
+/* Action button styling */
+.cheap-appbar-actions button {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cheap-appbar-actions button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.cheap-appbar-actions button:active {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Icon sizing */
+.cheap-appbar-actions button svg,
+.cheap-appbar-actions button i {
+    width: 24px;
+    height: 24px;
+    font-size: 24px;
+}
+
+/* Content spacer for page layout */
+.cheap-appbar-spacer {
+    height: 56px; /* Default app bar height */
+}
+
+/* Utility class to push content below app bar */
+.cheap-appbar-offset {
+    padding-top: 56px;
+}
+
+/* Smooth scroll behavior when app bar is fixed */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Print styles */
+@media print {
+    .cheap-appbar {
+        position: relative;
+        box-shadow: none;
+    }
+}

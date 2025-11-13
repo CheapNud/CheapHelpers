@@ -63,5 +63,22 @@ public interface IDeviceInstallationService
     /// <summary>
     /// Event triggered when the push token is refreshed or updated
     /// </summary>
+    [Obsolete("Use OnTokenReceived for initial token or OnTokenUpdated for refreshes")]
     event Action<string>? TokenRefreshed;
+
+    /// <summary>
+    /// Event triggered when a push token is received for the first time
+    /// </summary>
+    event Action<string>? OnTokenReceived;
+
+    /// <summary>
+    /// Event triggered when an existing push token is updated/refreshed
+    /// </summary>
+    event Action<string>? OnTokenUpdated;
+
+    /// <summary>
+    /// Gets comprehensive diagnostic information about the device's notification status
+    /// </summary>
+    /// <returns>DeviceNotificationStatus containing platform-specific diagnostics</returns>
+    DeviceNotificationStatus GetNotificationStatus();
 }

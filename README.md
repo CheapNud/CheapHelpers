@@ -102,6 +102,20 @@ await emailService.SendEmailAsync(
 );
 ```
 
+### Status Bar Configuration (MAUI)
+```csharp
+// In MauiProgram.cs - ONE LINE configuration!
+builder.UseMauiApp<App>()
+       .UseTransparentStatusBar(StatusBarStyle.DarkContent);
+
+// Or from any page/code
+StatusBarHelper.ConfigureForLightBackground(); // Dark icons for light theme
+StatusBarHelper.ConfigureForDarkBackground();  // Light icons for dark theme
+
+// Get status bar height for layouts
+var height = StatusBarHelper.GetStatusBarHeight();
+```
+
 ### Blazor Hybrid Push Notifications (MAUI)
 ```csharp
 // In MauiProgram.cs
@@ -151,9 +165,11 @@ Detailed documentation for each package:
 - [MAC Address Resolution](Docs/Networking/MACResolution.md) - Cross-platform MAC lookup
 
 ### MAUI
+- [Status Bar Configuration](Docs/MAUI/StatusBarConfiguration.md) - **NEW!** Cross-platform status bar with zero native code
 - [Push Notifications](Docs/MAUI/PushNotifications.md) - iOS APNS and Android FCM setup
 - [Device Installation](Docs/MAUI/DeviceInstallation.md) - Device registration and management
 - [Local Notifications](Docs/MAUI/LocalNotifications.md) - Foreground notification display
+- [Android System Bars](Docs/MAUI/AndroidSystemBars.md) - Android-specific system bar configuration and edge-to-edge layouts
 
 ## Requirements
 

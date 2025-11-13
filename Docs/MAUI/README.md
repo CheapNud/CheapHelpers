@@ -15,6 +15,9 @@ Platform-specific implementations for MAUI Blazor Hybrid applications supporting
 - Android FCM (Firebase Cloud Messaging) integration
 - Device registration and token management
 - Local notification display for foreground notifications
+- Cross-platform status bar configuration (zero platform-specific code!)
+- Android system bars helper (transparent status bar, navigation bar, edge-to-edge)
+- iOS status bar helper (style, visibility, height)
 - Seamless integration with CheapHelpers.Blazor abstractions
 - Automatic permission handling
 - Token refresh management
@@ -51,6 +54,29 @@ Foreground notification display guide covering:
 - Permission management
 - Usage examples and best practices
 
+### [Status Bar Configuration](StatusBarConfiguration.md)
+**NEW!** Unified cross-platform status bar solution covering:
+- Zero platform-specific code required
+- Configure from MauiProgram.cs with one line
+- Works from any MAUI code (pages, view models, etc.)
+- Consistent API across iOS and Android
+- Light/dark status bar styles
+- Transparent status bar support
+- Status bar height retrieval
+- iOS Info.plist configuration guide
+- Android navigation bar control
+- Complete usage examples and troubleshooting
+
+### [Android System Bars Helper](AndroidSystemBars.md)
+Android-specific system bar configuration utility covering:
+- Transparent status bar with light/dark icons
+- Navigation bar customization
+- Edge-to-edge layout configuration
+- Window insets handling
+- Safe Firebase token retrieval
+- Complete MainActivity examples
+- API level requirements and best practices
+
 ## Quick Start
 
 ### 1. Install Package
@@ -65,6 +91,7 @@ dotnet add package CheapHelpers.Blazor
 ```csharp
 using CheapHelpers.Blazor.Hybrid.Extensions;
 using CheapHelpers.MAUI.Extensions;
+using CheapHelpers.MAUI.Helpers;
 
 public static class MauiProgram
 {
@@ -74,6 +101,7 @@ public static class MauiProgram
 
         builder
             .UseMauiApp<App>()
+            .UseTransparentStatusBar(StatusBarStyle.DarkContent) // Configure status bar!
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");

@@ -1,0 +1,29 @@
+@namespace CheapHelpers.Blazor.Hybrid.Components
+@using Microsoft.AspNetCore.Components
+
+@*
+CheapHelpers Blazor App Bar Component
+Provides a flexible app bar with default implementation and full customization support
+*@
+
+<div class="cheap-appbar @CssClass" style="@GetStyle()">
+    @if (Content != null)
+    {
+        @Content
+    }
+    else
+    {
+        <div class="cheap-appbar-content">
+            @if (!string.IsNullOrEmpty(Title))
+            {
+                <div class="cheap-appbar-title">@Title</div>
+            }
+            @if (Actions != null)
+            {
+                <div class="cheap-appbar-actions">
+                    @Actions
+                </div>
+            }
+        </div>
+    }
+</div>

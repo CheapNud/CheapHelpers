@@ -60,7 +60,18 @@ public class DeviceInstallationService : IDeviceInstallationService
     /// <summary>
     /// Event fired when APNS token is refreshed
     /// </summary>
+    [Obsolete("Use OnTokenReceived for initial token or OnTokenUpdated for refreshes")]
     public event Action<string>? TokenRefreshed;
+
+    /// <summary>
+    /// Event triggered when a push token is received for the first time
+    /// </summary>
+    public event Action<string>? OnTokenReceived;
+
+    /// <summary>
+    /// Event triggered when an existing push token is updated/refreshed
+    /// </summary>
+    public event Action<string>? OnTokenUpdated;
 
     /// <summary>
     /// Set the APNS token (called from AppDelegate after registration)
@@ -69,12 +80,29 @@ public class DeviceInstallationService : IDeviceInstallationService
     public void SetToken(string token)
     {
         var oldToken = _token;
+        var wasEmpty = string.IsNullOrEmpty(oldToken);
         _token = token ?? string.Empty;
 
         if (!string.IsNullOrEmpty(_token) && _token != oldToken)
         {
             Debug.WriteLine($"APNS token set: {_token[..Math.Min(8, _token.Length)]}...");
+
+            // Fire the appropriate new event
+            if (wasEmpty)
+            {
+                Debug.WriteLine("APNS token received for the first time");
+                OnTokenReceived?.Invoke(_token);
+            }
+            else
+            {
+                Debug.WriteLine("APNS token updated/refreshed");
+                OnTokenUpdated?.Invoke(_token);
+            }
+
+            // Keep backward compatibility
+#pragma warning disable CS0618 // Type or member is obsolete
             TokenRefreshed?.Invoke(_token);
+#pragma warning restore CS0618 // Type or member is obsolete
         }
     }
 
@@ -295,5 +323,96 @@ public class DeviceInstallationService : IDeviceInstallationService
             Debug.WriteLine($"Failed to check iOS permissions: {ex.Message}");
             return false;
         }
+    }
+
+    /// <summary>
+    /// Gets comprehensive diagnostic information about the device's notification status
+    /// </summary>
+    /// <returns>DeviceNotificationStatus containing platform-specific diagnostics</returns>
+    public DeviceNotificationStatus GetNotificationStatus()
+    {
+        var status = new DeviceNotificationStatus
+        {
+            DeviceId = GetDeviceId(),
+            Platform = Platform,
+            IsSupported = NotificationsSupported,
+            HasToken = !string.IsNullOrEmpty(Token),
+            TokenLength = Token?.Length ?? 0,
+            LastChecked = DateTime.UtcNow
+        };
+
+        try
+        {
+            var device = UIDevice.CurrentDevice;
+            if (device != null)
+            {
+                // Device information
+                status.DeviceModel = device.Model ?? "Unknown";
+                status.DeviceManufacturer = "Apple";
+                status.PlatformSpecificData["SystemVersion"] = device.SystemVersion ?? "Unknown";
+                status.PlatformSpecificData["SystemName"] = device.SystemName ?? "Unknown";
+                status.PlatformSpecificData["DeviceName"] = device.Name ?? "Unknown";
+                status.PlatformSpecificData["IdentifierForVendor"] = device.IdentifierForVendor?.ToString() ?? "Unknown";
+
+                // iOS version support information
+                status.PlatformSpecificData["SupportedVersionMajor"] = SUPPORTED_VERSION_MAJOR;
+                status.PlatformSpecificData["SupportedVersionMinor"] = SUPPORTED_VERSION_MINOR;
+                status.PlatformSpecificData["MeetsVersionRequirement"] = device.CheckSystemVersion(SUPPORTED_VERSION_MAJOR, SUPPORTED_VERSION_MINOR);
+            }
+
+            // Token information
+            if (!string.IsNullOrEmpty(Token))
+            {
+                status.PlatformSpecificData["TokenPreview"] = Token.Length > 16 ? Token[..16] + "..." : Token;
+                status.PlatformSpecificData["TokenFormat"] = "APNS Hex";
+            }
+
+            // Get authorization status asynchronously
+            var tcs = new TaskCompletionSource<UNNotificationSettings>();
+            UNUserNotificationCenter.Current.GetNotificationSettings(settings =>
+            {
+                tcs.SetResult(settings);
+            });
+
+            if (tcs.Task.Wait(TimeSpan.FromSeconds(1)))
+            {
+                var settings = tcs.Task.Result;
+                status.PlatformSpecificData["AuthorizationStatus"] = settings.AuthorizationStatus.ToString();
+                status.PlatformSpecificData["AlertSetting"] = settings.AlertSetting.ToString();
+                status.PlatformSpecificData["BadgeSetting"] = settings.BadgeSetting.ToString();
+                status.PlatformSpecificData["SoundSetting"] = settings.SoundSetting.ToString();
+                status.PlatformSpecificData["NotificationCenterSetting"] = settings.NotificationCenterSetting.ToString();
+                status.PlatformSpecificData["LockScreenSetting"] = settings.LockScreenSetting.ToString();
+                status.PlatformSpecificData["IsAuthorized"] = settings.AuthorizationStatus == UNAuthorizationStatus.Authorized;
+            }
+            else
+            {
+                status.PlatformSpecificData["AuthorizationStatus"] = "Timeout retrieving settings";
+            }
+
+            // Bundle information
+            var mainBundle = NSBundle.MainBundle;
+            if (mainBundle != null)
+            {
+                status.PlatformSpecificData["BundleIdentifier"] = mainBundle.BundleIdentifier ?? "Unknown";
+                status.PlatformSpecificData["BundleVersion"] = mainBundle.InfoDictionary?["CFBundleVersion"]?.ToString() ?? "Unknown";
+                status.PlatformSpecificData["BundleShortVersion"] = mainBundle.InfoDictionary?["CFBundleShortVersionString"]?.ToString() ?? "Unknown";
+            }
+
+            // Application state
+            if (UIApplication.SharedApplication != null)
+            {
+                status.PlatformSpecificData["ApplicationState"] = UIApplication.SharedApplication.ApplicationState.ToString();
+                status.PlatformSpecificData["IsRegisteredForRemoteNotifications"] = UIApplication.SharedApplication.IsRegisteredForRemoteNotifications;
+            }
+
+        }
+        catch (Exception ex)
+        {
+            status.Error = $"Error collecting diagnostics: {ex.Message}";
+            Debug.WriteLine($"Error in GetNotificationStatus: {ex}");
+        }
+
+        return status;
     }
 }

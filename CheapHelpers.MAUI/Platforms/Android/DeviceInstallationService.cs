@@ -33,7 +33,18 @@ public class DeviceInstallationService : IDeviceInstallationService
     /// <summary>
     /// Event fired when FCM token is refreshed
     /// </summary>
+    [Obsolete("Use OnTokenReceived for initial token or OnTokenUpdated for refreshes")]
     public event Action<string>? TokenRefreshed;
+
+    /// <summary>
+    /// Event triggered when a push token is received for the first time
+    /// </summary>
+    public event Action<string>? OnTokenReceived;
+
+    /// <summary>
+    /// Event triggered when an existing push token is updated/refreshed
+    /// </summary>
+    public event Action<string>? OnTokenUpdated;
 
     /// <summary>
     /// Set the FCM token (called from FirebaseMessagingService when token is received)
@@ -42,12 +53,29 @@ public class DeviceInstallationService : IDeviceInstallationService
     public void SetToken(string token)
     {
         var oldToken = _token;
+        var wasEmpty = string.IsNullOrEmpty(oldToken);
         _token = token ?? string.Empty;
 
         if (!string.IsNullOrEmpty(_token) && _token != oldToken)
         {
             Debug.WriteLine($"FCM token set: {_token[..Math.Min(8, _token.Length)]}...");
+
+            // Fire the appropriate new event
+            if (wasEmpty)
+            {
+                Debug.WriteLine("FCM token received for the first time");
+                OnTokenReceived?.Invoke(_token);
+            }
+            else
+            {
+                Debug.WriteLine("FCM token updated/refreshed");
+                OnTokenUpdated?.Invoke(_token);
+            }
+
+            // Keep backward compatibility
+#pragma warning disable CS0618 // Type or member is obsolete
             TokenRefreshed?.Invoke(_token);
+#pragma warning restore CS0618 // Type or member is obsolete
         }
     }
 
@@ -141,9 +169,12 @@ public class DeviceInstallationService : IDeviceInstallationService
     {
         try
         {
-            // Check if Firebase is available globally via MainApplication or custom Firebase initializer
-            // Users should implement their own Firebase initialization check
-            // For now, we check Google Play Services which is required for FCM
+            // Check Firebase availability first
+            if (!FirebaseInitializer.IsFirebaseAvailable)
+            {
+                Debug.WriteLine("Firebase is not available or not initialized");
+                return false;
+            }
 
             // Check Google Play Services
             var availability = GoogleApiAvailability.Instance;
@@ -351,5 +382,91 @@ public class DeviceInstallationService : IDeviceInstallationService
             Debug.WriteLine($"Failed to check Android permissions: {ex.Message}");
             return false;
         }
+    }
+
+    /// <summary>
+    /// Gets comprehensive diagnostic information about the device's notification status
+    /// </summary>
+    /// <returns>DeviceNotificationStatus containing platform-specific diagnostics</returns>
+    public DeviceNotificationStatus GetNotificationStatus()
+    {
+        var status = new DeviceNotificationStatus
+        {
+            DeviceId = GetDeviceId(),
+            Platform = Platform,
+            IsSupported = NotificationsSupported,
+            HasToken = !string.IsNullOrEmpty(Token),
+            TokenLength = Token?.Length ?? 0,
+            LastChecked = DateTime.UtcNow
+        };
+
+        try
+        {
+            // Device information
+            status.DeviceModel = global::Android.OS.Build.Model ?? "Unknown";
+            status.DeviceManufacturer = global::Android.OS.Build.Manufacturer ?? "Unknown";
+
+            // Firebase availability
+            var (isFirebaseAvailable, firebaseStatus, firebaseApp) = FirebaseInitializer.GetStatus();
+            status.PlatformSpecificData["FirebaseAvailable"] = isFirebaseAvailable;
+            status.PlatformSpecificData["FirebaseStatus"] = firebaseStatus;
+            status.PlatformSpecificData["FirebaseAppName"] = firebaseApp?.Name ?? "null";
+
+            // Google Play Services
+            var availability = GoogleApiAvailability.Instance;
+            var resultCode = availability.IsGooglePlayServicesAvailable(Microsoft.Maui.ApplicationModel.Platform.AppContext);
+            status.PlatformSpecificData["GooglePlayServicesAvailable"] = resultCode == ConnectionResult.Success;
+            status.PlatformSpecificData["GooglePlayServicesResultCode"] = resultCode.ToString();
+
+            if (resultCode != ConnectionResult.Success)
+            {
+                var errorMessage = availability.IsUserResolvableError(resultCode)
+                    ? availability.GetErrorString(resultCode)
+                    : $"Error code: {resultCode}";
+                status.PlatformSpecificData["GooglePlayServicesError"] = errorMessage;
+            }
+
+            // Android API Level
+            var apiLevel = (int)global::Android.OS.Build.VERSION.SdkInt;
+            status.PlatformSpecificData["AndroidApiLevel"] = apiLevel;
+            status.PlatformSpecificData["AndroidVersion"] = global::Android.OS.Build.VERSION.Release ?? "Unknown";
+            status.PlatformSpecificData["AndroidVersionCodename"] = global::Android.OS.Build.VERSION.Codename ?? "Unknown";
+
+            // Token information
+            if (!string.IsNullOrEmpty(Token))
+            {
+                status.PlatformSpecificData["TokenPreview"] = Token.Length > 16 ? Token[..16] + "..." : Token;
+                status.PlatformSpecificData["TokenType"] = Token.StartsWith("development-") ? "Development" :
+                                                          Token.StartsWith("no-notifications-") ? "No Notifications" : "Real FCM Token";
+            }
+
+            // Permission status (for Android 13+)
+            if (apiLevel >= 33)
+            {
+                var permissionTask = CheckPermissionsAsync();
+                permissionTask.Wait(TimeSpan.FromSeconds(1));
+                status.PlatformSpecificData["NotificationPermissionGranted"] = permissionTask.Result;
+            }
+            else
+            {
+                status.PlatformSpecificData["NotificationPermissionGranted"] = "Not required (API < 33)";
+            }
+
+            // Internet permission
+            var hasInternetPermission = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity?.CheckSelfPermission(global::Android.Manifest.Permission.Internet)
+                                      == global::Android.Content.PM.Permission.Granted;
+            status.PlatformSpecificData["InternetPermissionGranted"] = hasInternetPermission;
+
+            // Package info
+            status.PlatformSpecificData["PackageName"] = Microsoft.Maui.ApplicationModel.Platform.CurrentActivity?.PackageName ?? "Unknown";
+
+        }
+        catch (Exception ex)
+        {
+            status.Error = $"Error collecting diagnostics: {ex.Message}";
+            Debug.WriteLine($"Error in GetNotificationStatus: {ex}");
+        }
+
+        return status;
     }
 }

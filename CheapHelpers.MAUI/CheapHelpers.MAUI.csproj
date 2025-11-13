@@ -1,24 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net10.0-android;net10.0-ios</TargetFrameworks>
+    <TargetFrameworks>net10.0-windows10.0.19041.0;net10.0-android;net10.0-ios</TargetFrameworks>
     <Version>1.1.5</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UseMaui>true</UseMaui>
+    <SingleProject>true</SingleProject>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">14.2</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.19041.0</SupportedOSPlatformVersion>
+    <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.19041.0</TargetPlatformMinVersion>
 
     <!-- NuGet Package Metadata -->
     <PackageId>CheapHelpers.MAUI</PackageId>
     <Authors>CheapNud</Authors>
     <Company>CheapNud</Company>
     <Product>CheapHelpers</Product>
-    <Description>MAUI platform implementations for Blazor Hybrid features: iOS APNS, Android FCM push notifications, local notifications, and platform-specific services for CheapHelpers.Blazor</Description>
+    <Description>MAUI platform implementations for Blazor Hybrid features: iOS APNS, Android FCM push notifications, local notifications, status bar configuration (iOS/Android/Windows), and platform-specific services for CheapHelpers.Blazor</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
     <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>maui;blazor-hybrid;push-notifications;apns;fcm;ios;android;local-notifications;device-registration</PackageTags>
+    <PackageTags>maui;blazor-hybrid;push-notifications;apns;fcm;ios;android;windows;local-notifications;device-registration;status-bar</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 
@@ -47,13 +51,13 @@
     <ProjectReference Include="..\CheapHelpers.Blazor\CheapHelpers.Blazor.csproj" />
   </ItemGroup>
 
-  <!-- Exclude platform-specific files based on target framework -->
+  <!-- Exclude Android files from iOS builds -->
+  <!-- iOS/Xcode fails if it detects Android-specific files (e.g., google-services.json, Firebase packages) -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-ios'">
-    <Compile Remove="Platforms\Android\**\*.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android'">
-    <Compile Remove="Platforms\iOS\**\*.cs" />
+    <None Remove="Platforms\Android\**" />
+    <Compile Remove="Platforms\Android\**" />
+    <EmbeddedResource Remove="Platforms\Android\**" />
+    <Content Remove="Platforms\Android\**" />
   </ItemGroup>
 
 </Project>

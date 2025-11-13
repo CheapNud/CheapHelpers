@@ -3,6 +3,7 @@ using System.Diagnostics;
 #if ANDROID
 using AndroidColor = Android.Graphics.Color;
 using AndroidActivity = Android.App.Activity;
+using CheapHelpers.MAUI.Platforms.Android;
 #elif IOS
 using UIKit;
 #endif

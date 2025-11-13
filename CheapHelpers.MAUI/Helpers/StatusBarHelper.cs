@@ -6,6 +6,7 @@ using AndroidActivity = Android.App.Activity;
 using CheapHelpers.MAUI.Platforms.Android;
 #elif IOS
 using UIKit;
+using CheapHelpers.MAUI.Platforms.iOS;
 #endif
 
 namespace CheapHelpers.MAUI.Helpers;
@@ -301,13 +302,13 @@ public static class StatusBarHelper
             ? UIStatusBarStyle.DarkContent
             : UIStatusBarStyle.LightContent;
 
-        Platforms.iOS.IosStatusBarHelper.ConfigureStatusBarStyle(style);
+        IosStatusBarHelper.ConfigureStatusBarStyle(style);
         Debug.WriteLine($"StatusBarHelper (iOS): Configuration applied - Style: {config.Style}");
     }
 
     private static double GetStatusBarHeightIos()
     {
-        var height = Platforms.iOS.IosStatusBarHelper.GetStatusBarHeight();
+        var height = IosStatusBarHelper.GetStatusBarHeight();
         Debug.WriteLine($"StatusBarHelper (iOS): Status bar height: {height}pt");
         return (double)height;
     }

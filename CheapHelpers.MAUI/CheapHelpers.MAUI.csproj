@@ -51,13 +51,42 @@
     <ProjectReference Include="..\CheapHelpers.Blazor\CheapHelpers.Blazor.csproj" />
   </ItemGroup>
 
-  <!-- Exclude Android files from iOS builds -->
-  <!-- iOS/Xcode fails if it detects Android-specific files (e.g., google-services.json, Firebase packages) -->
+  <!-- Exclude platform-specific files to prevent cross-contamination -->
+
+  <!-- iOS builds: ALWAYS exclude Android and Windows (iOS/Xcode is strict and fails if it detects other platform files) -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-ios'">
     <None Remove="Platforms\Android\**" />
     <Compile Remove="Platforms\Android\**" />
     <EmbeddedResource Remove="Platforms\Android\**" />
     <Content Remove="Platforms\Android\**" />
+    <None Remove="Platforms\Windows\**" />
+    <Compile Remove="Platforms\Windows\**" />
+    <EmbeddedResource Remove="Platforms\Windows\**" />
+    <Content Remove="Platforms\Windows\**" />
+  </ItemGroup>
+
+  <!-- Android Release builds: exclude iOS and Windows -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android' AND '$(Configuration)' == 'Release'">
+    <None Remove="Platforms\iOS\**" />
+    <Compile Remove="Platforms\iOS\**" />
+    <EmbeddedResource Remove="Platforms\iOS\**" />
+    <Content Remove="Platforms\iOS\**" />
+    <None Remove="Platforms\Windows\**" />
+    <Compile Remove="Platforms\Windows\**" />
+    <EmbeddedResource Remove="Platforms\Windows\**" />
+    <Content Remove="Platforms\Windows\**" />
+  </ItemGroup>
+
+  <!-- Windows Release builds: exclude Android and iOS -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows10.0.19041.0' AND '$(Configuration)' == 'Release'">
+    <None Remove="Platforms\Android\**" />
+    <Compile Remove="Platforms\Android\**" />
+    <EmbeddedResource Remove="Platforms\Android\**" />
+    <Content Remove="Platforms\Android\**" />
+    <None Remove="Platforms\iOS\**" />
+    <Compile Remove="Platforms\iOS\**" />
+    <EmbeddedResource Remove="Platforms\iOS\**" />
+    <Content Remove="Platforms\iOS\**" />
   </ItemGroup>
 
 </Project>

@@ -1039,4 +1039,4 @@ if (backend == null)
 
 - [Push Notifications Setup Guide](PushNotifications.md)
 - [Local Notifications Documentation](LocalNotifications.md)
-- [CheapHelpers.Blazor Documentation](../Blazor/README.md)
+- [CheapHelpers.Blazor Documentation](../../CheapHelpers.Blazor/README.md)

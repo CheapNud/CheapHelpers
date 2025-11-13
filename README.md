@@ -102,6 +102,20 @@ await emailService.SendEmailAsync(
 );
 ```
 
+### Status Bar Configuration (MAUI)
+```csharp
+// In MauiProgram.cs - ONE LINE configuration!
+builder.UseMauiApp<App>()
+       .UseTransparentStatusBar(StatusBarStyle.DarkContent);
+
+// Or from any page/code
+StatusBarHelper.ConfigureForLightBackground(); // Dark icons for light theme
+StatusBarHelper.ConfigureForDarkBackground();  // Light icons for dark theme
+
+// Get status bar height for layouts
+var height = StatusBarHelper.GetStatusBarHeight();
+```
+
 ### Blazor Hybrid Push Notifications (MAUI)
 ```csharp
 // In MauiProgram.cs
@@ -116,44 +130,82 @@ if (status == DeviceRegistrationState.NotRegistered)
 }
 ```
 
-## Documentation
+## Projects
 
-Detailed documentation for each package:
+This repository contains multiple NuGet packages, each with its own documentation:
 
-### Core Package
-- [String Extensions](Docs/Core/StringExtensions.md) - Capitalize, sanitize, phone numbers, truncation
-- [DateTime Extensions](Docs/Core/DateTimeExtensions.md) - Timezone conversion, business days, rounding
-- [Collection Extensions](Docs/Core/CollectionExtensions.md) - Dynamic ordering, replacements, bindings
-- [Caching](Docs/Core/Caching.md) - Memory cache with flexible expiration strategies
-- [Encryption](Docs/Core/Encryption.md) - Machine-specific AES-256 encryption
-- [File Helpers](Docs/Core/FileHelpers.md) - Secure filename generation, date-based naming
-- [Process Execution](Docs/Core/ProcessExecution.md) - Process executor with progress tracking
+### [CheapHelpers.Blazor](CheapHelpers.Blazor/README.md)
+Blazor and Blazor Hybrid utilities including app bar components, WebView helpers, push notification abstractions, and file download utilities.
 
-### Entity Framework
-- [Repository Pattern](Docs/EF/Repository.md) - BaseRepo with CRUD operations and pagination
-- [Context Extensions](Docs/EF/ContextExtensions.md) - Bulk operations and utilities
+**Key Features:**
+- App Bar Component with programmatic control
+- Blazor Hybrid integration (MAUI, Photino, Avalonia)
+- Push notification abstractions (platform-agnostic)
+- WebView JSON parser and bridge
+- Download helper and clipboard service
 
-### Services
-- [Email Service](Docs/Services/Email.md) - SMTP with Fluid templates and attachments
-- [PDF Services](Docs/Services/PDF.md) - PDF generation and optimization
-- [XML Service](Docs/Services/XML.md) - Dynamic and strongly-typed serialization
-- [Azure Integration](Docs/Services/Azure.md) - Translation, Vision, Document services
+**Documentation:** [CheapHelpers.Blazor/Docs](CheapHelpers.Blazor/Docs/)
 
-### Blazor
-- [Components](Docs/Blazor/Components.md) - UI components and utilities
-- [Hybrid Features](Docs/Blazor/Hybrid.md) - WebView bridge and push notification abstractions
-- [Download Helper](Docs/Blazor/DownloadHelper.md) - Client-side file downloads
-- [Clipboard Service](Docs/Blazor/ClipboardService.md) - Async clipboard operations
+### [CheapHelpers.MAUI](CheapHelpers.MAUI/README.md)
+MAUI platform helpers for iOS and Android including status bar configuration, system UI helpers, and push notification implementations.
 
-### Networking
-- [Network Scanner](Docs/Networking/Scanner.md) - Device discovery and scanning
-- [Device Detectors](Docs/Networking/Detectors.md) - UPnP, mDNS, HTTP, SSH detection
-- [MAC Address Resolution](Docs/Networking/MACResolution.md) - Cross-platform MAC lookup
+**Key Features:**
+- Cross-platform status bar configuration
+- Android system bars (status bar + navigation bar) with edge-to-edge support
+- iOS APNS and Android FCM push notification implementations
+- Firebase token helper with safe retrieval
+- Device installation service for backend registration
 
-### MAUI
-- [Push Notifications](Docs/MAUI/PushNotifications.md) - iOS APNS and Android FCM setup
-- [Device Installation](Docs/MAUI/DeviceInstallation.md) - Device registration and management
-- [Local Notifications](Docs/MAUI/LocalNotifications.md) - Foreground notification display
+**Documentation:** [CheapHelpers.MAUI/Docs](CheapHelpers.MAUI/Docs/)
+
+### [CheapHelpers](Docs/Core/README.md)
+Core utilities, extensions, and helpers for everyday .NET development.
+
+**Key Features:**
+- String extensions (capitalize, sanitize, phone numbers, truncation)
+- DateTime extensions (timezone conversion, business days, rounding)
+- Collection extensions (dynamic ordering, replacements, bindings)
+- Memory caching with flexible expiration strategies
+- Encryption helpers (machine-specific AES-256)
+- File helpers (secure filename generation, date-based naming)
+- Process execution with progress tracking
+
+**Documentation:** [Docs/Core](Docs/Core/)
+
+### [CheapHelpers.EF](Docs/EF/)
+Entity Framework repository pattern and extensions.
+
+**Key Features:**
+- BaseRepo with CRUD operations and pagination
+- Context extensions for bulk operations
+- PaginatedList helper
+
+**Documentation:** [Docs/EF](Docs/EF/)
+
+### [CheapHelpers.Services](Docs/Services/README.md)
+Business services and integrations for common development tasks.
+
+**Key Features:**
+- Email service with SMTP and Fluid templates
+- PDF generation and optimization services
+- XML serialization (dynamic and strongly-typed)
+- Azure integration (Translation, Vision, Document services)
+
+**Documentation:** [Docs/Services](Docs/Services/)
+
+### [CheapHelpers.Networking](Docs/Networking/)
+Network scanning and device discovery utilities.
+
+**Key Features:**
+- Network scanner with background discovery
+- Device detectors (UPnP, mDNS, HTTP, SSH)
+- MAC address resolution (cross-platform)
+
+**Documentation:** [Docs/Networking](Docs/Networking/)
+
+## Architecture
+
+See [Docs/ARCHITECTURE.md](Docs/ARCHITECTURE.md) for overall solution architecture and separation of concerns.
 
 ## Requirements
 

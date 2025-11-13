@@ -315,7 +315,7 @@ If the navigation bar is not appearing black:
 
 ## See Also
 
-- [Status Bar Helper](StatusBarConfiguration.md) - Cross-platform status bar configuration
+- [Status Bar Helper](StatusBar.md) - Cross-platform status bar configuration
 - [Firebase Token Helper](FirebaseTokenHelper.md) - Firebase token retrieval (separate concern)
 - [Push Notifications](PushNotifications.md) - Complete push notification setup
 - [Device Installation](DeviceInstallation.md) - Device registration details

@@ -574,10 +574,10 @@ div.cheap-appbar.my-appbar { background: red !important; }
 
 ## See Also
 
-- [Android System Bars](../MAUI/AndroidSystemBars.md) - System-level status bar configuration
-- [Status Bar Helper](../MAUI/StatusBarConfiguration.md) - Cross-platform status bar utilities
+- [Android System Bars](../../../CheapHelpers.MAUI/Docs/AndroidSystemBars.md) - System-level status bar configuration
+- [Status Bar Helper](../../../CheapHelpers.MAUI/Docs/StatusBar.md) - Cross-platform status bar utilities
 - [Blazor Hybrid](Hybrid.md) - Other Blazor Hybrid features
-- [Components](Components.md) - Other CheapHelpers Blazor components
+- [Components](../Components.md) - Other CheapHelpers Blazor components
 
 ## Source Location
 

@@ -1318,6 +1318,6 @@ else
 
 ## See Also
 
-- [Components.md](Components.md) - Blazor UI components and base classes
-- [DownloadHelper.md](DownloadHelper.md) - Client-side file downloads
-- [ClipboardService.md](ClipboardService.md) - Async clipboard operations
+- [Components](../Components.md) - Blazor UI components and base classes
+- [Download Helper](../DownloadHelper.md) - Client-side file downloads
+- [Clipboard Service](../ClipboardService.md) - Async clipboard operations

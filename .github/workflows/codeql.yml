@@ -41,23 +41,11 @@ jobs:
         languages: ${{ matrix.language }}
         queries: security-and-quality
 
-    - name: Restore dependencies (non-MAUI projects)
-      run: |
-        dotnet restore CheapHelpers/CheapHelpers.csproj
-        dotnet restore CheapHelpers.Models/CheapHelpers.Models.csproj
-        dotnet restore CheapHelpers.EF/CheapHelpers.EF.csproj
-        dotnet restore CheapHelpers.Services/CheapHelpers.Services.csproj
-        dotnet restore CheapHelpers.Blazor/CheapHelpers.Blazor.csproj
-        dotnet restore CheapHelpers.Networking/CheapHelpers.Networking.csproj
+    - name: Restore dependencies
+      run: dotnet restore CheapHelpers.sln
 
-    - name: Build for CodeQL (non-MAUI projects)
-      run: |
-        dotnet build CheapHelpers/CheapHelpers.csproj --configuration Release --no-restore
-        dotnet build CheapHelpers.Models/CheapHelpers.Models.csproj --configuration Release --no-restore
-        dotnet build CheapHelpers.EF/CheapHelpers.EF.csproj --configuration Release --no-restore
-        dotnet build CheapHelpers.Services/CheapHelpers.Services.csproj --configuration Release --no-restore
-        dotnet build CheapHelpers.Blazor/CheapHelpers.Blazor.csproj --configuration Release --no-restore
-        dotnet build CheapHelpers.Networking/CheapHelpers.Networking.csproj --configuration Release --no-restore
+    - name: Build for CodeQL
+      run: dotnet build CheapHelpers.sln --configuration Release --no-restore /p:TargetFrameworks=net10.0
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3

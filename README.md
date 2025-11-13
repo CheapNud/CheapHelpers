@@ -102,6 +102,36 @@ await emailService.SendEmailAsync(
 );
 ```
 
+### Geocoding Services
+```csharp
+using CheapHelpers.Services.Geocoding.Extensions;
+
+// Configure geocoding with multiple providers
+services.AddGeocodingServices(options =>
+{
+    options.DefaultProvider = GeocodingProvider.Mapbox;
+    options.Mapbox.AccessToken = "your-mapbox-token";
+    options.AzureMaps.SubscriptionKey = "your-azure-key";
+    options.GoogleMaps.ApiKey = "your-google-key";
+    options.PtvMaps.ApiKey = "your-ptv-key";
+});
+
+// Forward geocoding - address to coordinates
+var result = await geocodingService.GeocodeAsync("1600 Amphitheatre Parkway, Mountain View, CA");
+Console.WriteLine($"Coordinates: {result.Coordinate.Latitude}, {result.Coordinate.Longitude}");
+
+// Reverse geocoding - coordinates to address
+var address = await geocodingService.ReverseGeocodeAsync(37.4224764, -122.0842499);
+Console.WriteLine($"Address: {address.FormattedAddress}");
+
+// Fuzzy search/autocomplete
+var results = await geocodingService.SearchAsync("main st", new GeocodingOptions
+{
+    Limit = 5,
+    Countries = new[] { "US" }
+});
+```
+
 ### Status Bar Configuration (MAUI)
 ```csharp
 // In MauiProgram.cs - ONE LINE configuration!
@@ -187,6 +217,7 @@ Business services and integrations for common development tasks.
 
 **Key Features:**
 - Email service with SMTP and Fluid templates
+- Geocoding services with 4 providers (Mapbox, Azure Maps, Google Maps, PTV Maps)
 - PDF generation and optimization services
 - XML serialization (dynamic and strongly-typed)
 - Azure integration (Translation, Vision, Document services)

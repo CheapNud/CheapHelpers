@@ -32,7 +32,12 @@ public enum NotificationChannelFlags
     Push = 1 << 3,
 
     /// <summary>
+    /// Desktop OS notification channel (requires CheapHelpers.Avalonia.Bridge package)
+    /// </summary>
+    Desktop = 1 << 4,
+
+    /// <summary>
     /// All available notification channels
     /// </summary>
-    All = InApp | Email | Sms | Push
+    All = InApp | Email | Sms | Push | Desktop
 }

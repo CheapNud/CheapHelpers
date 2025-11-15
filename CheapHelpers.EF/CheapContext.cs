@@ -217,7 +217,47 @@ namespace CheapHelpers.EF
                       .HasDatabaseName(Constants.Database.FileAttachmentsEntityIndex);
             });
 
+            // Configure InAppNotification entities
+            modelBuilder.Entity<InAppNotification>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                // String length constraints
+                entity.Property(e => e.NotificationType).HasMaxLength(100);
+                entity.Property(e => e.Title).HasMaxLength(200);
+                entity.Property(e => e.ActionUrl).HasMaxLength(500);
+                entity.Property(e => e.IconUrl).HasMaxLength(500);
+
+                // Indexes for performance
+                entity.HasIndex(e => e.UserId).HasDatabaseName(Constants.Database.NotificationsUserIdIndex);
+                entity.HasIndex(e => new { e.UserId, e.IsRead }).HasDatabaseName(Constants.Database.NotificationsUserIdIsReadIndex);
+                entity.HasIndex(e => new { e.UserId, e.NotificationType }).HasDatabaseName(Constants.Database.NotificationsUserIdTypeIndex);
+                entity.HasIndex(e => e.CreatedAt).HasDatabaseName(Constants.Database.NotificationsCreatedAtIndex);
+                entity.HasIndex(e => e.ExpiresAt).HasDatabaseName(Constants.Database.NotificationsExpiresAtIndex);
+            });
+
+            // Configure UserNotificationPreference entities
+            modelBuilder.Entity<UserNotificationPreference>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                // Unique composite index on UserId + NotificationType
+                entity.HasIndex(e => new { e.UserId, e.NotificationType })
+                      .IsUnique()
+                      .HasDatabaseName(Constants.Database.NotificationPreferencesUserIdTypeIndex);
+            });
+
         }
+
+        /// <summary>
+        /// Gets or sets the DbSet for in-app notifications.
+        /// </summary>
+        public DbSet<InAppNotification> InAppNotifications { get; set; }
+
+        /// <summary>
+        /// Gets or sets the DbSet for user notification preferences.
+        /// </summary>
+        public DbSet<UserNotificationPreference> UserNotificationPreferences { get; set; }
 
         public DbSet<FileAttachment> FileAttachments { get; set; }
     }

@@ -230,6 +230,36 @@ namespace CheapHelpers
             /// Index name for Users NavigationState column
             /// </summary>
             public const string UsersNavigationStateIndex = "IX_Users_NavigationState";
+
+            /// <summary>
+            /// Index name for InAppNotifications UserId column
+            /// </summary>
+            public const string NotificationsUserIdIndex = "IX_InAppNotifications_UserId";
+
+            /// <summary>
+            /// Index name for InAppNotifications UserId and IsRead composite
+            /// </summary>
+            public const string NotificationsUserIdIsReadIndex = "IX_InAppNotifications_UserId_IsRead";
+
+            /// <summary>
+            /// Index name for InAppNotifications UserId and NotificationType composite
+            /// </summary>
+            public const string NotificationsUserIdTypeIndex = "IX_InAppNotifications_UserId_NotificationType";
+
+            /// <summary>
+            /// Index name for InAppNotifications CreatedAt column
+            /// </summary>
+            public const string NotificationsCreatedAtIndex = "IX_InAppNotifications_CreatedAt";
+
+            /// <summary>
+            /// Index name for InAppNotifications ExpiresAt column
+            /// </summary>
+            public const string NotificationsExpiresAtIndex = "IX_InAppNotifications_ExpiresAt";
+
+            /// <summary>
+            /// Index name for UserNotificationPreferences UserId and NotificationType unique composite
+            /// </summary>
+            public const string NotificationPreferencesUserIdTypeIndex = "IX_UserNotificationPreferences_UserId_NotificationType";
         }
 
         /// <summary>

@@ -1,6 +1,7 @@
 // CheapHelpers.Models/Entities/CheapUser.cs (Truly generic for library consumers)
 using CheapHelpers;
 using CheapHelpers.Extensions;
+using CheapHelpers.Models.Enums;
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
@@ -43,6 +44,11 @@ namespace CheapHelpers.Models.Entities
         /// Save the hash of the pin code for this user, used to verify the pin code when needed (only factor for now)
         /// </summary>
         public string? PinCodeHash { get; set; }
+
+        /// <summary>
+        /// Navigation property for user notification preferences
+        /// </summary>
+        public ICollection<UserNotificationPreference> NotificationPreferences { get; set; } = [];
 
         // Generic navigation state management
         private Dictionary<string, object>? _navigationStateCache;
@@ -152,6 +158,51 @@ namespace CheapHelpers.Models.Entities
         {
             _navigationStateCache?.Clear();
             NavigationStateJson = Constants.Authentication.EmptyJsonObject;
+        }
+
+        // Notification preference helper methods
+
+        /// <summary>
+        /// Gets the notification preference for a specific notification type
+        /// </summary>
+        /// <param name="notificationType">The type of notification (e.g., "OrderConfirmation", "SystemAlert")</param>
+        /// <returns>The user's preference for this notification type, or null if not set</returns>
+        public UserNotificationPreference? GetNotificationPreference(string notificationType)
+        {
+            if (string.IsNullOrWhiteSpace(notificationType))
+                return null;
+
+            return NotificationPreferences?.FirstOrDefault(p => p.NotificationType.Equals(notificationType, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Checks if a specific notification channel is enabled for a notification type
+        /// </summary>
+        /// <param name="notificationType">The type of notification</param>
+        /// <param name="channel">The channel to check (InApp, Email, SMS, Push)</param>
+        /// <returns>True if the channel is enabled, false otherwise. Defaults to InApp if no preference is set.</returns>
+        public bool IsChannelEnabled(string notificationType, NotificationChannelFlags channel)
+        {
+            var preference = GetNotificationPreference(notificationType);
+
+            if (preference == null)
+            {
+                // Default behavior: only InApp is enabled if no preference is set
+                return channel == NotificationChannelFlags.InApp;
+            }
+
+            return preference.IsChannelEnabled(channel);
+        }
+
+        /// <summary>
+        /// Gets all enabled channels for a specific notification type
+        /// </summary>
+        /// <param name="notificationType">The type of notification</param>
+        /// <returns>Flags representing all enabled channels. Defaults to InApp if no preference is set.</returns>
+        public NotificationChannelFlags GetEnabledChannels(string notificationType)
+        {
+            var preference = GetNotificationPreference(notificationType);
+            return preference?.EnabledChannels ?? NotificationChannelFlags.InApp;
         }
     }
 }

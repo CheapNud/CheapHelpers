@@ -1,0 +1,437 @@
+@using CheapHelpers.Models.Entities
+@using CheapHelpers.Models.Enums
+@using CheapHelpers.Services.Notifications
+@using CheapHelpers.Services.Notifications.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.SignalR.Client
+@inject IInAppNotificationService NotificationService
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<MudBadge Content="@_unreadCount" Visible="@(_unreadCount > 0)" Color="Color.Error" Overlap="true" Class="mx-2">
+    <MudIconButton Icon="@Icons.Material.Filled.Notifications"
+                   Color="Color.Inherit"
+                   OnClick="@(() => ToggleDrawer())" />
+</MudBadge>
+
+<MudDrawer @bind-Open="_drawerOpen"
+           Anchor="Anchor.End"
+           Elevation="2"
+           Variant="DrawerVariant.Temporary"
+           Width="400px">
+    <MudDrawerHeader>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width: 100%">
+            <MudText Typo="Typo.h6">Notifications</MudText>
+            @if (_unreadCount > 0)
+            {
+                <MudButton Size="Size.Small"
+                          Color="Color.Primary"
+                          Variant="Variant.Text"
+                          OnClick="@(() => MarkAllAsRead())">
+                    Mark all read
+                </MudButton>
+            }
+        </MudStack>
+    </MudDrawerHeader>
+
+    <MudDivider />
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="height: 200px">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        </MudStack>
+    }
+    else if (_notifications.Count == 0)
+    {
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="height: 200px; padding: 20px">
+            <MudIcon Icon="@Icons.Material.Filled.NotificationsNone" Size="Size.Large" Color="Color.Default" />
+            <MudText Typo="Typo.body1" Color="Color.Default">No notifications</MudText>
+        </MudStack>
+    }
+    else
+    {
+        <MudList T="InAppNotification" Clickable="true">
+            @foreach (var notification in _notifications)
+            {
+                <MudListItem T="InAppNotification" OnClick="@(() => HandleNotificationClick(notification))">
+                    <MudStack Row="false" Spacing="1">
+                        <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="2">
+                            <div>
+                                @if (!string.IsNullOrEmpty(notification.IconUrl))
+                                {
+                                    <MudAvatar Image="@notification.IconUrl" Size="Size.Medium" />
+                                }
+                                else
+                                {
+                                    <MudAvatar Color="@GetPriorityColor(notification.Priority)" Size="Size.Medium">
+                                        <MudIcon Icon="@GetPriorityIcon(notification.Priority)" />
+                                    </MudAvatar>
+                                }
+                            </div>
+                            <MudStack Row="false" Spacing="0" Style="flex: 1">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudText Typo="Typo.body2" Style="@(notification.IsRead ? "" : "font-weight: bold")">
+                                        @notification.Title
+                                    </MudText>
+                                    @if (!notification.IsRead)
+                                    {
+                                        <MudIcon Icon="@Icons.Material.Filled.Circle"
+                                                Color="Color.Primary"
+                                                Size="Size.Small"
+                                                Style="font-size: 8px" />
+                                    }
+                                </MudStack>
+                                @if (!string.IsNullOrEmpty(notification.Body))
+                                {
+                                    <MudText Typo="Typo.body2" Color="Color.Default">
+                                        @(notification.Body.Length > 80 ? notification.Body.Substring(0, 80) + "..." : notification.Body)
+                                    </MudText>
+                                }
+                                <MudText Typo="Typo.caption" Color="Color.Default">
+                                    @HumanizeTimestamp(notification.CreatedAt)
+                                </MudText>
+                            </MudStack>
+                        </MudStack>
+                    </MudStack>
+                </MudListItem>
+                <MudDivider />
+            }
+        </MudList>
+
+        @if (_hasMore)
+        {
+            <MudStack AlignItems="AlignItems.Center" Style="padding: 16px">
+                <MudButton Color="Color.Primary"
+                          Variant="Variant.Text"
+                          OnClick="@(() => LoadMore())"
+                          Disabled="_loadingMore">
+                    @if (_loadingMore)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                    }
+                    else
+                    {
+                        <MudText>Load more</MudText>
+                    }
+                </MudButton>
+            </MudStack>
+        }
+    }
+</MudDrawer>
+
+@code {
+    /// <summary>
+    /// Optional user ID. If not provided, will be retrieved from AuthenticationState.
+    /// </summary>
+    [Parameter]
+    public string? UserId { get; set; }
+
+    /// <summary>
+    /// Cascading parameter for getting the current authenticated user.
+    /// </summary>
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthState { get; set; }
+
+    private HubConnection? _hubConnection;
+    private bool _drawerOpen;
+    private int _unreadCount;
+    private List<InAppNotification> _notifications = [];
+    private bool _loading;
+    private bool _loadingMore;
+    private bool _hasMore;
+    private int _currentSkip;
+    private const int PageSize = 20;
+    private bool _notificationsLoaded;
+
+    /// <summary>
+    /// Initializes the component, retrieves user ID from authentication state if needed,
+    /// loads unread count, and establishes SignalR connection.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        // Get user ID from AuthState if not provided
+        if (string.IsNullOrEmpty(UserId) && AuthState != null)
+        {
+            var authState = await AuthState;
+            var user = authState?.User;
+            if (user?.Identity?.IsAuthenticated == true)
+            {
+                UserId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            }
+        }
+
+        // Load unread count and connect to SignalR if we have a user ID
+        if (!string.IsNullOrEmpty(UserId))
+        {
+            await LoadUnreadCount();
+            await ConnectToHub();
+        }
+    }
+
+    /// <summary>
+    /// Establishes SignalR connection to the notification hub and subscribes to real-time events.
+    /// </summary>
+    private async Task ConnectToHub()
+    {
+        if (string.IsNullOrEmpty(UserId))
+            return;
+
+        try
+        {
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/hubs/notifications"))
+                .WithAutomaticReconnect()
+                .Build();
+
+            // Subscribe to receive notification events
+            _hubConnection.On<InAppNotification>("ReceiveNotification", async (notification) =>
+            {
+                // Add to top of list
+                _notifications.Insert(0, notification);
+
+                // Increment unread count
+                _unreadCount++;
+
+                // Update UI
+                await InvokeAsync(StateHasChanged);
+            });
+
+            await _hubConnection.StartAsync();
+        }
+        catch (Exception)
+        {
+            // TODO: Add logging or error handling
+            // Connection failed - component will still work without real-time updates
+        }
+    }
+
+    /// <summary>
+    /// Loads the count of unread notifications for the current user.
+    /// </summary>
+    private async Task LoadUnreadCount()
+    {
+        if (string.IsNullOrEmpty(UserId))
+            return;
+
+        try
+        {
+            _unreadCount = await NotificationService.GetUnreadCountAsync(UserId);
+            StateHasChanged();
+        }
+        catch (Exception)
+        {
+            // TODO: Add logging or error handling
+        }
+    }
+
+    /// <summary>
+    /// Toggles the notification drawer open/closed and loads notifications on first open.
+    /// </summary>
+    private async Task ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+
+        // Load notifications on first open
+        if (_drawerOpen && !_notificationsLoaded)
+        {
+            await LoadNotifications();
+        }
+    }
+
+    /// <summary>
+    /// Loads the first page of notifications for the current user.
+    /// </summary>
+    private async Task LoadNotifications()
+    {
+        if (string.IsNullOrEmpty(UserId))
+            return;
+
+        _loading = true;
+        _currentSkip = 0;
+
+        try
+        {
+            var filter = new InAppNotificationFilter
+            {
+                Skip = 0,
+                Take = PageSize,
+                SortBy = "CreatedAt",
+                SortDescending = true
+            };
+
+            var notifications = await NotificationService.GetUserNotificationsAsync(UserId, filter);
+            _notifications = notifications;
+            _hasMore = notifications.Count == PageSize;
+            _currentSkip = PageSize;
+            _notificationsLoaded = true;
+        }
+        catch (Exception)
+        {
+            // TODO: Add logging or error handling
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Loads the next page of notifications.
+    /// </summary>
+    private async Task LoadMore()
+    {
+        if (string.IsNullOrEmpty(UserId) || _loadingMore)
+            return;
+
+        _loadingMore = true;
+
+        try
+        {
+            var filter = new InAppNotificationFilter
+            {
+                Skip = _currentSkip,
+                Take = PageSize,
+                SortBy = "CreatedAt",
+                SortDescending = true
+            };
+
+            var notifications = await NotificationService.GetUserNotificationsAsync(UserId, filter);
+            _notifications.AddRange(notifications);
+            _hasMore = notifications.Count == PageSize;
+            _currentSkip += PageSize;
+        }
+        catch (Exception)
+        {
+            // TODO: Add logging or error handling
+        }
+        finally
+        {
+            _loadingMore = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>
+    /// Handles notification click: marks as read, navigates if ActionUrl exists, and closes drawer.
+    /// </summary>
+    private async Task HandleNotificationClick(InAppNotification notification)
+    {
+        if (string.IsNullOrEmpty(UserId))
+            return;
+
+        // Mark as read if not already read
+        if (!notification.IsRead)
+        {
+            var success = await NotificationService.MarkAsReadAsync(notification.Id, UserId);
+            if (success)
+            {
+                notification.MarkAsRead();
+                _unreadCount = Math.Max(0, _unreadCount - 1);
+                StateHasChanged();
+            }
+        }
+
+        // Navigate to action URL if provided
+        if (!string.IsNullOrEmpty(notification.ActionUrl))
+        {
+            Navigation.NavigateTo(notification.ActionUrl);
+            _drawerOpen = false;
+        }
+    }
+
+    /// <summary>
+    /// Marks all notifications as read for the current user.
+    /// </summary>
+    private async Task MarkAllAsRead()
+    {
+        if (string.IsNullOrEmpty(UserId))
+            return;
+
+        try
+        {
+            var markedCount = await NotificationService.MarkAllAsReadAsync(UserId);
+            if (markedCount > 0)
+            {
+                // Update all notifications in the list
+                foreach (var notification in _notifications.Where(n => !n.IsRead))
+                {
+                    notification.MarkAsRead();
+                }
+
+                _unreadCount = 0;
+                StateHasChanged();
+            }
+        }
+        catch (Exception)
+        {
+            // TODO: Add logging or error handling
+        }
+    }
+
+    /// <summary>
+    /// Returns a MudBlazor color based on notification priority.
+    /// </summary>
+    private Color GetPriorityColor(NotificationPriority priority)
+    {
+        return priority switch
+        {
+            NotificationPriority.Low => Color.Default,
+            NotificationPriority.Normal => Color.Info,
+            NotificationPriority.High => Color.Warning,
+            NotificationPriority.Urgent => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    /// <summary>
+    /// Returns an icon based on notification priority.
+    /// </summary>
+    private string GetPriorityIcon(NotificationPriority priority)
+    {
+        return priority switch
+        {
+            NotificationPriority.Low => Icons.Material.Filled.Info,
+            NotificationPriority.Normal => Icons.Material.Filled.Notifications,
+            NotificationPriority.High => Icons.Material.Filled.Warning,
+            NotificationPriority.Urgent => Icons.Material.Filled.Error,
+            _ => Icons.Material.Filled.Notifications
+        };
+    }
+
+    /// <summary>
+    /// Converts a timestamp to a human-readable relative time string.
+    /// TODO: Consider using Humanizer library for more sophisticated formatting.
+    /// </summary>
+    private string HumanizeTimestamp(DateTime timestamp)
+    {
+        var timeSpan = DateTime.UtcNow - timestamp;
+
+        if (timeSpan.TotalMinutes < 1)
+            return "Just now";
+
+        if (timeSpan.TotalMinutes < 60)
+            return $"{(int)timeSpan.TotalMinutes} minutes ago";
+
+        if (timeSpan.TotalHours < 24)
+            return $"{(int)timeSpan.TotalHours} hours ago";
+
+        if (timeSpan.TotalDays < 7)
+            return $"{(int)timeSpan.TotalDays} days ago";
+
+        return timestamp.ToString("MMM dd, yyyy");
+    }
+
+    /// <summary>
+    /// Disposes the SignalR hub connection.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection != null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+}

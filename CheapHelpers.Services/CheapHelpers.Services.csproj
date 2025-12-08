@@ -86,6 +86,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CheapHelpers.EF\CheapHelpers.EF.csproj" />
     <ProjectReference Include="..\CheapHelpers.Models\CheapHelpers.Models.csproj" />
     <ProjectReference Include="..\CheapHelpers\CheapHelpers.csproj" />
   </ItemGroup>

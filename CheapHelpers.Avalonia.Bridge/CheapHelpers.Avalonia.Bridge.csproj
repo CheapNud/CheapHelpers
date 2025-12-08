@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Version>1.0.0</Version>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OutputType>Library</OutputType>
+
+    <!-- NuGet Package Metadata -->
+    <PackageId>CheapHelpers.Avalonia.Bridge</PackageId>
+    <Authors>CheapNud</Authors>
+    <Company>CheapNud</Company>
+    <Product>CheapHelpers</Product>
+    <Description>Bridge package integrating CheapAvaloniaBlazor desktop notifications with CheapHelpers notification system. Provides DesktopNotificationChannel adapter allowing desktop OS notifications to participate in the unified notification system.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>cheaphelpers;avalonia;photino;webview;notifications;bridge;desktop;adapter</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <!-- Documentation and Symbols -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn> <!-- Suppress missing XML comment warnings -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- CheapHelpers notification system -->
+    <ProjectReference Include="..\CheapHelpers.Services\CheapHelpers.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- CheapAvaloniaBlazor desktop interop -->
+    <PackageReference Include="CheapAvaloniaBlazor" Version="1.1.3" />
+  </ItemGroup>
+
+</Project>

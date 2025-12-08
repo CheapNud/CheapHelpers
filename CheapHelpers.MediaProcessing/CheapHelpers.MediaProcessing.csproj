@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Version>1.0.0</Version>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- Platform Support - Windows Only -->
+    <!-- Reasons: WMI (System.Management), TensorRT detection, NVENC detection -->
+    <RuntimeIdentifiers>win-x64;win-x86;win-arm64</RuntimeIdentifiers>
+
+    <!-- Suppress CA1416: This targets Windows-specific APIs by design -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+
+    <!-- NuGet Package Metadata -->
+    <PackageId>CheapHelpers.MediaProcessing</PackageId>
+    <Authors>CheapNud</Authors>
+    <Company>CheapNud</Company>
+    <Product>CheapHelpers</Product>
+    <Description>Media processing utilities including FFmpeg integration, hardware detection (GPU/NVENC), dependency management for video processing tools, and process management helpers</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>ffmpeg;video;media;hardware-detection;nvenc;gpu;video-processing;dependency-management</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <!-- Documentation and Symbols -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- FFmpeg wrapper -->
+    <PackageReference Include="FFMpegCore" Version="5.4.0" />
+
+    <!-- Hardware detection (WMI) -->
+    <PackageReference Include="System.Management" Version="10.0.0" />
+
+    <!-- Archive extraction for dependency installation -->
+    <PackageReference Include="SharpCompress" Version="0.41.0" />
+
+    <!-- Retry logic for downloads -->
+    <PackageReference Include="Polly" Version="8.6.5" />
+
+    <!-- DI extension -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CheapHelpers\CheapHelpers.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -37,6 +37,7 @@ jobs:
         dotnet restore CheapHelpers.Services/CheapHelpers.Services.csproj
         dotnet restore CheapHelpers.Blazor/CheapHelpers.Blazor.csproj
         dotnet restore CheapHelpers.Networking/CheapHelpers.Networking.csproj
+        dotnet restore CheapHelpers.MediaProcessing/CheapHelpers.MediaProcessing.csproj
 
     - name: Build solution (non-MAUI projects only)
       run: |
@@ -46,6 +47,7 @@ jobs:
         dotnet build CheapHelpers.Services/CheapHelpers.Services.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
         dotnet build CheapHelpers.Blazor/CheapHelpers.Blazor.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
         dotnet build CheapHelpers.Networking/CheapHelpers.Networking.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
+        dotnet build CheapHelpers.MediaProcessing/CheapHelpers.MediaProcessing.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
 
     - name: Run tests (if test projects exist)
       run: dotnet test --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal || echo "No test projects found"

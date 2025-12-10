@@ -158,6 +158,48 @@ public class ProcessManager
     }
 
     /// <summary>
+    /// Gracefully shut down a process with optional force kill
+    /// </summary>
+    public static async Task GracefulShutdownAsync(
+        SysProcess process,
+        int gracefulTimeoutMs = 3000,
+        string processName = "Process")
+    {
+        if (process.HasExited)
+        {
+            Debug.WriteLine($"[{processName}] Already exited");
+            return;
+        }
+
+        try
+        {
+            // Try to close the process gracefully
+            Debug.WriteLine($"[{processName}] Attempting graceful shutdown...");
+            process.CloseMainWindow();
+
+            // Wait for graceful exit
+            using var cts = new CancellationTokenSource(gracefulTimeoutMs);
+            try
+            {
+                await process.WaitForExitAsync(cts.Token);
+                Debug.WriteLine($"[{processName}] Graceful shutdown successful");
+            }
+            catch (OperationCanceledException)
+            {
+                // Graceful shutdown failed, force kill
+                Debug.WriteLine($"[{processName}] Graceful shutdown timed out, forcing kill...");
+                process.Kill(true);
+                Debug.WriteLine($"[{processName}] Force killed");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[{processName}] Error during shutdown: {ex.Message}");
+            try { process.Kill(true); } catch { }
+        }
+    }
+
+    /// <summary>
     /// Start a long-running process with progress reporting
     /// </summary>
     public SysProcess StartLongRunning(

@@ -20,12 +20,14 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
         var detected = new DetectedExecutables
         {
             FFmpegPath = DetectFFmpeg(useSvpEncoders: true, customPath: null),
-            FFprobePath = DetectFFprobe(useSvpEncoders: true, customPath: null)
+            FFprobePath = DetectFFprobe(useSvpEncoders: true, customPath: null),
+            MeltPath = DetectMelt(customPath: null)
         };
 
         Debug.WriteLine("=== Executable Detection ===");
         Debug.WriteLine($"FFmpeg: {detected.FFmpegPath ?? "NOT FOUND"}");
         Debug.WriteLine($"FFprobe: {detected.FFprobePath ?? "NOT FOUND"}");
+        Debug.WriteLine($"Melt: {detected.MeltPath ?? "NOT FOUND"}");
         Debug.WriteLine("============================");
 
         return detected;
@@ -83,6 +85,48 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
         }
 
         Debug.WriteLine("[FFmpeg] NOT FOUND");
+        return null;
+    }
+
+    /// <summary>
+    /// Detect Melt (Shotcut/MLT renderer) with priority order
+    /// </summary>
+    public string? DetectMelt(string? customPath)
+    {
+        // 1. Custom path
+        if (!string.IsNullOrWhiteSpace(customPath) && File.Exists(customPath))
+        {
+            Debug.WriteLine($"[Melt] Using custom path: {customPath}");
+            return customPath;
+        }
+
+        // 2. System PATH
+        if (IsExecutableInPath("melt"))
+        {
+            var pathLocation = GetExecutablePathFromCommand("melt");
+            Debug.WriteLine($"[Melt] Found in system PATH: {pathLocation ?? "melt"}");
+            return pathLocation ?? "melt";
+        }
+
+        // 3. Common installation locations (Shotcut)
+        var commonPaths = new[]
+        {
+            @"C:\Program Files\Shotcut\melt.exe",
+            @"C:\Program Files (x86)\Shotcut\melt.exe",
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Shotcut", "melt.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Shotcut", "melt.exe")
+        };
+
+        foreach (var path in commonPaths)
+        {
+            if (File.Exists(path))
+            {
+                Debug.WriteLine($"[Melt] Using: {path}");
+                return path;
+            }
+        }
+
+        Debug.WriteLine("[Melt] NOT FOUND");
         return null;
     }
 
@@ -270,6 +314,7 @@ public class DetectedExecutables
 {
     public string? FFmpegPath { get; set; }
     public string? FFprobePath { get; set; }
+    public string? MeltPath { get; set; }
 
     /// <summary>
     /// Additional detected executables (app-specific)
@@ -278,5 +323,6 @@ public class DetectedExecutables
 
     public bool FFmpegFound => FFmpegPath != null;
     public bool FFprobeFound => FFprobePath != null;
+    public bool MeltFound => MeltPath != null;
     public bool EssentialsFound => FFmpegFound && FFprobeFound;
 }

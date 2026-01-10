@@ -223,18 +223,40 @@ public class TemporaryFileManager : IDisposable
         return totalSize;
     }
 
+    /// <summary>
+    /// Disposes the manager and cleans up all tracked temporary files
+    /// </summary>
+    /// <remarks>
+    /// IMPORTANT: Always dispose this manager explicitly (via 'using' or DI scope).
+    /// Temp files will NOT be cleaned up automatically if Dispose is not called.
+    /// This is by design - finalizers should not perform I/O operations.
+    /// </remarks>
     public void Dispose()
     {
-        if (!_disposed)
-        {
-            CleanupAll();
-            _disposed = true;
-        }
+        Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }
 
-    ~TemporaryFileManager()
+    /// <summary>
+    /// Protected implementation of Dispose pattern
+    /// </summary>
+    /// <param name="disposing">True if called from Dispose(), false if from finalizer</param>
+    protected virtual void Dispose(bool disposing)
     {
-        Dispose();
+        if (_disposed)
+            return;
+
+        if (disposing)
+        {
+            // Only clean up managed resources when called explicitly
+            // File I/O in finalizers is dangerous and unreliable
+            CleanupAll();
+        }
+
+        _disposed = true;
     }
+
+    // NOTE: Finalizer intentionally removed.
+    // File system operations in finalizers are unreliable and can cause issues.
+    // Always ensure explicit disposal via 'using' statement or DI scoped lifetime.
 }

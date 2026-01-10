@@ -13,6 +13,51 @@ namespace CheapHelpers.MediaProcessing.Services;
 public class ExecutableDetectionService(SvpDetectionService svpDetection)
 {
     private const int PROCESS_TIMEOUT_MS = 1000;
+
+    /// <summary>
+    /// Characters that are not allowed in executable names for security
+    /// </summary>
+    private static readonly char[] InvalidExecutableChars = ['&', '|', ';', '$', '`', '"', '\'', '<', '>', '(', ')', '{', '}', '[', ']', '\n', '\r'];
+
+    /// <summary>
+    /// Validates an executable name to prevent command injection
+    /// </summary>
+    /// <param name="executableName">The name to validate</param>
+    /// <returns>True if the name is safe to use</returns>
+    private static bool IsValidExecutableName(string? executableName)
+    {
+        if (string.IsNullOrWhiteSpace(executableName))
+            return false;
+
+        // Check for command injection characters
+        if (executableName.IndexOfAny(InvalidExecutableChars) >= 0)
+            return false;
+
+        // Check for path traversal
+        if (executableName.Contains(".."))
+            return false;
+
+        // Check for invalid filename characters (but allow path separators for full paths)
+        var fileName = Path.GetFileName(executableName);
+        if (fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Validates an executable name and throws if invalid
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when the executable name contains invalid characters</exception>
+    private static void ValidateExecutableName(string executableName, string paramName)
+    {
+        if (!IsValidExecutableName(executableName))
+        {
+            throw new ArgumentException(
+                $"Invalid executable name '{executableName}'. Name contains characters that could be used for command injection.",
+                paramName);
+        }
+    }
     /// <summary>
     /// Auto-detect common media executables
     /// </summary>
@@ -178,12 +223,22 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     /// <summary>
     /// Generic executable detection with custom search paths
     /// </summary>
+    /// <exception cref="ArgumentException">Thrown when executableName contains invalid characters</exception>
     public string? DetectExecutable(string executableName, string? customPath, params string[] searchPaths)
     {
-        // 1. Custom path
-        if (!string.IsNullOrWhiteSpace(customPath) && File.Exists(customPath))
+        ValidateExecutableName(executableName, nameof(executableName));
+
+        // 1. Custom path (validate if provided)
+        if (!string.IsNullOrWhiteSpace(customPath))
         {
-            return customPath;
+            if (!IsValidExecutableName(customPath))
+            {
+                Debug.WriteLine($"[DetectExecutable] Custom path rejected (invalid characters): {customPath}");
+            }
+            else if (File.Exists(customPath))
+            {
+                return customPath;
+            }
         }
 
         // 2. System PATH
@@ -192,10 +247,10 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
             return GetExecutablePathFromCommand(executableName) ?? executableName;
         }
 
-        // 3. Search paths
+        // 3. Search paths (only check valid paths)
         foreach (var path in searchPaths)
         {
-            if (File.Exists(path))
+            if (IsValidExecutableName(path) && File.Exists(path))
             {
                 return path;
             }
@@ -207,8 +262,11 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     /// <summary>
     /// Check if executable exists in system PATH
     /// </summary>
+    /// <exception cref="ArgumentException">Thrown when executableName contains invalid characters</exception>
     public bool IsExecutableInPath(string executableName)
     {
+        ValidateExecutableName(executableName, nameof(executableName));
+
         try
         {
             using var process = new SysProcess
@@ -238,22 +296,24 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     /// <summary>
     /// Get full path of executable from PATH using 'where' command (Windows)
     /// </summary>
+    /// <exception cref="ArgumentException">Thrown when executableName contains invalid characters</exception>
     public string? GetExecutablePathFromCommand(string executableName)
     {
+        ValidateExecutableName(executableName, nameof(executableName));
+
         try
         {
-            using var process = new SysProcess
+            // Use ArgumentList to prevent command injection
+            var startInfo = new ProcessStartInfo("where")
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "where",
-                    Arguments = executableName,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
             };
+            startInfo.ArgumentList.Add(executableName);
+
+            using var process = new SysProcess { StartInfo = startInfo };
 
             process.Start();
             var output = process.StandardOutput.ReadToEnd().Trim();
@@ -265,7 +325,10 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
                 return File.Exists(firstPath) ? firstPath : null;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to find {executableName} in PATH: {ex.Message}");
+        }
 
         return null;
     }
@@ -273,8 +336,11 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     /// <summary>
     /// Get version string from an executable
     /// </summary>
+    /// <exception cref="ArgumentException">Thrown when executablePath contains invalid characters</exception>
     public async Task<string?> GetExecutableVersionAsync(string executablePath, string versionArgument = "-version")
     {
+        ValidateExecutableName(executablePath, nameof(executablePath));
+
         try
         {
             using var process = new SysProcess

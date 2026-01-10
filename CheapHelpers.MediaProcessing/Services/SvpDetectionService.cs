@@ -1,5 +1,6 @@
 using SysProcess = System.Diagnostics.Process;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Xml.Linq;
 
 namespace CheapHelpers.MediaProcessing.Services;
@@ -9,17 +10,45 @@ namespace CheapHelpers.MediaProcessing.Services;
 /// SVP includes high-quality FFmpeg builds with full hardware acceleration support.
 /// </summary>
 /// <remarks>
+/// PLATFORM REQUIREMENT: This service requires Windows operating system.
+/// Uses Windows-specific paths and the 'where' command for executable detection.
 /// PREFER SVP's FFmpeg over other installations for better NVENC performance.
 /// Detection priority: SVP installation > Custom path > System PATH > Common locations.
 /// </remarks>
+[SupportedOSPlatform("windows")]
 public class SvpDetectionService
 {
     private const string SVP_INSTALL_PATH_X86 = @"C:\Program Files (x86)\SVP 4";
     private const string SVP_INSTALL_PATH_X64 = @"C:\Program Files\SVP 4";
     private const int PROCESS_TIMEOUT_MS = 1000;
 
+    /// <summary>
+    /// Characters that are not allowed in file paths for security
+    /// </summary>
+    private static readonly char[] InvalidPathChars = ['&', '|', ';', '$', '`', '"', '\'', '<', '>', '(', ')', '{', '}', '[', ']', '\n', '\r'];
+
     private SvpInstallation? _cachedInstallation;
     private readonly object _cacheLock = new();
+
+    /// <summary>
+    /// Validates a file path to prevent command injection
+    /// </summary>
+    private static bool IsValidPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+
+        // Check for command injection characters
+        if (path.IndexOfAny(InvalidPathChars) >= 0)
+            return false;
+
+        // Check for path traversal outside of normal directory navigation
+        // Allow single ".." for relative paths but prevent injection patterns
+        if (path.Contains("...") || path.Contains("..\\..\\..\\.."))
+            return false;
+
+        return true;
+    }
 
     /// <summary>
     /// Detect SVP installation (cached after first call)
@@ -83,6 +112,9 @@ public class SvpDetectionService
     /// 3. System PATH
     /// 4. Common installation locations
     /// </summary>
+    /// <param name="useSvpEncoders">Whether to prefer SVP's FFmpeg installation</param>
+    /// <param name="customPath">Optional custom path to FFmpeg executable</param>
+    /// <returns>Path to FFmpeg executable, or null if not found</returns>
     public string? GetPreferredFFmpegPath(bool useSvpEncoders, string? customPath = null)
     {
         // 1. SVP installation (if enabled)
@@ -96,11 +128,18 @@ public class SvpDetectionService
             }
         }
 
-        // 2. Custom path
-        if (!string.IsNullOrWhiteSpace(customPath) && File.Exists(customPath))
+        // 2. Custom path (validate for security)
+        if (!string.IsNullOrWhiteSpace(customPath))
         {
-            Debug.WriteLine($"Using custom FFmpeg: {customPath}");
-            return customPath;
+            if (!IsValidPath(customPath))
+            {
+                Debug.WriteLine($"[FFmpeg] Custom path rejected (invalid characters): {customPath}");
+            }
+            else if (File.Exists(customPath))
+            {
+                Debug.WriteLine($"Using custom FFmpeg: {customPath}");
+                return customPath;
+            }
         }
 
         // 3. System PATH (test if 'ffmpeg' command works)

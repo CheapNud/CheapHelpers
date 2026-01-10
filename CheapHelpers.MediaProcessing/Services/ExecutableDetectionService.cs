@@ -1,5 +1,6 @@
 using SysProcess = System.Diagnostics.Process;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace CheapHelpers.MediaProcessing.Services;
 
@@ -10,6 +11,11 @@ namespace CheapHelpers.MediaProcessing.Services;
 /// 3. System PATH
 /// 4. Common installation directories
 /// </summary>
+/// <remarks>
+/// PLATFORM REQUIREMENT: This service requires Windows operating system.
+/// Uses the Windows 'where' command for PATH detection.
+/// </remarks>
+[SupportedOSPlatform("windows")]
 public class ExecutableDetectionService(SvpDetectionService svpDetection)
 {
     private const int PROCESS_TIMEOUT_MS = 1000;

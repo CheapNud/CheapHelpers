@@ -8,6 +8,8 @@ namespace CheapHelpers.MediaProcessing.Services.Utilities;
 /// </summary>
 public class ProcessManager
 {
+    private const int DEFAULT_SYNC_TIMEOUT_MS = 30000;
+
     /// <summary>
     /// Run a process and capture output
     /// </summary>
@@ -39,12 +41,17 @@ public class ProcessManager
 
         var outputBuilder = new System.Text.StringBuilder();
         var errorBuilder = new System.Text.StringBuilder();
+        var outputLock = new object();
+        var errorLock = new object();
 
         process.OutputDataReceived += (_, e) =>
         {
             if (e.Data != null)
             {
-                outputBuilder.AppendLine(e.Data);
+                lock (outputLock)
+                {
+                    outputBuilder.AppendLine(e.Data);
+                }
                 onOutput?.Invoke(e.Data);
             }
         };
@@ -53,7 +60,10 @@ public class ProcessManager
         {
             if (e.Data != null)
             {
-                errorBuilder.AppendLine(e.Data);
+                lock (errorLock)
+                {
+                    errorBuilder.AppendLine(e.Data);
+                }
                 onError?.Invoke(e.Data);
             }
         };
@@ -85,8 +95,8 @@ public class ProcessManager
             }
 
             result.ExitCode = process.ExitCode;
-            result.StandardOutput = outputBuilder.ToString();
-            result.StandardError = errorBuilder.ToString();
+            lock (outputLock) { result.StandardOutput = outputBuilder.ToString(); }
+            lock (errorLock) { result.StandardError = errorBuilder.ToString(); }
             result.Success = process.ExitCode == 0;
         }
         catch (OperationCanceledException)
@@ -110,7 +120,7 @@ public class ProcessManager
         string fileName,
         string arguments,
         string? workingDirectory = null,
-        int timeoutMs = 30000)
+        int timeoutMs = DEFAULT_SYNC_TIMEOUT_MS)
     {
         var result = new ProcessResult();
 
@@ -200,9 +210,20 @@ public class ProcessManager
     }
 
     /// <summary>
-    /// Start a long-running process with progress reporting
+    /// Start a long-running process with progress reporting.
+    /// Returns a <see cref="ManagedProcess"/> that must be disposed when no longer needed.
     /// </summary>
-    public SysProcess StartLongRunning(
+    /// <remarks>
+    /// IMPORTANT: The caller is responsible for disposing the returned <see cref="ManagedProcess"/>.
+    /// Use with 'using' statement or call Dispose() explicitly to prevent process leaks.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// using var managed = processManager.StartLongRunning("ffmpeg", "-i input.mp4 output.mkv");
+    /// await managed.WaitForExitAsync();
+    /// </code>
+    /// </example>
+    public ManagedProcess StartLongRunning(
         string fileName,
         string arguments,
         string? workingDirectory = null,
@@ -244,7 +265,95 @@ public class ProcessManager
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
-        return process;
+        return new ManagedProcess(process);
+    }
+}
+
+/// <summary>
+/// Wrapper for long-running processes that ensures proper disposal.
+/// Implements IDisposable to properly clean up process resources.
+/// </summary>
+/// <remarks>
+/// This class wraps a System.Diagnostics.Process and provides:
+/// - Automatic disposal of process resources
+/// - Access to the underlying process for monitoring
+/// - Helper methods for graceful shutdown
+/// </remarks>
+public sealed class ManagedProcess : IDisposable
+{
+    private readonly SysProcess _process;
+    private bool _disposed;
+
+    internal ManagedProcess(SysProcess process) => _process = process;
+
+    /// <summary>
+    /// Gets the underlying process. Use with caution - prefer using ManagedProcess methods.
+    /// </summary>
+    public SysProcess Process => _process;
+
+    /// <summary>
+    /// Gets a value indicating whether the process has exited
+    /// </summary>
+    public bool HasExited => _process.HasExited;
+
+    /// <summary>
+    /// Gets the exit code of the process (only valid after process has exited)
+    /// </summary>
+    public int ExitCode => _process.ExitCode;
+
+    /// <summary>
+    /// Gets the process ID
+    /// </summary>
+    public int Id => _process.Id;
+
+    /// <summary>
+    /// Wait for the process to exit asynchronously
+    /// </summary>
+    public Task WaitForExitAsync(CancellationToken cancellationToken = default) =>
+        _process.WaitForExitAsync(cancellationToken);
+
+    /// <summary>
+    /// Wait for the process to exit synchronously with optional timeout
+    /// </summary>
+    public bool WaitForExit(int milliseconds) => _process.WaitForExit(milliseconds);
+
+    /// <summary>
+    /// Wait for the process to exit synchronously
+    /// </summary>
+    public void WaitForExit() => _process.WaitForExit();
+
+    /// <summary>
+    /// Kill the process immediately
+    /// </summary>
+    /// <param name="entireProcessTree">If true, kills the process and all child processes</param>
+    public void Kill(bool entireProcessTree = false) => _process.Kill(entireProcessTree);
+
+    /// <summary>
+    /// Gracefully shut down the process with optional force kill after timeout
+    /// </summary>
+    public async Task GracefulShutdownAsync(int gracefulTimeoutMs = 3000)
+    {
+        await ProcessManager.GracefulShutdownAsync(_process, gracefulTimeoutMs, $"Process-{_process.Id}");
+    }
+
+    /// <summary>
+    /// Disposes the process resources
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        try
+        {
+            if (!_process.HasExited)
+            {
+                _process.Kill(true);
+            }
+        }
+        catch { }
+
+        _process.Dispose();
     }
 }
 

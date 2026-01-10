@@ -1,28 +1,60 @@
 using SysProcess = System.Diagnostics.Process;
 using System.Diagnostics;
 using System.Management;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using CheapHelpers.MediaProcessing.Models;
 
 namespace CheapHelpers.MediaProcessing.Services;
 
 /// <summary>
-/// Detects hardware capabilities including CPU, GPU, and available video encoders
-/// Provides information for optimizing video processing operations
-/// Note: Uses Windows Management Instrumentation (WMI) - Windows-only
+/// Detects hardware capabilities including CPU, GPU, and available video encoders.
+/// Provides information for optimizing video processing operations.
 /// </summary>
+/// <remarks>
+/// PLATFORM REQUIREMENT: This service requires Windows operating system.
+/// Uses Windows Management Instrumentation (WMI) for hardware detection.
+/// Attempting to use this service on non-Windows platforms will throw <see cref="PlatformNotSupportedException"/>.
+/// </remarks>
 [SupportedOSPlatform("windows")]
 public class HardwareDetectionService(SvpDetectionService svpDetection)
 {
+    // Encoding quality constants
+    private const int NVENC_OPTIMAL_QUALITY = 19;
+    private const int NVENC_HIGH_QUALITY = 18;
+    private const int CPU_DEFAULT_QUALITY = 23;
+    private const int CPU_HIGH_QUALITY = 20;
+    private const int CPU_FAST_QUALITY = 26;
+
+    // NVENC preset constants
+    private const string NVENC_BEST_PRESET = "p7";
+    private const string NVENC_FAST_PRESET = "p4";
+
+    // CPU preset constants
+    private const string CPU_DEFAULT_PRESET = "medium";
+    private const string CPU_HIGH_QUALITY_PRESET = "slow";
+    private const string CPU_FAST_PRESET = "fast";
+
     private HardwareCapabilities? _cachedCapabilities;
+    private readonly object _cacheLock = new();
 
     /// <summary>
     /// Detect hardware capabilities (cached after first call)
     /// </summary>
+    /// <exception cref="PlatformNotSupportedException">Thrown when running on non-Windows platform</exception>
     public virtual async Task<HardwareCapabilities> DetectHardwareAsync()
     {
+        ThrowIfNotWindows();
+
+        // Thread-safe double-check locking pattern
         if (_cachedCapabilities != null)
             return _cachedCapabilities;
+
+        lock (_cacheLock)
+        {
+            if (_cachedCapabilities != null)
+                return _cachedCapabilities;
+        }
 
         var capabilities = new HardwareCapabilities
         {
@@ -46,7 +78,10 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
         Debug.WriteLine($"Hardware Encoders Detected: {capabilities.SupportedEncoders.Count(e => e.Value.IsAvailable)}");
         Debug.WriteLine("========================");
 
-        _cachedCapabilities = capabilities;
+        lock (_cacheLock)
+        {
+            _cachedCapabilities = capabilities;
+        }
         return capabilities;
     }
 
@@ -68,16 +103,16 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
         {
             // NVENC settings - maximum quality at high speed
             settings.VideoCodec = "hevc_nvenc";
-            settings.NvencPreset = "p7"; // Best quality
+            settings.NvencPreset = NVENC_BEST_PRESET;
             settings.RateControl = "vbr";
-            settings.Quality = 19; // Visually lossless
+            settings.Quality = NVENC_OPTIMAL_QUALITY;
         }
         else
         {
             // CPU fallback
             settings.VideoCodec = "libx265";
-            settings.CpuPreset = "medium";
-            settings.Quality = 23;
+            settings.CpuPreset = CPU_DEFAULT_PRESET;
+            settings.Quality = CPU_DEFAULT_QUALITY;
         }
 
         var speedDescription = hw.NvencAvailable
@@ -98,13 +133,13 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
 
         if (settings.UseHardwareAcceleration)
         {
-            settings.Quality = 18;
-            settings.NvencPreset = "p7";
+            settings.Quality = NVENC_HIGH_QUALITY;
+            settings.NvencPreset = NVENC_BEST_PRESET;
         }
         else
         {
-            settings.CpuPreset = "slow";
-            settings.Quality = 20;
+            settings.CpuPreset = CPU_HIGH_QUALITY_PRESET;
+            settings.Quality = CPU_HIGH_QUALITY;
         }
 
         return settings;
@@ -119,13 +154,13 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
 
         if (settings.UseHardwareAcceleration)
         {
-            settings.NvencPreset = "p4";
-            settings.Quality = 23;
+            settings.NvencPreset = NVENC_FAST_PRESET;
+            settings.Quality = CPU_DEFAULT_QUALITY;
         }
         else
         {
-            settings.CpuPreset = "fast";
-            settings.Quality = 26;
+            settings.CpuPreset = CPU_FAST_PRESET;
+            settings.Quality = CPU_FAST_QUALITY;
         }
 
         return settings;
@@ -157,15 +192,18 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
     {
         try
         {
-            var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController");
-            var results = searcher.Get();
+            using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController");
+            using var results = searcher.Get();
 
             foreach (ManagementObject obj in results)
             {
-                var name = obj["Name"]?.ToString() ?? "";
-                if (name.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase))
+                using (obj)
                 {
-                    return true;
+                    var name = obj["Name"]?.ToString() ?? "";
+                    if (name.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
                 }
             }
 
@@ -176,7 +214,7 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
             // Fallback: check if nvidia-smi exists
             try
             {
-                var process = SysProcess.Start(new ProcessStartInfo
+                using var process = SysProcess.Start(new ProcessStartInfo
                 {
                     FileName = "nvidia-smi",
                     Arguments = "--query-gpu=name --format=csv,noheader",
@@ -201,24 +239,29 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
     {
         try
         {
-            var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController");
-            var results = searcher.Get();
+            using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController");
+            using var results = searcher.Get();
+
+            string? firstGpuName = null;
 
             foreach (ManagementObject obj in results)
             {
-                var name = obj["Name"]?.ToString() ?? "";
-                if (name.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase))
+                using (obj)
                 {
-                    return name;
+                    var name = obj["Name"]?.ToString() ?? "";
+
+                    // Prefer NVIDIA GPU name
+                    if (name.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return name;
+                    }
+
+                    // Remember first GPU as fallback
+                    firstGpuName ??= name;
                 }
             }
 
-            foreach (ManagementObject obj in results)
-            {
-                return obj["Name"]?.ToString() ?? "Unknown GPU";
-            }
-
-            return "Unknown GPU";
+            return firstGpuName ?? "Unknown GPU";
         }
         catch
         {
@@ -232,15 +275,18 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
 
         try
         {
-            var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController");
-            var results = searcher.Get();
+            using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_VideoController");
+            using var results = searcher.Get();
 
             foreach (ManagementObject obj in results)
             {
-                var name = obj["Name"]?.ToString();
-                if (!string.IsNullOrEmpty(name))
+                using (obj)
                 {
-                    gpuList.Add(name);
+                    var name = obj["Name"]?.ToString();
+                    if (!string.IsNullOrEmpty(name))
+                    {
+                        gpuList.Add(name);
+                    }
                 }
             }
 
@@ -248,7 +294,7 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
             {
                 try
                 {
-                    var process = new SysProcess
+                    using var process = new SysProcess
                     {
                         StartInfo = new ProcessStartInfo
                         {
@@ -291,12 +337,15 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
     {
         try
         {
-            var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Processor");
-            var results = searcher.Get();
+            using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Processor");
+            using var results = searcher.Get();
 
             foreach (ManagementObject obj in results)
             {
-                return obj["Name"]?.ToString() ?? "Unknown CPU";
+                using (obj)
+                {
+                    return obj["Name"]?.ToString() ?? "Unknown CPU";
+                }
             }
 
             return "Unknown CPU";
@@ -311,18 +360,21 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
     {
         try
         {
-            var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Processor");
-            var results = searcher.Get();
+            using var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Processor");
+            using var results = searcher.Get();
 
             foreach (ManagementObject obj in results)
             {
-                var cpuName = obj["Name"]?.ToString() ?? "";
-                var manufacturer = obj["Manufacturer"]?.ToString() ?? "";
+                using (obj)
+                {
+                    var cpuName = obj["Name"]?.ToString() ?? "";
+                    var manufacturer = obj["Manufacturer"]?.ToString() ?? "";
 
-                var isIntel = manufacturer.Contains("Intel", StringComparison.OrdinalIgnoreCase) ||
-                             cpuName.Contains("Intel", StringComparison.OrdinalIgnoreCase);
+                    var isIntel = manufacturer.Contains("Intel", StringComparison.OrdinalIgnoreCase) ||
+                                 cpuName.Contains("Intel", StringComparison.OrdinalIgnoreCase);
 
-                return isIntel;
+                    return isIntel;
+                }
             }
 
             return false;
@@ -423,7 +475,7 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
 
         try
         {
-            var process = new SysProcess
+            using var process = new SysProcess
             {
                 StartInfo = new ProcessStartInfo
                 {
@@ -493,7 +545,7 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
         {
             try
             {
-                var process = new SysProcess
+                using var process = new SysProcess
                 {
                     StartInfo = new ProcessStartInfo
                     {
@@ -538,7 +590,7 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
         {
             try
             {
-                var process = new SysProcess
+                using var process = new SysProcess
                 {
                     StartInfo = new ProcessStartInfo
                     {
@@ -571,5 +623,18 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Throws PlatformNotSupportedException if not running on Windows
+    /// </summary>
+    private static void ThrowIfNotWindows()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            throw new PlatformNotSupportedException(
+                "HardwareDetectionService requires Windows operating system. " +
+                "This service uses Windows Management Instrumentation (WMI) which is not available on other platforms.");
+        }
     }
 }

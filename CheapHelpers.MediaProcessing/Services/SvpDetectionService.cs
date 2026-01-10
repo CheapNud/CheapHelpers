@@ -5,24 +5,36 @@ using System.Xml.Linq;
 namespace CheapHelpers.MediaProcessing.Services;
 
 /// <summary>
-/// Detects SmoothVideo Project (SVP) 4 Pro installation and provides paths to encoders
-/// SVP includes high-quality FFmpeg builds with full hardware acceleration support
-/// PREFER SVP's FFmpeg over other installations for better NVENC performance
+/// Detects SmoothVideo Project (SVP) 4 Pro installation and provides paths to encoders.
+/// SVP includes high-quality FFmpeg builds with full hardware acceleration support.
 /// </summary>
+/// <remarks>
+/// PREFER SVP's FFmpeg over other installations for better NVENC performance.
+/// Detection priority: SVP installation > Custom path > System PATH > Common locations.
+/// </remarks>
 public class SvpDetectionService
 {
     private const string SVP_INSTALL_PATH_X86 = @"C:\Program Files (x86)\SVP 4";
     private const string SVP_INSTALL_PATH_X64 = @"C:\Program Files\SVP 4";
+    private const int PROCESS_TIMEOUT_MS = 1000;
 
     private SvpInstallation? _cachedInstallation;
+    private readonly object _cacheLock = new();
 
     /// <summary>
     /// Detect SVP installation (cached after first call)
     /// </summary>
     public virtual SvpInstallation DetectSvpInstallation()
     {
+        // Thread-safe double-check locking pattern
         if (_cachedInstallation != null)
             return _cachedInstallation;
+
+        lock (_cacheLock)
+        {
+            if (_cachedInstallation != null)
+                return _cachedInstallation;
+        }
 
         var installation = new SvpInstallation();
 
@@ -57,7 +69,10 @@ public class SvpDetectionService
             Debug.WriteLine("SVP 4 Pro not detected");
         }
 
-        _cachedInstallation = installation;
+        lock (_cacheLock)
+        {
+            _cachedInstallation = installation;
+        }
         return installation;
     }
 
@@ -126,7 +141,7 @@ public class SvpDetectionService
     {
         try
         {
-            var process = new SysProcess
+            using var process = new SysProcess
             {
                 StartInfo = new ProcessStartInfo
                 {
@@ -140,7 +155,7 @@ public class SvpDetectionService
             };
 
             process.Start();
-            process.WaitForExit(1000);
+            process.WaitForExit(PROCESS_TIMEOUT_MS);
 
             return process.ExitCode == 0;
         }
@@ -237,7 +252,7 @@ public class SvpDetectionService
     {
         try
         {
-            var process = new SysProcess
+            using var process = new SysProcess
             {
                 StartInfo = new ProcessStartInfo
                 {

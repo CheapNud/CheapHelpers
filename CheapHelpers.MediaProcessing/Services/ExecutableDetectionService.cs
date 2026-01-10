@@ -12,6 +12,7 @@ namespace CheapHelpers.MediaProcessing.Services;
 /// </summary>
 public class ExecutableDetectionService(SvpDetectionService svpDetection)
 {
+    private const int PROCESS_TIMEOUT_MS = 1000;
     /// <summary>
     /// Auto-detect common media executables
     /// </summary>
@@ -210,7 +211,7 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     {
         try
         {
-            var process = new SysProcess
+            using var process = new SysProcess
             {
                 StartInfo = new ProcessStartInfo
                 {
@@ -224,7 +225,7 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
             };
 
             process.Start();
-            process.WaitForExit(1000);
+            process.WaitForExit(PROCESS_TIMEOUT_MS);
 
             return process.ExitCode == 0 || process.ExitCode == 1;
         }
@@ -241,7 +242,7 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     {
         try
         {
-            var process = new SysProcess
+            using var process = new SysProcess
             {
                 StartInfo = new ProcessStartInfo
                 {
@@ -276,7 +277,7 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     {
         try
         {
-            var process = new SysProcess
+            using var process = new SysProcess
             {
                 StartInfo = new ProcessStartInfo
                 {

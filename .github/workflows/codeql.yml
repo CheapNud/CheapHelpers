@@ -42,10 +42,11 @@ jobs:
         queries: security-and-quality
 
     - name: Restore dependencies
-      run: dotnet restore CheapHelpers.sln
+      run: dotnet restore CheapHelpers.CI.sln
 
     - name: Build for CodeQL
-      run: dotnet build CheapHelpers.sln --configuration Release --no-restore /p:TargetFrameworks=net10.0
+      # Use CI solution which excludes MAUI (requires workloads not available on Ubuntu runners)
+      run: dotnet build CheapHelpers.CI.sln --configuration Release --no-restore
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3

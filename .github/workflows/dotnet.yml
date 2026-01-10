@@ -20,21 +20,10 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 10.0.x
-    - name: Restore dependencies (non-MAUI projects only)
-      run: |
-        dotnet restore CheapHelpers/CheapHelpers.csproj
-        dotnet restore CheapHelpers.Models/CheapHelpers.Models.csproj
-        dotnet restore CheapHelpers.EF/CheapHelpers.EF.csproj
-        dotnet restore CheapHelpers.Services/CheapHelpers.Services.csproj
-        dotnet restore CheapHelpers.Blazor/CheapHelpers.Blazor.csproj
-        dotnet restore CheapHelpers.Networking/CheapHelpers.Networking.csproj
-    - name: Build (non-MAUI projects only)
-      run: |
-        dotnet build CheapHelpers/CheapHelpers.csproj --no-restore
-        dotnet build CheapHelpers.Models/CheapHelpers.Models.csproj --no-restore
-        dotnet build CheapHelpers.EF/CheapHelpers.EF.csproj --no-restore
-        dotnet build CheapHelpers.Services/CheapHelpers.Services.csproj --no-restore
-        dotnet build CheapHelpers.Blazor/CheapHelpers.Blazor.csproj --no-restore
-        dotnet build CheapHelpers.Networking/CheapHelpers.Networking.csproj --no-restore
+    - name: Restore dependencies
+      # Use CI solution which excludes MAUI (requires workloads not available on Ubuntu runners)
+      run: dotnet restore CheapHelpers.CI.sln
+    - name: Build
+      run: dotnet build CheapHelpers.CI.sln --no-restore
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test CheapHelpers.CI.sln --no-build --verbosity normal

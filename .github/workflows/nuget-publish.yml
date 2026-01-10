@@ -29,26 +29,15 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Restore dependencies (non-MAUI projects only)
-      run: |
-        dotnet restore CheapHelpers/CheapHelpers.csproj
-        dotnet restore CheapHelpers.Models/CheapHelpers.Models.csproj
-        dotnet restore CheapHelpers.EF/CheapHelpers.EF.csproj
-        dotnet restore CheapHelpers.Services/CheapHelpers.Services.csproj
-        dotnet restore CheapHelpers.Blazor/CheapHelpers.Blazor.csproj
-        dotnet restore CheapHelpers.Networking/CheapHelpers.Networking.csproj
+    - name: Restore dependencies
+      # Use CI solution which excludes MAUI (requires workloads not available on Ubuntu runners)
+      run: dotnet restore CheapHelpers.CI.sln
 
-    - name: Build solution (non-MAUI projects only)
-      run: |
-        dotnet build CheapHelpers/CheapHelpers.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
-        dotnet build CheapHelpers.Models/CheapHelpers.Models.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
-        dotnet build CheapHelpers.EF/CheapHelpers.EF.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
-        dotnet build CheapHelpers.Services/CheapHelpers.Services.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
-        dotnet build CheapHelpers.Blazor/CheapHelpers.Blazor.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
-        dotnet build CheapHelpers.Networking/CheapHelpers.Networking.csproj --configuration ${{ env.CONFIGURATION }} --no-restore
+    - name: Build solution
+      run: dotnet build CheapHelpers.CI.sln --configuration ${{ env.CONFIGURATION }} --no-restore
 
-    - name: Run tests (if test projects exist)
-      run: dotnet test --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal || echo "No test projects found"
+    - name: Run tests
+      run: dotnet test CheapHelpers.CI.sln --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal || echo "No test projects found"
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4

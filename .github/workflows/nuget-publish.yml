@@ -72,10 +72,11 @@ jobs:
         dotnet workload list
 
     - name: Restore dependencies
-      run: dotnet restore
+      # Use full solution on macOS where MAUI workloads are available
+      run: dotnet restore CheapHelpers.sln
 
     - name: Pack NuGet packages
-      run: dotnet pack --configuration ${{ env.CONFIGURATION }} --no-restore --output ./nupkgs
+      run: dotnet pack CheapHelpers.sln --configuration ${{ env.CONFIGURATION }} --no-restore --output ./nupkgs
 
     - name: Upload NuGet packages
       uses: actions/upload-artifact@v4

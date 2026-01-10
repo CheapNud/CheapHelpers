@@ -56,7 +56,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CheapHelpers\CheapHelpers.csproj" />
+    <PackageReference Include="CheapHelpers" Version="1.1.5" />
   </ItemGroup>
 
 </Project>

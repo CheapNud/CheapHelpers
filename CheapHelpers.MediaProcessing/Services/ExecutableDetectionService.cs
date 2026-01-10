@@ -300,7 +300,8 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     }
 
     /// <summary>
-    /// Get full path of executable from PATH using 'where' command (Windows)
+    /// Get full path of executable from PATH by enumerating directories.
+    /// This is safer than using the 'where' command as it doesn't shell out.
     /// </summary>
     /// <exception cref="ArgumentException">Thrown when executableName contains invalid characters</exception>
     public string? GetExecutablePathFromCommand(string executableName)
@@ -309,27 +310,55 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
 
         try
         {
-            // Use ArgumentList to prevent command injection
-            var startInfo = new ProcessStartInfo("where")
+            // Get PATH environment variable and split into directories
+            var pathEnv = Environment.GetEnvironmentVariable("PATH");
+            if (string.IsNullOrWhiteSpace(pathEnv))
             {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            startInfo.ArgumentList.Add(executableName);
-
-            using var process = new SysProcess { StartInfo = startInfo };
-
-            process.Start();
-            var output = process.StandardOutput.ReadToEnd().Trim();
-            process.WaitForExit();
-
-            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
-            {
-                var firstPath = output.Split('\n')[0].Trim();
-                return File.Exists(firstPath) ? firstPath : null;
+                Debug.WriteLine($"[GetExecutablePath] PATH environment variable is empty");
+                return null;
             }
+
+            // Windows PATH separator is semicolon
+            var pathDirs = pathEnv.Split(';', StringSplitOptions.RemoveEmptyEntries);
+
+            // Common executable extensions on Windows
+            var extensions = new[] { ".exe", ".cmd", ".bat", ".com", "" };
+
+            // Check if executableName already has an extension
+            var hasExtension = Path.HasExtension(executableName);
+
+            foreach (var dir in pathDirs)
+            {
+                // Skip invalid or non-existent directories
+                if (!IsValidExecutableName(dir) || !Directory.Exists(dir))
+                    continue;
+
+                if (hasExtension)
+                {
+                    // If name has extension, check directly
+                    var fullPath = Path.Combine(dir, executableName);
+                    if (File.Exists(fullPath))
+                    {
+                        Debug.WriteLine($"[GetExecutablePath] Found {executableName} at: {fullPath}");
+                        return fullPath;
+                    }
+                }
+                else
+                {
+                    // Try each extension
+                    foreach (var ext in extensions)
+                    {
+                        var fullPath = Path.Combine(dir, executableName + ext);
+                        if (File.Exists(fullPath))
+                        {
+                            Debug.WriteLine($"[GetExecutablePath] Found {executableName} at: {fullPath}");
+                            return fullPath;
+                        }
+                    }
+                }
+            }
+
+            Debug.WriteLine($"[GetExecutablePath] {executableName} not found in PATH");
         }
         catch (Exception ex)
         {

@@ -55,54 +55,53 @@ public class SvpDetectionService
     /// </summary>
     public virtual SvpInstallation DetectSvpInstallation()
     {
-        // Thread-safe double-check locking pattern
+        // Fast path - return cached value without locking
         if (_cachedInstallation != null)
             return _cachedInstallation;
 
+        // Thread-safe initialization - entire detection inside lock
         lock (_cacheLock)
         {
+            // Double-check after acquiring lock
             if (_cachedInstallation != null)
                 return _cachedInstallation;
-        }
 
-        var installation = new SvpInstallation();
+            var installation = new SvpInstallation();
 
-        // Check common installation paths
-        if (Directory.Exists(SVP_INSTALL_PATH_X86))
-        {
-            installation.IsInstalled = true;
-            installation.InstallPath = SVP_INSTALL_PATH_X86;
-        }
-        else if (Directory.Exists(SVP_INSTALL_PATH_X64))
-        {
-            installation.IsInstalled = true;
-            installation.InstallPath = SVP_INSTALL_PATH_X64;
-        }
+            // Check common installation paths
+            if (Directory.Exists(SVP_INSTALL_PATH_X86))
+            {
+                installation.IsInstalled = true;
+                installation.InstallPath = SVP_INSTALL_PATH_X86;
+            }
+            else if (Directory.Exists(SVP_INSTALL_PATH_X64))
+            {
+                installation.IsInstalled = true;
+                installation.InstallPath = SVP_INSTALL_PATH_X64;
+            }
 
-        if (installation.IsInstalled)
-        {
-            PopulateSvpPaths(installation);
-            PopulateSvpVersion(installation);
+            if (installation.IsInstalled)
+            {
+                PopulateSvpPaths(installation);
+                PopulateSvpVersion(installation);
 
-            Debug.WriteLine("=== SVP 4 Pro Detection ===");
-            Debug.WriteLine($"Installed: {installation.IsInstalled}");
-            Debug.WriteLine($"Path: {installation.InstallPath}");
-            Debug.WriteLine($"Version: {installation.Version}");
-            Debug.WriteLine($"FFmpeg: {installation.FFmpegPath}");
-            Debug.WriteLine($"Python: {installation.PythonPath}");
-            Debug.WriteLine($"FFmpeg has NVENC: {installation.FFmpegHasNvenc}");
-            Debug.WriteLine("===========================");
-        }
-        else
-        {
-            Debug.WriteLine("SVP 4 Pro not detected");
-        }
+                Debug.WriteLine("=== SVP 4 Pro Detection ===");
+                Debug.WriteLine($"Installed: {installation.IsInstalled}");
+                Debug.WriteLine($"Path: {installation.InstallPath}");
+                Debug.WriteLine($"Version: {installation.Version}");
+                Debug.WriteLine($"FFmpeg: {installation.FFmpegPath}");
+                Debug.WriteLine($"Python: {installation.PythonPath}");
+                Debug.WriteLine($"FFmpeg has NVENC: {installation.FFmpegHasNvenc}");
+                Debug.WriteLine("===========================");
+            }
+            else
+            {
+                Debug.WriteLine("SVP 4 Pro not detected");
+            }
 
-        lock (_cacheLock)
-        {
             _cachedInstallation = installation;
+            return installation;
         }
-        return installation;
     }
 
     /// <summary>

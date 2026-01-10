@@ -36,7 +36,7 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
     private const string CPU_FAST_PRESET = "fast";
 
     private HardwareCapabilities? _cachedCapabilities;
-    private readonly object _cacheLock = new();
+    private readonly SemaphoreSlim _cacheSemaphore = new(1, 1);
 
     /// <summary>
     /// Detect hardware capabilities (cached after first call)
@@ -46,43 +46,47 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
     {
         ThrowIfNotWindows();
 
-        // Thread-safe double-check locking pattern
+        // Fast path - return cached value without locking
         if (_cachedCapabilities != null)
             return _cachedCapabilities;
 
-        lock (_cacheLock)
+        // Async-safe locking for initialization
+        await _cacheSemaphore.WaitAsync();
+        try
         {
+            // Double-check after acquiring lock
             if (_cachedCapabilities != null)
                 return _cachedCapabilities;
-        }
 
-        var capabilities = new HardwareCapabilities
-        {
-            CpuCoreCount = Environment.ProcessorCount,
-            CpuName = GetCpuName(),
-            HasNvidiaGpu = await DetectNvidiaGpuAsync(),
-            GpuName = GetGpuName(),
-            NvencAvailable = await IsNvencAvailableAsync(),
-            AvailableGpus = GetAllGpuNames(),
-            IsIntelCpu = IsIntelCpu()
-        };
+            var capabilities = new HardwareCapabilities
+            {
+                CpuCoreCount = Environment.ProcessorCount,
+                CpuName = GetCpuName(),
+                HasNvidiaGpu = await DetectNvidiaGpuAsync(),
+                GpuName = GetGpuName(),
+                NvencAvailable = await IsNvencAvailableAsync(),
+                AvailableGpus = GetAllGpuNames(),
+                IsIntelCpu = IsIntelCpu()
+            };
 
-        // Detect individual hardware encoders
-        await DetectHardwareEncodersAsync(capabilities);
+            // Detect individual hardware encoders
+            await DetectHardwareEncodersAsync(capabilities);
 
-        Debug.WriteLine("=== Hardware Detection ===");
-        Debug.WriteLine($"CPU: {capabilities.CpuName} ({capabilities.CpuCoreCount} cores)");
-        Debug.WriteLine($"GPU: {capabilities.GpuName}");
-        Debug.WriteLine($"NVIDIA GPU: {capabilities.HasNvidiaGpu}");
-        Debug.WriteLine($"NVENC Available: {capabilities.NvencAvailable}");
-        Debug.WriteLine($"Hardware Encoders Detected: {capabilities.SupportedEncoders.Count(e => e.Value.IsAvailable)}");
-        Debug.WriteLine("========================");
+            Debug.WriteLine("=== Hardware Detection ===");
+            Debug.WriteLine($"CPU: {capabilities.CpuName} ({capabilities.CpuCoreCount} cores)");
+            Debug.WriteLine($"GPU: {capabilities.GpuName}");
+            Debug.WriteLine($"NVIDIA GPU: {capabilities.HasNvidiaGpu}");
+            Debug.WriteLine($"NVENC Available: {capabilities.NvencAvailable}");
+            Debug.WriteLine($"Hardware Encoders Detected: {capabilities.SupportedEncoders.Count(e => e.Value.IsAvailable)}");
+            Debug.WriteLine("========================");
 
-        lock (_cacheLock)
-        {
             _cachedCapabilities = capabilities;
+            return capabilities;
         }
-        return capabilities;
+        finally
+        {
+            _cacheSemaphore.Release();
+        }
     }
 
     /// <summary>

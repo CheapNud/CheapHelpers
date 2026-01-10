@@ -274,17 +274,27 @@ public class ProcessManager
 /// Implements IDisposable to properly clean up process resources.
 /// </summary>
 /// <remarks>
+/// IMPORTANT: Always dispose this wrapper using 'using' statement or explicit Dispose() call.
 /// This class wraps a System.Diagnostics.Process and provides:
 /// - Automatic disposal of process resources
 /// - Access to the underlying process for monitoring
 /// - Helper methods for graceful shutdown
+/// - Leak detection via finalizer (logs warning if not properly disposed)
 /// </remarks>
 public sealed class ManagedProcess : IDisposable
 {
     private readonly SysProcess _process;
+    private readonly string _processInfo;
+    private readonly DateTime _startTime;
     private bool _disposed;
 
-    internal ManagedProcess(SysProcess process) => _process = process;
+    internal ManagedProcess(SysProcess process)
+    {
+        _process = process;
+        _startTime = DateTime.UtcNow;
+        // Capture info for leak detection logging (process may exit before finalizer runs)
+        _processInfo = $"PID={process.Id}, FileName={process.StartInfo.FileName}";
+    }
 
     /// <summary>
     /// Gets the underlying process. Use with caution - prefer using ManagedProcess methods.
@@ -354,6 +364,28 @@ public sealed class ManagedProcess : IDisposable
         catch { }
 
         _process.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Finalizer for leak detection. Logs warning if process wasn't properly disposed.
+    /// </summary>
+    /// <remarks>
+    /// This finalizer does NOT attempt to clean up the process (I/O in finalizers is dangerous).
+    /// It only logs a warning to help developers identify disposal issues during development.
+    /// </remarks>
+    ~ManagedProcess()
+    {
+        if (!_disposed)
+        {
+            // Log warning about leaked process - this helps identify missing 'using' statements
+            var lifetime = DateTime.UtcNow - _startTime;
+            Debug.WriteLine($"[LEAK WARNING] ManagedProcess not disposed! {_processInfo}, Lifetime={lifetime.TotalSeconds:F1}s. " +
+                           "Use 'using' statement or call Dispose() explicitly.");
+
+            // Don't try to clean up - just mark as disposed to prevent double-warning
+            _disposed = true;
+        }
     }
 }
 

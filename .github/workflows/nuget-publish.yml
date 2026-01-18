@@ -102,7 +102,34 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Publish to NuGet.org
-      run: dotnet nuget push "./nupkgs/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+    - name: List packages
+      run: ls -la ./nupkgs/
+
+    # Tier 1: Base packages with no internal NuGet dependencies
+    - name: "Publish Tier 1: Base packages"
+      run: |
+        echo "Publishing base packages..."
+        dotnet nuget push "./nupkgs/CheapHelpers.[0-9]*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate || true
+        dotnet nuget push "./nupkgs/CheapHelpers.Networking.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate || true
+        dotnet nuget push "./nupkgs/CheapHelpers.Models.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate || true
+        dotnet nuget push "./nupkgs/CheapHelpers.EF.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate || true
+        dotnet nuget push "./nupkgs/CheapHelpers.Services.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate || true
+        dotnet nuget push "./nupkgs/CheapHelpers.Blazor.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate || true
+        dotnet nuget push "./nupkgs/CheapHelpers.MAUI.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate || true
+        dotnet nuget push "./nupkgs/CheapHelpers.Avalonia.Bridge.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate || true
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+    # Wait for NuGet to index base packages before publishing dependent packages
+    - name: Wait for NuGet indexing
+      run: |
+        echo "Waiting 10 minutes for NuGet to index base packages..."
+        sleep 600
+
+    # Tier 2: Packages that depend on CheapHelpers via PackageReference
+    - name: "Publish Tier 2: Dependent packages"
+      run: |
+        echo "Publishing packages with NuGet dependencies..."
+        dotnet nuget push "./nupkgs/CheapHelpers.MediaProcessing.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate || true
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}

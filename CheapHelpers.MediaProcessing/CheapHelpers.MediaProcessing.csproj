@@ -43,20 +43,20 @@
     <PackageReference Include="FFMpegCore" Version="5.4.0" />
 
     <!-- Hardware detection (WMI) -->
-    <PackageReference Include="System.Management" Version="10.0.0" />
+    <PackageReference Include="System.Management" Version="10.0.2" />
 
     <!-- Archive extraction for dependency installation -->
-    <PackageReference Include="SharpCompress" Version="0.41.0" />
+    <PackageReference Include="SharpCompress" Version="0.44.0" />
 
     <!-- Retry logic for downloads -->
     <PackageReference Include="Polly" Version="8.6.5" />
 
     <!-- DI extension -->
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.2" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CheapHelpers" Version="1.1.5" />
+    <PackageReference Include="CheapHelpers" Version="1.2.0" />
   </ItemGroup>
 
 </Project>

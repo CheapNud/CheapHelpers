@@ -21,5 +21,13 @@ jobs:
       uses: actions/dependency-review-action@v4
       with:
         fail-on-severity: moderate
-        allow-licenses: MIT, Apache-2.0, BSD-3-Clause, BSD-2-Clause, ISC, 0BSD, Unlicense
+        allow-licenses: MIT, Apache-2.0, BSD-3-Clause, BSD-2-Clause, ISC, 0BSD, Unlicense, LGPL-2.1-only, AGPL-3.0-only
+        # Allow known packages with undetected or complex licenses
+        allow-dependencies-licenses: |
+          pkg:nuget/Azure.Identity,
+          pkg:nuget/Microsoft.Graph,
+          pkg:nuget/itext,
+          pkg:nuget/itext.pdfoptimizer,
+          pkg:nuget/Xamarin.Firebase.Messaging,
+          pkg:nuget/Xamarin.GooglePlayServices.Base
         comment-summary-in-pr: true

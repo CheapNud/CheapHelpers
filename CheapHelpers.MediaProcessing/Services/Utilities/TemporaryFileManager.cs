@@ -4,8 +4,20 @@ using CheapHelpers.Helpers.Files;
 namespace CheapHelpers.MediaProcessing.Services.Utilities;
 
 /// <summary>
-/// Manages temporary files with automatic cleanup
+/// Manages temporary files with automatic cleanup.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Filename generation uses <see cref="FileHelper.GetTrustedFileName(string, DateTime?, string?)"/> which appends
+/// an 8-character GUID suffix to prevent filename collisions and path traversal attacks.
+/// </para>
+/// <para>
+/// Example: <c>CreateTempFile(".png")</c> produces <c>temp_a1b2c3d4.png</c>
+/// </para>
+/// <para>
+/// Example: <c>GetTempFilePath("frame", ".png")</c> produces <c>frame_a1b2c3d4.png</c>
+/// </para>
+/// </remarks>
 public class TemporaryFileManager : IDisposable
 {
     private readonly List<string> _tempFiles = [];
@@ -20,8 +32,14 @@ public class TemporaryFileManager : IDisposable
     }
 
     /// <summary>
-    /// Create a temporary file with the specified extension
+    /// Creates a temporary file with the specified extension and returns its path.
     /// </summary>
+    /// <param name="extension">File extension including the dot (e.g., ".tmp", ".png").</param>
+    /// <returns>Full path to the created temporary file with format: temp_{8charGuid}{extension}</returns>
+    /// <remarks>
+    /// Uses <see cref="FileHelper.GetTrustedFileName(string, DateTime?, string?)"/> for secure, unique filename generation.
+    /// The file is created empty and registered for automatic cleanup on disposal.
+    /// </remarks>
     public string CreateTempFile(string extension = ".tmp")
     {
         var fileName = FileHelper.GetTrustedFileName($"temp{extension}");
@@ -37,8 +55,14 @@ public class TemporaryFileManager : IDisposable
     }
 
     /// <summary>
-    /// Create a temporary file path (doesn't create the file)
+    /// Generates a temporary file path without creating the file.
     /// </summary>
+    /// <param name="extension">File extension including the dot (e.g., ".tmp", ".png").</param>
+    /// <returns>Full path for a temporary file with format: temp_{8charGuid}{extension}</returns>
+    /// <remarks>
+    /// Uses <see cref="FileHelper.GetTrustedFileName(string, DateTime?, string?)"/> for secure, unique filename generation.
+    /// The path is registered for cleanup even if the file is never created.
+    /// </remarks>
     public string GetTempFilePath(string extension = ".tmp")
     {
         var fileName = FileHelper.GetTrustedFileName($"temp{extension}");
@@ -50,8 +74,15 @@ public class TemporaryFileManager : IDisposable
     }
 
     /// <summary>
-    /// Create a temporary file path with a specific name prefix
+    /// Generates a temporary file path with a specific name prefix without creating the file.
     /// </summary>
+    /// <param name="prefix">Prefix for the filename (e.g., "frame", "audio").</param>
+    /// <param name="extension">File extension including the dot (e.g., ".tmp", ".png").</param>
+    /// <returns>Full path for a temporary file with format: {prefix}_{8charGuid}{extension}</returns>
+    /// <remarks>
+    /// Uses <see cref="FileHelper.GetTrustedFileName(string, DateTime?, string?)"/> for secure, unique filename generation.
+    /// The path is registered for cleanup even if the file is never created.
+    /// </remarks>
     public string GetTempFilePath(string prefix, string extension)
     {
         var fileName = FileHelper.GetTrustedFileName($"{prefix}{extension}");

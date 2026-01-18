@@ -224,8 +224,15 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
             };
 
             process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
+
+            // Read both streams concurrently to prevent deadlock
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+
             await process.WaitForExitAsync();
+
+            var output = await stdoutTask;
+            await stderrTask;
 
             if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
             {
@@ -252,8 +259,15 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
             };
 
             process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
+
+            // Read both streams concurrently to prevent deadlock
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+
             await process.WaitForExitAsync();
+
+            var output = await stdoutTask;
+            await stderrTask;
 
             if (process.ExitCode == 0)
             {
@@ -289,8 +303,15 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
             };
 
             process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
+
+            // Read both streams concurrently to prevent deadlock
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+
             await process.WaitForExitAsync();
+
+            var output = await stdoutTask;
+            await stderrTask;
 
             if (process.ExitCode == 0)
             {
@@ -402,8 +423,15 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
             };
 
             process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
+
+            // Read both streams concurrently to prevent deadlock
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+
             await process.WaitForExitAsync();
+
+            var output = await stdoutTask;
+            await stderrTask;
 
             if (process.ExitCode == 0)
             {
@@ -444,8 +472,15 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
             };
 
             process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
+
+            // Read both streams concurrently to prevent deadlock
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+
             await process.WaitForExitAsync();
+
+            var output = await stdoutTask;
+            await stderrTask;
 
             if (process.ExitCode == 0)
             {

@@ -346,8 +346,8 @@ public class LinuxExecutableDetectionService
                 return null;
             }
 
-            // Linux PATH separator is colon
-            var pathDirs = pathEnv.Split(':', StringSplitOptions.RemoveEmptyEntries);
+            // Use platform-specific PATH separator
+            var pathDirs = pathEnv.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
 
             foreach (var dir in pathDirs)
             {
@@ -393,8 +393,15 @@ public class LinuxExecutableDetectionService
             process.StartInfo.ArgumentList.Add(versionArgument);
 
             process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
+
+            // Read both streams concurrently to prevent deadlock when buffers fill
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
+
             await process.WaitForExitAsync();
+
+            var output = await stdoutTask;
+            await stderrTask; // Ensure stderr is also consumed
 
             if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
             {

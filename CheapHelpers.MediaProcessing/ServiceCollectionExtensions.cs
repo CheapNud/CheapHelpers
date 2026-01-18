@@ -19,8 +19,11 @@ public static class ServiceCollectionExtensions
     /// Add all media processing services to the service collection.
     /// Automatically selects Windows or Linux implementations based on the runtime platform.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when services is null</exception>
     public static IServiceCollection AddMediaProcessing(this IServiceCollection services)
     {
+        ArgumentNullException.ThrowIfNull(services);
+
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             AddWindowsServices(services);
@@ -47,8 +50,11 @@ public static class ServiceCollectionExtensions
     /// Add media processing services with custom temp path.
     /// Automatically selects Windows or Linux implementations based on the runtime platform.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when services is null</exception>
     public static IServiceCollection AddMediaProcessing(this IServiceCollection services, string tempBasePath)
     {
+        ArgumentNullException.ThrowIfNull(services);
+
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             AddWindowsServices(services);
@@ -74,10 +80,12 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Add Windows-specific media processing services.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when services is null</exception>
     /// <exception cref="PlatformNotSupportedException">Thrown when not running on Windows</exception>
     [SupportedOSPlatform("windows")]
     public static IServiceCollection AddMediaProcessingWindows(this IServiceCollection services)
     {
+        ArgumentNullException.ThrowIfNull(services);
         ThrowIfNotWindows();
         AddWindowsServices(services);
 
@@ -90,10 +98,12 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Add Linux-specific media processing services.
     /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when services is null</exception>
     /// <exception cref="PlatformNotSupportedException">Thrown when running on Windows</exception>
     [UnsupportedOSPlatform("windows")]
     public static IServiceCollection AddMediaProcessingLinux(this IServiceCollection services)
     {
+        ArgumentNullException.ThrowIfNull(services);
         ThrowIfWindows();
         AddLinuxServices(services);
 

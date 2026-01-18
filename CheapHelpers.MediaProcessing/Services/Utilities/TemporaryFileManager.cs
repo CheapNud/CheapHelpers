@@ -17,6 +17,11 @@ namespace CheapHelpers.MediaProcessing.Services.Utilities;
 /// <para>
 /// Example: <c>GetTempFilePath("frame", ".png")</c> produces <c>frame_a1b2c3d4.png</c>
 /// </para>
+/// <para>
+/// <b>Design note:</b> The 8-char GUID suffix provides ~4 billion combinations, which is sufficient
+/// for ephemeral temp files that are cleaned up on disposal. This trades maximum uniqueness for
+/// consistent naming with the rest of the CheapHelpers ecosystem via <see cref="FileHelper"/>.
+/// </para>
 /// </remarks>
 public class TemporaryFileManager : IDisposable
 {

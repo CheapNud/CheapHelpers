@@ -11,8 +11,9 @@ namespace CheapHelpers.MediaProcessing.Services.Linux;
 /// Uses nvidia-smi for GPU detection and /proc/ for CPU info.
 /// </summary>
 [UnsupportedOSPlatform("windows")]
-public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionService executableDetection)
+public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionService executableDetection) : IDisposable
 {
+    private bool _disposed;
     // Encoding quality constants
     private const int NVENC_OPTIMAL_QUALITY = 19;
     private const int NVENC_HIGH_QUALITY = 18;
@@ -460,4 +461,28 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
 
     [GeneratedRegex(@"model name\s*:\s*(.+)", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
     private static partial Regex CpuModelNameRegex();
+
+    /// <summary>
+    /// Dispose of managed resources
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Dispose pattern implementation
+    /// </summary>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed) return;
+
+        if (disposing)
+        {
+            _cacheSemaphore.Dispose();
+        }
+
+        _disposed = true;
+    }
 }

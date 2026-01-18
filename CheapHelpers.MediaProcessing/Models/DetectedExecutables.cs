@@ -1,4 +1,4 @@
-namespace CheapHelpers.MediaProcessing.Services;
+namespace CheapHelpers.MediaProcessing.Models;
 
 /// <summary>
 /// Result of executable detection.

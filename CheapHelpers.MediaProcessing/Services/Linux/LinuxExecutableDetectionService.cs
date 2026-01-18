@@ -1,6 +1,7 @@
 using SysProcess = System.Diagnostics.Process;
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using CheapHelpers.MediaProcessing.Models;
 
 namespace CheapHelpers.MediaProcessing.Services.Linux;
 

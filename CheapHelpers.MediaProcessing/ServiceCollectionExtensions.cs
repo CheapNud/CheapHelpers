@@ -25,9 +25,15 @@ public static class ServiceCollectionExtensions
         {
             AddWindowsServices(services);
         }
-        else
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
             AddLinuxServices(services);
+        }
+        else
+        {
+            throw new PlatformNotSupportedException(
+                $"Platform {RuntimeInformation.OSDescription} is not supported. " +
+                "Only Windows and Linux are currently supported.");
         }
 
         // Cross-platform utilities
@@ -47,9 +53,15 @@ public static class ServiceCollectionExtensions
         {
             AddWindowsServices(services);
         }
-        else
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
             AddLinuxServices(services);
+        }
+        else
+        {
+            throw new PlatformNotSupportedException(
+                $"Platform {RuntimeInformation.OSDescription} is not supported. " +
+                "Only Windows and Linux are currently supported.");
         }
 
         // Cross-platform utilities

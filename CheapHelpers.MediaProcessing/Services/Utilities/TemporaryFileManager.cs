@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using CheapHelpers.Helpers.Files;
 
 namespace CheapHelpers.MediaProcessing.Services.Utilities;
 
@@ -23,7 +24,7 @@ public class TemporaryFileManager : IDisposable
     /// </summary>
     public string CreateTempFile(string extension = ".tmp")
     {
-        var fileName = $"{Guid.NewGuid()}{extension}";
+        var fileName = FileHelper.GetTrustedFileName($"temp{extension}");
         var filePath = Path.Combine(_baseTempPath, fileName);
 
         // Create empty file
@@ -40,7 +41,7 @@ public class TemporaryFileManager : IDisposable
     /// </summary>
     public string GetTempFilePath(string extension = ".tmp")
     {
-        var fileName = $"{Guid.NewGuid()}{extension}";
+        var fileName = FileHelper.GetTrustedFileName($"temp{extension}");
         var filePath = Path.Combine(_baseTempPath, fileName);
 
         _tempFiles.Add(filePath);
@@ -53,7 +54,7 @@ public class TemporaryFileManager : IDisposable
     /// </summary>
     public string GetTempFilePath(string prefix, string extension)
     {
-        var fileName = $"{prefix}_{Guid.NewGuid()}{extension}";
+        var fileName = FileHelper.GetTrustedFileName($"{prefix}{extension}");
         var filePath = Path.Combine(_baseTempPath, fileName);
 
         _tempFiles.Add(filePath);

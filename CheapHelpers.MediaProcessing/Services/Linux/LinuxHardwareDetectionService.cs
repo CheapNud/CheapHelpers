@@ -229,7 +229,8 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
 
             if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
             {
-                return output.Split('\n', StringSplitOptions.RemoveEmptyEntries)[0].Trim();
+                var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                return lines.Length > 0 ? lines[0].Trim() : "Unknown GPU";
             }
         }
         catch { }

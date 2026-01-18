@@ -249,16 +249,22 @@ public class LinuxExecutableDetectionService
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = executableName,
-                    Arguments = "--version",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
             };
+            process.StartInfo.ArgumentList.Add("--version");
 
             process.Start();
-            process.WaitForExit(PROCESS_TIMEOUT_MS);
+
+            // Wait for exit with timeout, kill if exceeded
+            if (!process.WaitForExit(PROCESS_TIMEOUT_MS))
+            {
+                try { process.Kill(); } catch { /* Best effort cleanup */ }
+                return false;
+            }
 
             return process.ExitCode == 0 || process.ExitCode == 1;
         }
@@ -282,17 +288,26 @@ public class LinuxExecutableDetectionService
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = "which",
-                    Arguments = executableName,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
             };
+            process.StartInfo.ArgumentList.Add(executableName);
 
             process.Start();
+
+            // Wait for exit with timeout, kill if exceeded
+            if (!process.WaitForExit(PROCESS_TIMEOUT_MS))
+            {
+                try { process.Kill(); } catch { /* Best effort cleanup */ }
+                Debug.WriteLine($"[which] Process timed out for {executableName}");
+                return null;
+            }
+
+            // Read output only after process has exited
             var output = process.StandardOutput.ReadToEnd().Trim();
-            process.WaitForExit(PROCESS_TIMEOUT_MS);
 
             if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output) && File.Exists(output))
             {
@@ -369,13 +384,13 @@ public class LinuxExecutableDetectionService
                 StartInfo = new ProcessStartInfo
                 {
                     FileName = executablePath,
-                    Arguments = versionArgument,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 }
             };
+            process.StartInfo.ArgumentList.Add(versionArgument);
 
             process.Start();
             var output = await process.StandardOutput.ReadToEndAsync();
@@ -383,7 +398,8 @@ public class LinuxExecutableDetectionService
 
             if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
             {
-                return output.Split('\n')[0].Trim();
+                var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                return lines.Length > 0 ? lines[0].Trim() : null;
             }
         }
         catch (Exception ex)

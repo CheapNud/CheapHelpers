@@ -62,24 +62,24 @@
   <ItemGroup>
     <PackageReference Include="Azure.AI.Translation.Document" Version="2.0.0" />
     <PackageReference Include="Azure.AI.Vision.ImageAnalysis" Version="1.0.0" />
-    <PackageReference Include="Azure.Identity" Version="1.17.0" />
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.26.0" />
+    <PackageReference Include="Azure.Identity" Version="1.17.1" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.27.0" />
     <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="CsvHelper" Version="33.1.0" />
-    <PackageReference Include="Duende.IdentityModel" Version="7.1.0" />
+    <PackageReference Include="Duende.IdentityModel" Version="8.0.0" />
     <PackageReference Include="Fluid.Core" Version="2.31.0" />
-    <PackageReference Include="GoogleApi" Version="5.8.11" />
+    <PackageReference Include="GoogleApi" Version="5.8.12" />
     <PackageReference Include="ILove_PDF" Version="1.6.2" />
-    <PackageReference Include="itext" Version="9.4.0" />
-    <PackageReference Include="itext.pdfoptimizer" Version="4.1.1" />
+    <PackageReference Include="itext" Version="9.5.0" />
+    <PackageReference Include="itext.pdfoptimizer" Version="4.1.2" />
     <PackageReference Include="MailKit" Version="4.14.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Connections" Version="1.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Graph" Version="5.96.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Connections" Version="1.2.9" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Graph" Version="5.100.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-    <PackageReference Include="Twilio" Version="7.13.6" />
+    <PackageReference Include="Twilio" Version="7.14.1" />
     <PackageReference Include="UblSharp" Version="1.1.1" />
     <PackageReference Include="ZXing.Net" Version="0.16.11" />
     <PackageReference Include="ZXing.Net.Bindings.ImageSharp.V3" Version="0.16.18" />

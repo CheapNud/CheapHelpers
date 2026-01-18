@@ -2,21 +2,14 @@ using SysProcess = System.Diagnostics.Process;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 
-namespace CheapHelpers.MediaProcessing.Services;
+namespace CheapHelpers.MediaProcessing.Services.Linux;
 
 /// <summary>
-/// Generic service for detecting executables in priority order:
-/// 1. Custom paths (from settings)
-/// 2. SVP installation (preferred for FFmpeg)
-/// 3. System PATH
-/// 4. Common installation directories
+/// Linux implementation for detecting executables.
+/// Uses 'which' command and PATH enumeration.
 /// </summary>
-/// <remarks>
-/// PLATFORM REQUIREMENT: This service requires Windows operating system.
-/// Uses the Windows 'where' command for PATH detection.
-/// </remarks>
-[SupportedOSPlatform("windows")]
-public class ExecutableDetectionService(SvpDetectionService svpDetection)
+[UnsupportedOSPlatform("windows")]
+public class LinuxExecutableDetectionService
 {
     private const int PROCESS_TIMEOUT_MS = 1000;
 
@@ -28,22 +21,17 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     /// <summary>
     /// Validates an executable name to prevent command injection
     /// </summary>
-    /// <param name="executableName">The name to validate</param>
-    /// <returns>True if the name is safe to use</returns>
     private static bool IsValidExecutableName(string? executableName)
     {
         if (string.IsNullOrWhiteSpace(executableName))
             return false;
 
-        // Check for command injection characters
         if (executableName.IndexOfAny(InvalidExecutableChars) >= 0)
             return false;
 
-        // Check for path traversal
         if (executableName.Contains(".."))
             return false;
 
-        // Check for invalid filename characters (but allow path separators for full paths)
         var fileName = Path.GetFileName(executableName);
         if (fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
             return false;
@@ -51,10 +39,6 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
         return true;
     }
 
-    /// <summary>
-    /// Validates an executable name and throws if invalid
-    /// </summary>
-    /// <exception cref="ArgumentException">Thrown when the executable name contains invalid characters</exception>
     private static void ValidateExecutableName(string executableName, string paramName)
     {
         if (!IsValidExecutableName(executableName))
@@ -64,6 +48,7 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
                 paramName);
         }
     }
+
     /// <summary>
     /// Auto-detect common media executables
     /// </summary>
@@ -71,22 +56,22 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     {
         var detected = new DetectedExecutables
         {
-            FFmpegPath = DetectFFmpeg(useSvpEncoders: true, customPath: null),
-            FFprobePath = DetectFFprobe(useSvpEncoders: true, customPath: null),
+            FFmpegPath = DetectFFmpeg(useSvpEncoders: false, customPath: null),
+            FFprobePath = DetectFFprobe(useSvpEncoders: false, customPath: null),
             MeltPath = DetectMelt(customPath: null)
         };
 
-        Debug.WriteLine("=== Executable Detection ===");
+        Debug.WriteLine("=== Linux Executable Detection ===");
         Debug.WriteLine($"FFmpeg: {detected.FFmpegPath ?? "NOT FOUND"}");
         Debug.WriteLine($"FFprobe: {detected.FFprobePath ?? "NOT FOUND"}");
         Debug.WriteLine($"Melt: {detected.MeltPath ?? "NOT FOUND"}");
-        Debug.WriteLine("============================");
+        Debug.WriteLine("==================================");
 
         return detected;
     }
 
     /// <summary>
-    /// Detect FFmpeg with priority order
+    /// Detect FFmpeg with priority order (SVP not available on Linux)
     /// </summary>
     public string? DetectFFmpeg(bool useSvpEncoders, string? customPath)
     {
@@ -97,34 +82,22 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
             return customPath;
         }
 
-        // 2. SVP installation (if enabled)
-        if (useSvpEncoders)
+        // 2. System PATH via 'which'
+        var whichPath = GetExecutablePathFromWhich("ffmpeg");
+        if (!string.IsNullOrEmpty(whichPath))
         {
-            var svp = svpDetection.DetectSvpInstallation();
-            if (svp.IsInstalled && File.Exists(svp.FFmpegPath))
-            {
-                Debug.WriteLine($"[FFmpeg] Using SVP: {svp.FFmpegPath}");
-                return svp.FFmpegPath;
-            }
+            Debug.WriteLine($"[FFmpeg] Found via which: {whichPath}");
+            return whichPath;
         }
 
-        // 3. System PATH
-        if (IsExecutableInPath("ffmpeg"))
-        {
-            var pathLocation = GetExecutablePathFromCommand("ffmpeg");
-            Debug.WriteLine($"[FFmpeg] Found in system PATH: {pathLocation ?? "ffmpeg"}");
-            return pathLocation ?? "ffmpeg";
-        }
-
-        // 4. Common installation locations
+        // 3. Common Linux installation locations
         var commonPaths = new[]
         {
-            @"C:\Program Files\Shotcut\ffmpeg.exe",
-            @"C:\Program Files (x86)\Shotcut\ffmpeg.exe",
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Shotcut", "ffmpeg.exe"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Shotcut", "ffmpeg.exe"),
-            @"C:\ffmpeg\bin\ffmpeg.exe",
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "ffmpeg", "bin", "ffmpeg.exe")
+            "/usr/bin/ffmpeg",
+            "/usr/local/bin/ffmpeg",
+            "/opt/ffmpeg/bin/ffmpeg",
+            "/app/bin/ffmpeg",  // Docker
+            "/snap/bin/ffmpeg"
         };
 
         foreach (var path in commonPaths)
@@ -141,48 +114,6 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     }
 
     /// <summary>
-    /// Detect Melt (Shotcut/MLT renderer) with priority order
-    /// </summary>
-    public string? DetectMelt(string? customPath)
-    {
-        // 1. Custom path
-        if (!string.IsNullOrWhiteSpace(customPath) && File.Exists(customPath))
-        {
-            Debug.WriteLine($"[Melt] Using custom path: {customPath}");
-            return customPath;
-        }
-
-        // 2. System PATH
-        if (IsExecutableInPath("melt"))
-        {
-            var pathLocation = GetExecutablePathFromCommand("melt");
-            Debug.WriteLine($"[Melt] Found in system PATH: {pathLocation ?? "melt"}");
-            return pathLocation ?? "melt";
-        }
-
-        // 3. Common installation locations (Shotcut)
-        var commonPaths = new[]
-        {
-            @"C:\Program Files\Shotcut\melt.exe",
-            @"C:\Program Files (x86)\Shotcut\melt.exe",
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Shotcut", "melt.exe"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Shotcut", "melt.exe")
-        };
-
-        foreach (var path in commonPaths)
-        {
-            if (File.Exists(path))
-            {
-                Debug.WriteLine($"[Melt] Using: {path}");
-                return path;
-            }
-        }
-
-        Debug.WriteLine("[Melt] NOT FOUND");
-        return null;
-    }
-
-    /// <summary>
     /// Detect FFprobe with priority order
     /// </summary>
     public string? DetectFFprobe(bool useSvpEncoders, string? customPath)
@@ -194,23 +125,21 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
             return customPath;
         }
 
-        // 2. System PATH
-        if (IsExecutableInPath("ffprobe"))
+        // 2. System PATH via 'which'
+        var whichPath = GetExecutablePathFromWhich("ffprobe");
+        if (!string.IsNullOrEmpty(whichPath))
         {
-            var pathLocation = GetExecutablePathFromCommand("ffprobe");
-            Debug.WriteLine($"[FFprobe] Found in system PATH: {pathLocation ?? "ffprobe"}");
-            return pathLocation ?? "ffprobe";
+            Debug.WriteLine($"[FFprobe] Found via which: {whichPath}");
+            return whichPath;
         }
 
-        // 3. Common installation locations
+        // 3. Common Linux installation locations
         var commonPaths = new[]
         {
-            @"C:\Program Files\Shotcut\ffprobe.exe",
-            @"C:\Program Files (x86)\Shotcut\ffprobe.exe",
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Shotcut", "ffprobe.exe"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Shotcut", "ffprobe.exe"),
-            @"C:\ffmpeg\bin\ffprobe.exe",
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "ffmpeg", "bin", "ffprobe.exe")
+            "/usr/bin/ffprobe",
+            "/usr/local/bin/ffprobe",
+            "/opt/ffmpeg/bin/ffprobe",
+            "/app/bin/ffprobe"
         };
 
         foreach (var path in commonPaths)
@@ -227,14 +156,53 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     }
 
     /// <summary>
+    /// Detect Melt (MLT renderer)
+    /// </summary>
+    public string? DetectMelt(string? customPath)
+    {
+        // 1. Custom path
+        if (!string.IsNullOrWhiteSpace(customPath) && File.Exists(customPath))
+        {
+            Debug.WriteLine($"[Melt] Using custom path: {customPath}");
+            return customPath;
+        }
+
+        // 2. System PATH via 'which'
+        var whichPath = GetExecutablePathFromWhich("melt");
+        if (!string.IsNullOrEmpty(whichPath))
+        {
+            Debug.WriteLine($"[Melt] Found via which: {whichPath}");
+            return whichPath;
+        }
+
+        // 3. Common installation locations
+        var commonPaths = new[]
+        {
+            "/usr/bin/melt",
+            "/usr/local/bin/melt"
+        };
+
+        foreach (var path in commonPaths)
+        {
+            if (File.Exists(path))
+            {
+                Debug.WriteLine($"[Melt] Using: {path}");
+                return path;
+            }
+        }
+
+        Debug.WriteLine("[Melt] NOT FOUND");
+        return null;
+    }
+
+    /// <summary>
     /// Generic executable detection with custom search paths
     /// </summary>
-    /// <exception cref="ArgumentException">Thrown when executableName contains invalid characters</exception>
     public string? DetectExecutable(string executableName, string? customPath, params string[] searchPaths)
     {
         ValidateExecutableName(executableName, nameof(executableName));
 
-        // 1. Custom path (validate if provided)
+        // 1. Custom path
         if (!string.IsNullOrWhiteSpace(customPath))
         {
             if (!IsValidExecutableName(customPath))
@@ -247,13 +215,14 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
             }
         }
 
-        // 2. System PATH
-        if (IsExecutableInPath(executableName))
+        // 2. System PATH via 'which'
+        var whichPath = GetExecutablePathFromWhich(executableName);
+        if (!string.IsNullOrEmpty(whichPath))
         {
-            return GetExecutablePathFromCommand(executableName) ?? executableName;
+            return whichPath;
         }
 
-        // 3. Search paths (only check valid paths)
+        // 3. Search paths
         foreach (var path in searchPaths)
         {
             if (IsValidExecutableName(path) && File.Exists(path))
@@ -268,7 +237,6 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     /// <summary>
     /// Check if executable exists in system PATH
     /// </summary>
-    /// <exception cref="ArgumentException">Thrown when executableName contains invalid characters</exception>
     public bool IsExecutableInPath(string executableName)
     {
         ValidateExecutableName(executableName, nameof(executableName));
@@ -300,65 +268,83 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     }
 
     /// <summary>
-    /// Get full path of executable from PATH by enumerating directories.
-    /// This is safer than using the 'where' command as it doesn't shell out.
+    /// Get full path of executable using 'which' command
     /// </summary>
-    /// <exception cref="ArgumentException">Thrown when executableName contains invalid characters</exception>
-    public string? GetExecutablePathFromCommand(string executableName)
+    public string? GetExecutablePathFromWhich(string executableName)
     {
         ValidateExecutableName(executableName, nameof(executableName));
 
         try
         {
-            // Get PATH environment variable and split into directories
+            using var process = new SysProcess
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "which",
+                    Arguments = executableName,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var output = process.StandardOutput.ReadToEnd().Trim();
+            process.WaitForExit(PROCESS_TIMEOUT_MS);
+
+            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output) && File.Exists(output))
+            {
+                Debug.WriteLine($"[which] Found {executableName} at: {output}");
+                return output;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to run 'which {executableName}': {ex.Message}");
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Get full path of executable from PATH environment variable
+    /// </summary>
+    public string? GetExecutablePathFromCommand(string executableName)
+    {
+        ValidateExecutableName(executableName, nameof(executableName));
+
+        // First try 'which'
+        var whichPath = GetExecutablePathFromWhich(executableName);
+        if (!string.IsNullOrEmpty(whichPath))
+        {
+            return whichPath;
+        }
+
+        // Fallback: enumerate PATH directories
+        try
+        {
             var pathEnv = Environment.GetEnvironmentVariable("PATH");
             if (string.IsNullOrWhiteSpace(pathEnv))
             {
-                Debug.WriteLine($"[GetExecutablePath] PATH environment variable is empty");
                 return null;
             }
 
-            // Windows PATH separator is semicolon
-            var pathDirs = pathEnv.Split(';', StringSplitOptions.RemoveEmptyEntries);
-
-            // Common executable extensions on Windows
-            var extensions = new[] { ".exe", ".cmd", ".bat", ".com", "" };
-
-            // Check if executableName already has an extension
-            var hasExtension = Path.HasExtension(executableName);
+            // Linux PATH separator is colon
+            var pathDirs = pathEnv.Split(':', StringSplitOptions.RemoveEmptyEntries);
 
             foreach (var dir in pathDirs)
             {
-                // Skip invalid or non-existent directories
-                if (!IsValidExecutableName(dir) || !Directory.Exists(dir))
+                if (!Directory.Exists(dir))
                     continue;
 
-                if (hasExtension)
+                var fullPath = Path.Combine(dir, executableName);
+                if (File.Exists(fullPath))
                 {
-                    // If name has extension, check directly
-                    var fullPath = Path.Combine(dir, executableName);
-                    if (File.Exists(fullPath))
-                    {
-                        Debug.WriteLine($"[GetExecutablePath] Found {executableName} at: {fullPath}");
-                        return fullPath;
-                    }
-                }
-                else
-                {
-                    // Try each extension
-                    foreach (var ext in extensions)
-                    {
-                        var fullPath = Path.Combine(dir, executableName + ext);
-                        if (File.Exists(fullPath))
-                        {
-                            Debug.WriteLine($"[GetExecutablePath] Found {executableName} at: {fullPath}");
-                            return fullPath;
-                        }
-                    }
+                    Debug.WriteLine($"[GetExecutablePath] Found {executableName} at: {fullPath}");
+                    return fullPath;
                 }
             }
-
-            Debug.WriteLine($"[GetExecutablePath] {executableName} not found in PATH");
         }
         catch (Exception ex)
         {
@@ -371,7 +357,6 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     /// <summary>
     /// Get version string from an executable
     /// </summary>
-    /// <exception cref="ArgumentException">Thrown when executablePath contains invalid characters</exception>
     public async Task<string?> GetExecutableVersionAsync(string executablePath, string versionArgument = "-version")
     {
         ValidateExecutableName(executablePath, nameof(executablePath));
@@ -408,5 +393,3 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
         return null;
     }
 }
-
-// DetectedExecutables class has been moved to Models/DetectedExecutables.cs for cross-platform support

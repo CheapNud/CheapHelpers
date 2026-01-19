@@ -51,9 +51,18 @@ public static class ServiceCollectionExtensions
     /// Automatically selects Windows or Linux implementations based on the runtime platform.
     /// </summary>
     /// <exception cref="ArgumentNullException">Thrown when services is null</exception>
+    /// <exception cref="ArgumentException">Thrown when tempBasePath is null or empty</exception>
+    /// <exception cref="DirectoryNotFoundException">Thrown when tempBasePath directory does not exist</exception>
     public static IServiceCollection AddMediaProcessing(this IServiceCollection services, string tempBasePath)
     {
         ArgumentNullException.ThrowIfNull(services);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tempBasePath);
+
+        if (!Directory.Exists(tempBasePath))
+        {
+            throw new DirectoryNotFoundException(
+                $"The specified temp base path does not exist: {tempBasePath}");
+        }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {

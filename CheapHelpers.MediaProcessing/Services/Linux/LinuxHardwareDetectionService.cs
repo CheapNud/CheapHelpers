@@ -30,7 +30,7 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
     private const string CPU_HIGH_QUALITY_PRESET = "slow";
     private const string CPU_FAST_PRESET = "fast";
 
-    private HardwareCapabilities? _cachedCapabilities;
+    private volatile HardwareCapabilities? _cachedCapabilities;
     private readonly SemaphoreSlim _cacheSemaphore = new(1, 1);
 
     /// <summary>
@@ -42,7 +42,7 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
         if (_cachedCapabilities != null)
             return _cachedCapabilities;
 
-        await _cacheSemaphore.WaitAsync();
+        await _cacheSemaphore.WaitAsync().ConfigureAwait(false);
         try
         {
             if (_cachedCapabilities != null)
@@ -52,15 +52,15 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
             {
                 CpuCoreCount = Environment.ProcessorCount,
                 CpuName = GetCpuName(),
-                HasNvidiaGpu = await DetectNvidiaGpuAsync(),
-                GpuName = await GetGpuNameAsync(),
-                NvencAvailable = await IsNvencAvailableAsync(),
-                AvailableGpus = await GetAllGpuNamesAsync(),
+                HasNvidiaGpu = await DetectNvidiaGpuAsync().ConfigureAwait(false),
+                GpuName = await GetGpuNameAsync().ConfigureAwait(false),
+                NvencAvailable = await IsNvencAvailableAsync().ConfigureAwait(false),
+                AvailableGpus = await GetAllGpuNamesAsync().ConfigureAwait(false),
                 IsIntelCpu = IsIntelCpu()
             };
 
             // Detect hardware encoders
-            await DetectHardwareEncodersAsync(capabilities);
+            await DetectHardwareEncodersAsync(capabilities).ConfigureAwait(false);
 
             Debug.WriteLine("=== Linux Hardware Detection ===");
             Debug.WriteLine($"CPU: {capabilities.CpuName} ({capabilities.CpuCoreCount} cores)");
@@ -84,7 +84,7 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
     /// </summary>
     public virtual async Task<FFmpegRenderSettings> GetOptimalFFmpegSettingsAsync(int targetFps = 60)
     {
-        var hw = await DetectHardwareAsync();
+        var hw = await DetectHardwareAsync().ConfigureAwait(false);
 
         var settings = new FFmpegRenderSettings
         {
@@ -120,7 +120,7 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
     /// </summary>
     public virtual async Task<FFmpegRenderSettings> GetHighQualityFFmpegSettingsAsync(int targetFps = 60)
     {
-        var settings = await GetOptimalFFmpegSettingsAsync(targetFps);
+        var settings = await GetOptimalFFmpegSettingsAsync(targetFps).ConfigureAwait(false);
 
         if (settings.UseHardwareAcceleration)
         {
@@ -141,7 +141,7 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
     /// </summary>
     public virtual async Task<FFmpegRenderSettings> GetFastFFmpegSettingsAsync(int targetFps = 60)
     {
-        var settings = await GetOptimalFFmpegSettingsAsync(targetFps);
+        var settings = await GetOptimalFFmpegSettingsAsync(targetFps).ConfigureAwait(false);
 
         if (settings.UseHardwareAcceleration)
         {
@@ -162,7 +162,7 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
     /// </summary>
     public async Task<HardwareEncoderInfo?> GetBestEncoderAsync(string codecType = "hevc")
     {
-        var hw = await DetectHardwareAsync();
+        var hw = await DetectHardwareAsync().ConfigureAwait(false);
 
         // Priority: NVENC > VAAPI > Software
         var preferredOrder = new[] { "nvenc", "vaapi" };
@@ -197,7 +197,7 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
             };
 
             process.Start();
-            await process.WaitForExitAsync();
+            await process.WaitForExitAsync().ConfigureAwait(false);
             return process.ExitCode == 0;
         }
         catch
@@ -229,10 +229,10 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
             var stdoutTask = process.StandardOutput.ReadToEndAsync();
             var stderrTask = process.StandardError.ReadToEndAsync();
 
-            await process.WaitForExitAsync();
+            await process.WaitForExitAsync().ConfigureAwait(false);
 
-            var output = await stdoutTask;
-            await stderrTask;
+            var output = await stdoutTask.ConfigureAwait(false);
+            await stderrTask.ConfigureAwait(false);
 
             if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
             {
@@ -264,10 +264,10 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
             var stdoutTask = process.StandardOutput.ReadToEndAsync();
             var stderrTask = process.StandardError.ReadToEndAsync();
 
-            await process.WaitForExitAsync();
+            await process.WaitForExitAsync().ConfigureAwait(false);
 
-            var output = await stdoutTask;
-            await stderrTask;
+            var output = await stdoutTask.ConfigureAwait(false);
+            await stderrTask.ConfigureAwait(false);
 
             if (process.ExitCode == 0)
             {
@@ -308,10 +308,10 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
             var stdoutTask = process.StandardOutput.ReadToEndAsync();
             var stderrTask = process.StandardError.ReadToEndAsync();
 
-            await process.WaitForExitAsync();
+            await process.WaitForExitAsync().ConfigureAwait(false);
 
-            var output = await stdoutTask;
-            await stderrTask;
+            var output = await stdoutTask.ConfigureAwait(false);
+            await stderrTask.ConfigureAwait(false);
 
             if (process.ExitCode == 0)
             {
@@ -428,10 +428,10 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
             var stdoutTask = process.StandardOutput.ReadToEndAsync();
             var stderrTask = process.StandardError.ReadToEndAsync();
 
-            await process.WaitForExitAsync();
+            await process.WaitForExitAsync().ConfigureAwait(false);
 
-            var output = await stdoutTask;
-            await stderrTask;
+            var output = await stdoutTask.ConfigureAwait(false);
+            await stderrTask.ConfigureAwait(false);
 
             if (process.ExitCode == 0)
             {
@@ -477,10 +477,10 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
             var stdoutTask = process.StandardOutput.ReadToEndAsync();
             var stderrTask = process.StandardError.ReadToEndAsync();
 
-            await process.WaitForExitAsync();
+            await process.WaitForExitAsync().ConfigureAwait(false);
 
-            var output = await stdoutTask;
-            await stderrTask;
+            var output = await stdoutTask.ConfigureAwait(false);
+            await stderrTask.ConfigureAwait(false);
 
             if (process.ExitCode == 0)
             {

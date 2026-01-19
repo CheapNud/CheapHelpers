@@ -398,10 +398,10 @@ public class LinuxExecutableDetectionService
             var stdoutTask = process.StandardOutput.ReadToEndAsync();
             var stderrTask = process.StandardError.ReadToEndAsync();
 
-            await process.WaitForExitAsync();
+            await process.WaitForExitAsync().ConfigureAwait(false);
 
-            var output = await stdoutTask;
-            await stderrTask; // Ensure stderr is also consumed
+            var output = await stdoutTask.ConfigureAwait(false);
+            await stderrTask.ConfigureAwait(false); // Ensure stderr is also consumed
 
             if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
             {

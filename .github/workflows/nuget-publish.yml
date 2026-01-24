@@ -116,10 +116,11 @@ jobs:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
   # Phase 2: Pack and publish MediaProcessing (depends on base packages being on NuGet)
+  # IMPORTANT: Must run on Windows to compile net10.0-windows target (Windows services need WMI, etc.)
   pack-and-publish-dependent:
     name: Pack and Publish MediaProcessing
     needs: publish-base
-    runs-on: macos-latest
+    runs-on: windows-latest
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
@@ -135,9 +136,10 @@ jobs:
 
     # Wait for NuGet to index base packages
     - name: Wait for NuGet indexing
+      shell: pwsh
       run: |
-        echo "Waiting 10 minutes for NuGet to index base packages..."
-        sleep 600
+        Write-Host "Waiting 10 minutes for NuGet to index base packages..."
+        Start-Sleep -Seconds 600
 
     - name: Restore MediaProcessing
       run: dotnet restore CheapHelpers.MediaProcessing/CheapHelpers.MediaProcessing.csproj -p:EnableWindowsTargeting=true
@@ -146,12 +148,15 @@ jobs:
       run: dotnet pack CheapHelpers.MediaProcessing/CheapHelpers.MediaProcessing.csproj --configuration ${{ env.CONFIGURATION }} --no-restore -p:EnableWindowsTargeting=true --output ./nupkgs
 
     - name: List MediaProcessing package
-      run: ls -la ./nupkgs/
+      shell: pwsh
+      run: Get-ChildItem -Path ./nupkgs/
 
     - name: Publish MediaProcessing to NuGet.org
+      shell: pwsh
       run: |
-        echo "Publishing MediaProcessing..."
-        dotnet nuget push "./nupkgs/CheapHelpers.MediaProcessing.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate || true
+        Write-Host "Publishing MediaProcessing..."
+        $pkg = Get-ChildItem -Path ./nupkgs -Filter "CheapHelpers.MediaProcessing.*.nupkg" | Select-Object -First 1
+        dotnet nuget push $pkg.FullName --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 

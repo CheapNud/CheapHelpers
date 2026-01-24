@@ -12,9 +12,17 @@
 
     <!-- Suppress CA1416 for Windows-specific APIs -->
     <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
 
-    <!-- Define WINDOWS constant for Windows target -->
-    <DefineConstants Condition="'$(TargetFramework)' == 'net10.0-windows'">$(DefineConstants);WINDOWS</DefineConstants>
+  <!-- Platform-specific constants -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup>
 
     <!-- NuGet Package Metadata -->
     <PackageId>CheapHelpers.MediaProcessing</PackageId>

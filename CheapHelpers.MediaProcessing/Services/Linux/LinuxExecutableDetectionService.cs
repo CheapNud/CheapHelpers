@@ -245,29 +245,10 @@ public class LinuxExecutableDetectionService
 
         try
         {
-            using var process = new SysProcess
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = executableName,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-            process.StartInfo.ArgumentList.Add("--version");
+            using var process = ProcessHelper.CreateProcess(executableName, "--version");
+            var (exitCode, _, _) = ProcessHelper.Run(process, PROCESS_TIMEOUT_MS);
 
-            process.Start();
-
-            // Wait for exit with timeout, kill if exceeded
-            if (!process.WaitForExit(PROCESS_TIMEOUT_MS))
-            {
-                try { process.Kill(entireProcessTree: true); } catch { /* Best effort cleanup */ }
-                return false;
-            }
-
-            return process.ExitCode == 0 || process.ExitCode == 1;
+            return exitCode == 0 || exitCode == 1;
         }
         catch
         {
@@ -284,33 +265,17 @@ public class LinuxExecutableDetectionService
 
         try
         {
-            using var process = new SysProcess
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "which",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-            process.StartInfo.ArgumentList.Add(executableName);
+            using var process = ProcessHelper.CreateProcess("which", executableName);
+            var (exitCode, stdout, _) = ProcessHelper.Run(process, PROCESS_TIMEOUT_MS);
 
-            process.Start();
-
-            // Wait for exit with timeout, kill if exceeded
-            if (!process.WaitForExit(PROCESS_TIMEOUT_MS))
+            if (exitCode == -1)
             {
-                try { process.Kill(entireProcessTree: true); } catch { /* Best effort cleanup */ }
                 Debug.WriteLine($"[which] Process timed out for {executableName}");
                 return null;
             }
 
-            // Read output only after process has exited
-            var output = process.StandardOutput.ReadToEnd().Trim();
-
-            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output) && File.Exists(output))
+            var output = stdout.Trim();
+            if (exitCode == 0 && !string.IsNullOrWhiteSpace(output) && File.Exists(output))
             {
                 Debug.WriteLine($"[which] Found {executableName} at: {output}");
                 return output;

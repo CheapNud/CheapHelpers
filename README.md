@@ -13,6 +13,8 @@ A collection of production-ready C# utilities, extensions, and services for .NET
 | [CheapHelpers.Blazor](https://www.nuget.org/packages/CheapHelpers.Blazor) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Blazor.svg) | Blazor components, UI utilities, and Hybrid features |
 | [CheapHelpers.Networking](https://www.nuget.org/packages/CheapHelpers.Networking) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Networking.svg) | Network scanning and device discovery |
 | [CheapHelpers.MAUI](https://www.nuget.org/packages/CheapHelpers.MAUI) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.MAUI.svg) | MAUI platform implementations (iOS APNS, Android FCM) |
+| [CheapHelpers.MediaProcessing](https://www.nuget.org/packages/CheapHelpers.MediaProcessing) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.MediaProcessing.svg) | FFmpeg integration, hardware detection (Windows/Linux) |
+| [CheapHelpers.Avalonia.Bridge](https://www.nuget.org/packages/CheapHelpers.Avalonia.Bridge) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Avalonia.Bridge.svg) | Desktop notification bridge for Avalonia apps |
 
 ## Installation
 
@@ -34,6 +36,12 @@ dotnet add package CheapHelpers.Networking
 
 # MAUI platform implementations
 dotnet add package CheapHelpers.MAUI
+
+# Media processing (FFmpeg, hardware detection)
+dotnet add package CheapHelpers.MediaProcessing
+
+# Avalonia desktop notifications bridge
+dotnet add package CheapHelpers.Avalonia.Bridge
 ```
 
 ## Quick Start
@@ -233,6 +241,39 @@ Network scanning and device discovery utilities.
 - MAC address resolution (cross-platform)
 
 **Documentation:** [Docs/Networking](Docs/Networking/)
+
+### CheapHelpers.MediaProcessing
+Media processing utilities for FFmpeg integration and hardware detection.
+
+**Platform Support:**
+- **Windows** - Full support including SVP integration, WMI-based GPU detection, NVENC capability detection
+- **Linux** - Full support using nvidia-smi and system commands for hardware detection
+- **macOS** - Not currently supported (planned for future release)
+
+**Key Features:**
+- FFmpeg/FFprobe executable detection with priority ordering
+- Hardware capability detection (GPU, NVENC encoders)
+- SVP (Smooth Video Project) integration (Windows only)
+- Process management with timeout and cancellation support
+- Temporary file management with automatic cleanup
+- Dependency installation helpers
+
+**Usage:**
+```csharp
+// Automatic platform detection
+services.AddMediaProcessing();
+
+// Or explicit platform selection
+services.AddMediaProcessingWindows();  // Windows only
+services.AddMediaProcessingLinux();    // Linux only
+```
+
+### CheapHelpers.Avalonia.Bridge
+Bridge package integrating CheapAvaloniaBlazor desktop notifications with CheapHelpers notification system.
+
+**Key Features:**
+- Desktop notification adapter for Avalonia/Photino apps
+- Integration with CheapHelpers.Services notification system
 
 ## Architecture
 

@@ -70,6 +70,12 @@ jobs:
     - name: Pack base NuGet packages
       run: dotnet pack CheapHelpers.CI.sln --configuration ${{ env.CONFIGURATION }} --no-restore -p:EnableWindowsTargeting=true --output ./nupkgs
 
+    # MAUI is excluded from CI.sln but we have workloads installed on macos, pack it separately
+    - name: Restore and Pack MAUI
+      run: |
+        dotnet restore CheapHelpers.MAUI/CheapHelpers.MAUI.csproj -p:EnableWindowsTargeting=true
+        dotnet pack CheapHelpers.MAUI/CheapHelpers.MAUI.csproj --configuration ${{ env.CONFIGURATION }} --no-restore -p:EnableWindowsTargeting=true --output ./nupkgs
+
     - name: Upload base NuGet packages
       uses: actions/upload-artifact@v4
       with:

@@ -156,7 +156,7 @@ jobs:
       run: |
         Write-Host "Publishing MediaProcessing..."
         $pkg = Get-ChildItem -Path ./nupkgs -Filter "CheapHelpers.MediaProcessing.*.nupkg" | Select-Object -First 1
-        dotnet nuget push $pkg.FullName --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        dotnet nuget push $pkg.FullName --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate --no-symbols
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 

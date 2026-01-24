@@ -1,24 +1,35 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Version>1.3.0</Version>
+    <!-- Multi-target for cross-platform support -->
+    <TargetFrameworks>net10.0;net10.0-windows</TargetFrameworks>
+    <Version>2.0.0</Version>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-    <!-- Platform Support - Windows Only -->
-    <!-- Reasons: WMI (System.Management), TensorRT detection, NVENC detection -->
-    <RuntimeIdentifiers>win-x64;win-x86;win-arm64</RuntimeIdentifiers>
+    <!-- Platform Support - all RIDs for multi-targeting -->
+    <RuntimeIdentifiers>win-x64;win-x86;win-arm64;linux-x64;linux-arm64</RuntimeIdentifiers>
 
-    <!-- Suppress CA1416: This targets Windows-specific APIs by design -->
+    <!-- Suppress CA1416 for Windows-specific APIs -->
     <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+
+  <!-- Platform-specific constants -->
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <DefineConstants>$(DefineConstants);UNIX</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup>
 
     <!-- NuGet Package Metadata -->
     <PackageId>CheapHelpers.MediaProcessing</PackageId>
     <Authors>CheapNud</Authors>
     <Company>CheapNud</Company>
     <Product>CheapHelpers</Product>
-    <Description>Media processing utilities including FFmpeg integration, hardware detection (GPU/NVENC), dependency management for video processing tools, and process management helpers</Description>
+    <Description>Media processing utilities including FFmpeg integration, hardware detection (GPU/NVENC), dependency management for video processing tools, and process management helpers. Supports Windows and Linux platforms.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
     <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
@@ -42,9 +53,6 @@
     <!-- FFmpeg wrapper -->
     <PackageReference Include="FFMpegCore" Version="5.4.0" />
 
-    <!-- Hardware detection (WMI) -->
-    <PackageReference Include="System.Management" Version="10.0.2" />
-
     <!-- Archive extraction for dependency installation -->
     <PackageReference Include="SharpCompress" Version="0.44.0" />
 
@@ -55,8 +63,25 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.2" />
   </ItemGroup>
 
+  <!-- Windows-only: Hardware detection via WMI -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <PackageReference Include="System.Management" Version="10.0.2" />
+  </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Include="CheapHelpers" Version="1.3.0" />
+    <PackageReference Include="CheapHelpers" Version="2.0.0" />
+  </ItemGroup>
+
+  <!-- Exclude Windows-specific services from non-Windows build -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <Compile Remove="Services\HardwareDetectionService.cs" />
+    <Compile Remove="Services\SvpDetectionService.cs" />
+    <Compile Remove="Services\ExecutableDetectionService.cs" />
+  </ItemGroup>
+
+  <!-- Exclude Linux-specific services from Windows build -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <Compile Remove="Services\Linux\**" />
   </ItemGroup>
 
 </Project>

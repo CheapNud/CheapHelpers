@@ -1,6 +1,7 @@
 using SysProcess = System.Diagnostics.Process;
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using CheapHelpers.MediaProcessing.Models;
 
 namespace CheapHelpers.MediaProcessing.Services;
 
@@ -67,9 +68,9 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     /// <summary>
     /// Auto-detect common media executables
     /// </summary>
-    public DetectedExecutables DetectAll()
+    public Models.DetectedExecutables DetectAll()
     {
-        var detected = new DetectedExecutables
+        var detected = new Models.DetectedExecutables
         {
             FFmpegPath = DetectFFmpeg(useSvpEncoders: true, customPath: null),
             FFprobePath = DetectFFprobe(useSvpEncoders: true, customPath: null),
@@ -407,24 +408,4 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
 
         return null;
     }
-}
-
-/// <summary>
-/// Result of executable detection
-/// </summary>
-public class DetectedExecutables
-{
-    public string? FFmpegPath { get; set; }
-    public string? FFprobePath { get; set; }
-    public string? MeltPath { get; set; }
-
-    /// <summary>
-    /// Additional detected executables (app-specific)
-    /// </summary>
-    public Dictionary<string, string?> AdditionalExecutables { get; set; } = new();
-
-    public bool FFmpegFound => FFmpegPath != null;
-    public bool FFprobeFound => FFprobePath != null;
-    public bool MeltFound => MeltPath != null;
-    public bool EssentialsFound => FFmpegFound && FFprobeFound;
 }

@@ -1,0 +1,443 @@
+using SysProcess = System.Diagnostics.Process;
+using System.Diagnostics;
+using System.Runtime.Versioning;
+using System.Text.RegularExpressions;
+using CheapHelpers.MediaProcessing.Models;
+using CheapHelpers.MediaProcessing.Utilities;
+
+namespace CheapHelpers.MediaProcessing.Services.Linux;
+
+/// <summary>
+/// Linux implementation for detecting hardware capabilities.
+/// Uses nvidia-smi for GPU detection and /proc/ for CPU info.
+/// </summary>
+[UnsupportedOSPlatform("windows")]
+public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionService executableDetection) : IDisposable
+{
+    private bool _disposed;
+    // Encoding quality constants
+    private const int NVENC_OPTIMAL_QUALITY = 19;
+    private const int NVENC_HIGH_QUALITY = 18;
+    private const int CPU_DEFAULT_QUALITY = 23;
+    private const int CPU_HIGH_QUALITY = 20;
+    private const int CPU_FAST_QUALITY = 26;
+
+    // NVENC preset constants
+    private const string NVENC_BEST_PRESET = "p7";
+    private const string NVENC_FAST_PRESET = "p4";
+
+    // CPU preset constants
+    private const string CPU_DEFAULT_PRESET = "medium";
+    private const string CPU_HIGH_QUALITY_PRESET = "slow";
+    private const string CPU_FAST_PRESET = "fast";
+
+    // TODO: Consider refactoring to AsyncLazy<T> for cleaner caching pattern
+    private volatile HardwareCapabilities? _cachedCapabilities;
+    private readonly SemaphoreSlim _cacheSemaphore = new(1, 1);
+
+    /// <summary>
+    /// Detect hardware capabilities (cached after first call)
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public virtual async Task<HardwareCapabilities> DetectHardwareAsync(CancellationToken cancellationToken = default)
+    {
+        // Fast path - return cached value without lock contention (volatile ensures visibility)
+        if (_cachedCapabilities != null)
+            return _cachedCapabilities;
+
+        await _cacheSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            // Double-check inside lock prevents multiple detections when concurrent calls
+            // arrive before cache is populated - this is the standard double-check locking pattern
+            if (_cachedCapabilities != null)
+                return _cachedCapabilities;
+
+            var capabilities = new HardwareCapabilities
+            {
+                CpuCoreCount = Environment.ProcessorCount,
+                CpuName = GetCpuName(),
+                HasNvidiaGpu = await DetectNvidiaGpuAsync(cancellationToken).ConfigureAwait(false),
+                GpuName = await GetGpuNameAsync(cancellationToken).ConfigureAwait(false),
+                NvencAvailable = await IsNvencAvailableAsync(cancellationToken).ConfigureAwait(false),
+                AvailableGpus = await GetAllGpuNamesAsync(cancellationToken).ConfigureAwait(false),
+                IsIntelCpu = IsIntelCpu()
+            };
+
+            // Detect hardware encoders
+            await DetectHardwareEncodersAsync(capabilities, cancellationToken).ConfigureAwait(false);
+
+            Debug.WriteLine("=== Linux Hardware Detection ===");
+            Debug.WriteLine($"CPU: {capabilities.CpuName} ({capabilities.CpuCoreCount} cores)");
+            Debug.WriteLine($"GPU: {capabilities.GpuName}");
+            Debug.WriteLine($"NVIDIA GPU: {capabilities.HasNvidiaGpu}");
+            Debug.WriteLine($"NVENC Available: {capabilities.NvencAvailable}");
+            Debug.WriteLine($"Hardware Encoders Detected: {capabilities.SupportedEncoders.Count(e => e.Value.IsAvailable)}");
+            Debug.WriteLine("================================");
+
+            _cachedCapabilities = capabilities;
+            return capabilities;
+        }
+        finally
+        {
+            _cacheSemaphore.Release();
+        }
+    }
+
+    /// <summary>
+    /// Get optimal FFmpeg settings for video encoding
+    /// </summary>
+    /// <param name="targetFps">Target frame rate</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public virtual async Task<FFmpegRenderSettings> GetOptimalFFmpegSettingsAsync(int targetFps = 60, CancellationToken cancellationToken = default)
+    {
+        var hw = await DetectHardwareAsync(cancellationToken).ConfigureAwait(false);
+
+        var settings = new FFmpegRenderSettings
+        {
+            FrameRate = targetFps,
+            UseHardwareAcceleration = hw.NvencAvailable
+        };
+
+        if (hw.NvencAvailable)
+        {
+            settings.VideoCodec = "hevc_nvenc";
+            settings.NvencPreset = NVENC_BEST_PRESET;
+            settings.RateControl = "vbr";
+            settings.Quality = NVENC_OPTIMAL_QUALITY;
+        }
+        else
+        {
+            settings.VideoCodec = "libx265";
+            settings.CpuPreset = CPU_DEFAULT_PRESET;
+            settings.Quality = CPU_DEFAULT_QUALITY;
+        }
+
+        var speedDescription = hw.NvencAvailable
+            ? "NVENC hardware acceleration"
+            : "CPU encoding (no NVIDIA GPU detected)";
+
+        Debug.WriteLine($"Optimal FFmpeg settings: {speedDescription}");
+
+        return settings;
+    }
+
+    /// <summary>
+    /// Get high-quality FFmpeg settings
+    /// </summary>
+    /// <param name="targetFps">Target frame rate</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public virtual async Task<FFmpegRenderSettings> GetHighQualityFFmpegSettingsAsync(int targetFps = 60, CancellationToken cancellationToken = default)
+    {
+        var settings = await GetOptimalFFmpegSettingsAsync(targetFps, cancellationToken).ConfigureAwait(false);
+
+        if (settings.UseHardwareAcceleration)
+        {
+            settings.Quality = NVENC_HIGH_QUALITY;
+            settings.NvencPreset = NVENC_BEST_PRESET;
+        }
+        else
+        {
+            settings.CpuPreset = CPU_HIGH_QUALITY_PRESET;
+            settings.Quality = CPU_HIGH_QUALITY;
+        }
+
+        return settings;
+    }
+
+    /// <summary>
+    /// Get fast FFmpeg settings
+    /// </summary>
+    /// <param name="targetFps">Target frame rate</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public virtual async Task<FFmpegRenderSettings> GetFastFFmpegSettingsAsync(int targetFps = 60, CancellationToken cancellationToken = default)
+    {
+        var settings = await GetOptimalFFmpegSettingsAsync(targetFps, cancellationToken).ConfigureAwait(false);
+
+        if (settings.UseHardwareAcceleration)
+        {
+            settings.NvencPreset = NVENC_FAST_PRESET;
+            settings.Quality = CPU_DEFAULT_QUALITY;
+        }
+        else
+        {
+            settings.CpuPreset = CPU_FAST_PRESET;
+            settings.Quality = CPU_FAST_QUALITY;
+        }
+
+        return settings;
+    }
+
+    /// <summary>
+    /// Get the best available hardware encoder
+    /// </summary>
+    /// <param name="codecType">Codec type (e.g., "hevc", "h264")</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public async Task<HardwareEncoderInfo?> GetBestEncoderAsync(string codecType = "hevc", CancellationToken cancellationToken = default)
+    {
+        var hw = await DetectHardwareAsync(cancellationToken).ConfigureAwait(false);
+
+        // Priority: NVENC > VAAPI > Software
+        var preferredOrder = new[] { "nvenc", "vaapi" };
+
+        foreach (var vendor in preferredOrder)
+        {
+            var encoderKey = $"{codecType}_{vendor}";
+            if (hw.SupportedEncoders.TryGetValue(encoderKey, out var encoder) && encoder.IsAvailable)
+            {
+                return encoder;
+            }
+        }
+
+        return null;
+    }
+
+    private async Task<bool> DetectNvidiaGpuAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var process = ProcessHelper.CreateProcess("nvidia-smi", "--query-gpu=name --format=csv,noheader");
+            var (exitCode, _, _) = await ProcessHelper.RunAsync(process, cancellationToken: cancellationToken).ConfigureAwait(false);
+            return exitCode == 0;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private async Task<string> GetGpuNameAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var process = ProcessHelper.CreateProcess("nvidia-smi", "--query-gpu=name --format=csv,noheader");
+            var (exitCode, stdout, _) = await ProcessHelper.RunAsync(process, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            if (exitCode == 0 && !string.IsNullOrWhiteSpace(stdout))
+            {
+                var lines = stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                return lines.Length > 0 ? lines[0].Trim() : "Unknown GPU";
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch { }
+
+        // Fallback: try lspci
+        try
+        {
+            using var process = ProcessHelper.CreateProcess("lspci", "-v");
+            var (exitCode, stdout, _) = await ProcessHelper.RunAsync(process, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            if (exitCode == 0)
+            {
+                var vgaMatch = VgaControllerRegex().Match(stdout);
+                if (vgaMatch.Success)
+                {
+                    return vgaMatch.Groups[1].Value.Trim();
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch { }
+
+        return "Unknown GPU";
+    }
+
+    private async Task<List<string>> GetAllGpuNamesAsync(CancellationToken cancellationToken = default)
+    {
+        var gpuList = new List<string>();
+
+        try
+        {
+            using var process = ProcessHelper.CreateProcess("nvidia-smi", "--query-gpu=name --format=csv,noheader");
+            var (exitCode, stdout, _) = await ProcessHelper.RunAsync(process, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            if (exitCode == 0)
+            {
+                var gpuNames = stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                gpuList.AddRange(gpuNames.Select(n => n.Trim()));
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch { }
+
+        if (gpuList.Count == 0)
+        {
+            gpuList.Add("Unknown GPU");
+        }
+
+        return gpuList;
+    }
+
+    private string GetCpuName()
+    {
+        try
+        {
+            if (File.Exists("/proc/cpuinfo"))
+            {
+                var cpuInfo = File.ReadAllText("/proc/cpuinfo");
+                var match = CpuModelNameRegex().Match(cpuInfo);
+                if (match.Success)
+                {
+                    return match.Groups[1].Value.Trim();
+                }
+            }
+        }
+        catch { }
+
+        return "Unknown CPU";
+    }
+
+    private bool IsIntelCpu()
+    {
+        var cpuName = GetCpuName();
+        return cpuName.Contains("Intel", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task DetectHardwareEncodersAsync(HardwareCapabilities capabilities, CancellationToken cancellationToken = default)
+    {
+        var encodersToCheck = new Dictionary<string, HardwareEncoderInfo>
+        {
+            ["av1_nvenc"] = new()
+            {
+                CodecName = "av1_nvenc",
+                DisplayName = "AV1 (NVENC)",
+                VendorType = "NVENC",
+                EstimatedSpeedupFactor = 12.0,
+                Description = "Highest compression efficiency with NVIDIA hardware"
+            },
+            ["h264_nvenc"] = new()
+            {
+                CodecName = "h264_nvenc",
+                DisplayName = "H.264 (NVENC)",
+                VendorType = "NVENC",
+                EstimatedSpeedupFactor = 8.0,
+                Description = "Most compatible format on NVIDIA GPUs"
+            },
+            ["hevc_nvenc"] = new()
+            {
+                CodecName = "hevc_nvenc",
+                DisplayName = "HEVC/H.265 (NVENC)",
+                VendorType = "NVENC",
+                EstimatedSpeedupFactor = 8.5,
+                Description = "Excellent quality-to-size ratio on NVIDIA GPUs"
+            },
+            ["h264_vaapi"] = new()
+            {
+                CodecName = "h264_vaapi",
+                DisplayName = "H.264 (VAAPI)",
+                VendorType = "VAAPI",
+                EstimatedSpeedupFactor = 6.0,
+                Description = "Linux video acceleration API"
+            },
+            ["hevc_vaapi"] = new()
+            {
+                CodecName = "hevc_vaapi",
+                DisplayName = "HEVC/H.265 (VAAPI)",
+                VendorType = "VAAPI",
+                EstimatedSpeedupFactor = 6.5,
+                Description = "Linux video acceleration API"
+            }
+        };
+
+        var ffmpegPath = executableDetection.DetectFFmpeg(useSvpEncoders: false, customPath: null);
+        if (string.IsNullOrEmpty(ffmpegPath))
+        {
+            capabilities.SupportedEncoders = encodersToCheck;
+            return;
+        }
+
+        try
+        {
+            using var process = ProcessHelper.CreateProcess(ffmpegPath, "-encoders");
+            var (exitCode, stdout, _) = await ProcessHelper.RunAsync(process, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            if (exitCode == 0)
+            {
+                foreach (var encoder in encodersToCheck)
+                {
+                    encoder.Value.IsAvailable = stdout.Contains(encoder.Key);
+                    Debug.WriteLine($"Hardware encoder {encoder.Key}: {(encoder.Value.IsAvailable ? "Available" : "Not available")}");
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error detecting hardware encoders: {ex.Message}");
+        }
+
+        capabilities.SupportedEncoders = encodersToCheck;
+    }
+
+    private async Task<bool> IsNvencAvailableAsync(CancellationToken cancellationToken = default)
+    {
+        var ffmpegPath = executableDetection.DetectFFmpeg(useSvpEncoders: false, customPath: null);
+        if (string.IsNullOrEmpty(ffmpegPath))
+            return false;
+
+        try
+        {
+            using var process = ProcessHelper.CreateProcess(ffmpegPath, "-encoders");
+            var (exitCode, stdout, _) = await ProcessHelper.RunAsync(process, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            if (exitCode == 0)
+            {
+                return stdout.Contains("h264_nvenc") || stdout.Contains("hevc_nvenc");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch { }
+
+        return false;
+    }
+
+    [GeneratedRegex(@"VGA compatible controller:\s*(.+)", RegexOptions.IgnoreCase)]
+    private static partial Regex VgaControllerRegex();
+
+    [GeneratedRegex(@"model name\s*:\s*(.+)", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+    private static partial Regex CpuModelNameRegex();
+
+    /// <summary>
+    /// Dispose of managed resources
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Dispose pattern implementation
+    /// </summary>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed) return;
+
+        if (disposing)
+        {
+            _cacheSemaphore.Dispose();
+        }
+
+        _disposed = true;
+    }
+}

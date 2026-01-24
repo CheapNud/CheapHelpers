@@ -2,6 +2,7 @@ using SysProcess = System.Diagnostics.Process;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using CheapHelpers.MediaProcessing.Models;
+using CheapHelpers.MediaProcessing.Utilities;
 
 namespace CheapHelpers.MediaProcessing.Services.Linux;
 
@@ -53,9 +54,9 @@ public class LinuxExecutableDetectionService
     /// <summary>
     /// Auto-detect common media executables
     /// </summary>
-    public DetectedExecutables DetectAll()
+    public Models.DetectedExecutables DetectAll()
     {
-        var detected = new DetectedExecutables
+        var detected = new Models.DetectedExecutables
         {
             FFmpegPath = DetectFFmpeg(useSvpEncoders: false, customPath: null),
             FFprobePath = DetectFFprobe(useSvpEncoders: false, customPath: null),
@@ -262,7 +263,7 @@ public class LinuxExecutableDetectionService
             // Wait for exit with timeout, kill if exceeded
             if (!process.WaitForExit(PROCESS_TIMEOUT_MS))
             {
-                try { process.Kill(); } catch { /* Best effort cleanup */ }
+                try { process.Kill(entireProcessTree: true); } catch { /* Best effort cleanup */ }
                 return false;
             }
 
@@ -301,7 +302,7 @@ public class LinuxExecutableDetectionService
             // Wait for exit with timeout, kill if exceeded
             if (!process.WaitForExit(PROCESS_TIMEOUT_MS))
             {
-                try { process.Kill(); } catch { /* Best effort cleanup */ }
+                try { process.Kill(entireProcessTree: true); } catch { /* Best effort cleanup */ }
                 Debug.WriteLine($"[which] Process timed out for {executableName}");
                 return null;
             }
@@ -373,41 +374,27 @@ public class LinuxExecutableDetectionService
     /// <summary>
     /// Get version string from an executable
     /// </summary>
-    public async Task<string?> GetExecutableVersionAsync(string executablePath, string versionArgument = "-version")
+    /// <param name="executablePath">Path to the executable</param>
+    /// <param name="versionArgument">Argument to get version (default: -version)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public async Task<string?> GetExecutableVersionAsync(string executablePath, string versionArgument = "-version", CancellationToken cancellationToken = default)
     {
         ValidateExecutableName(executablePath, nameof(executablePath));
 
         try
         {
-            using var process = new SysProcess
+            using var process = ProcessHelper.CreateProcess(executablePath, versionArgument);
+            var (exitCode, stdout, _) = await ProcessHelper.RunAsync(process, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            if (exitCode == 0 && !string.IsNullOrWhiteSpace(stdout))
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = executablePath,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-            process.StartInfo.ArgumentList.Add(versionArgument);
-
-            process.Start();
-
-            // Read both streams concurrently to prevent deadlock when buffers fill
-            var stdoutTask = process.StandardOutput.ReadToEndAsync();
-            var stderrTask = process.StandardError.ReadToEndAsync();
-
-            await process.WaitForExitAsync().ConfigureAwait(false);
-
-            var output = await stdoutTask.ConfigureAwait(false);
-            await stderrTask.ConfigureAwait(false); // Ensure stderr is also consumed
-
-            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
-            {
-                var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                var lines = stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries);
                 return lines.Length > 0 ? lines[0].Trim() : null;
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

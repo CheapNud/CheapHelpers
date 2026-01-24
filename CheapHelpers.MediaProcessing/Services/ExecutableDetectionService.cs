@@ -68,9 +68,9 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     /// <summary>
     /// Auto-detect common media executables
     /// </summary>
-    public DetectedExecutables DetectAll()
+    public Models.DetectedExecutables DetectAll()
     {
-        var detected = new DetectedExecutables
+        var detected = new Models.DetectedExecutables
         {
             FFmpegPath = DetectFFmpeg(useSvpEncoders: true, customPath: null),
             FFprobePath = DetectFFprobe(useSvpEncoders: true, customPath: null),
@@ -410,4 +410,4 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     }
 }
 
-// DetectedExecutables class has been moved to Models/DetectedExecutables.cs for cross-platform support
+// Backward compatibility alias is in Services/DetectedExecutablesCompat.cs

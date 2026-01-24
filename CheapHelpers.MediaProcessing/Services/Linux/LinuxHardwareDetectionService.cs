@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 using CheapHelpers.MediaProcessing.Models;
+using CheapHelpers.MediaProcessing.Utilities;
 
 namespace CheapHelpers.MediaProcessing.Services.Linux;
 
@@ -36,13 +37,14 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
     /// <summary>
     /// Detect hardware capabilities (cached after first call)
     /// </summary>
-    public virtual async Task<HardwareCapabilities> DetectHardwareAsync()
+    /// <param name="cancellationToken">Cancellation token</param>
+    public virtual async Task<HardwareCapabilities> DetectHardwareAsync(CancellationToken cancellationToken = default)
     {
         // Fast path - return cached value
         if (_cachedCapabilities != null)
             return _cachedCapabilities;
 
-        await _cacheSemaphore.WaitAsync().ConfigureAwait(false);
+        await _cacheSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (_cachedCapabilities != null)
@@ -52,15 +54,15 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
             {
                 CpuCoreCount = Environment.ProcessorCount,
                 CpuName = GetCpuName(),
-                HasNvidiaGpu = await DetectNvidiaGpuAsync().ConfigureAwait(false),
-                GpuName = await GetGpuNameAsync().ConfigureAwait(false),
-                NvencAvailable = await IsNvencAvailableAsync().ConfigureAwait(false),
-                AvailableGpus = await GetAllGpuNamesAsync().ConfigureAwait(false),
+                HasNvidiaGpu = await DetectNvidiaGpuAsync(cancellationToken).ConfigureAwait(false),
+                GpuName = await GetGpuNameAsync(cancellationToken).ConfigureAwait(false),
+                NvencAvailable = await IsNvencAvailableAsync(cancellationToken).ConfigureAwait(false),
+                AvailableGpus = await GetAllGpuNamesAsync(cancellationToken).ConfigureAwait(false),
                 IsIntelCpu = IsIntelCpu()
             };
 
             // Detect hardware encoders
-            await DetectHardwareEncodersAsync(capabilities).ConfigureAwait(false);
+            await DetectHardwareEncodersAsync(capabilities, cancellationToken).ConfigureAwait(false);
 
             Debug.WriteLine("=== Linux Hardware Detection ===");
             Debug.WriteLine($"CPU: {capabilities.CpuName} ({capabilities.CpuCoreCount} cores)");
@@ -82,9 +84,11 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
     /// <summary>
     /// Get optimal FFmpeg settings for video encoding
     /// </summary>
-    public virtual async Task<FFmpegRenderSettings> GetOptimalFFmpegSettingsAsync(int targetFps = 60)
+    /// <param name="targetFps">Target frame rate</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public virtual async Task<FFmpegRenderSettings> GetOptimalFFmpegSettingsAsync(int targetFps = 60, CancellationToken cancellationToken = default)
     {
-        var hw = await DetectHardwareAsync().ConfigureAwait(false);
+        var hw = await DetectHardwareAsync(cancellationToken).ConfigureAwait(false);
 
         var settings = new FFmpegRenderSettings
         {
@@ -118,9 +122,11 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
     /// <summary>
     /// Get high-quality FFmpeg settings
     /// </summary>
-    public virtual async Task<FFmpegRenderSettings> GetHighQualityFFmpegSettingsAsync(int targetFps = 60)
+    /// <param name="targetFps">Target frame rate</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public virtual async Task<FFmpegRenderSettings> GetHighQualityFFmpegSettingsAsync(int targetFps = 60, CancellationToken cancellationToken = default)
     {
-        var settings = await GetOptimalFFmpegSettingsAsync(targetFps).ConfigureAwait(false);
+        var settings = await GetOptimalFFmpegSettingsAsync(targetFps, cancellationToken).ConfigureAwait(false);
 
         if (settings.UseHardwareAcceleration)
         {
@@ -139,9 +145,11 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
     /// <summary>
     /// Get fast FFmpeg settings
     /// </summary>
-    public virtual async Task<FFmpegRenderSettings> GetFastFFmpegSettingsAsync(int targetFps = 60)
+    /// <param name="targetFps">Target frame rate</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public virtual async Task<FFmpegRenderSettings> GetFastFFmpegSettingsAsync(int targetFps = 60, CancellationToken cancellationToken = default)
     {
-        var settings = await GetOptimalFFmpegSettingsAsync(targetFps).ConfigureAwait(false);
+        var settings = await GetOptimalFFmpegSettingsAsync(targetFps, cancellationToken).ConfigureAwait(false);
 
         if (settings.UseHardwareAcceleration)
         {
@@ -160,9 +168,11 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
     /// <summary>
     /// Get the best available hardware encoder
     /// </summary>
-    public async Task<HardwareEncoderInfo?> GetBestEncoderAsync(string codecType = "hevc")
+    /// <param name="codecType">Codec type (e.g., "hevc", "h264")</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    public async Task<HardwareEncoderInfo?> GetBestEncoderAsync(string codecType = "hevc", CancellationToken cancellationToken = default)
     {
-        var hw = await DetectHardwareAsync().ConfigureAwait(false);
+        var hw = await DetectHardwareAsync(cancellationToken).ConfigureAwait(false);
 
         // Priority: NVENC > VAAPI > Software
         var preferredOrder = new[] { "nvenc", "vaapi" };
@@ -179,26 +189,17 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
         return null;
     }
 
-    private async Task<bool> DetectNvidiaGpuAsync()
+    private async Task<bool> DetectNvidiaGpuAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            using var process = new SysProcess
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "nvidia-smi",
-                    Arguments = "--query-gpu=name --format=csv,noheader",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-
-            process.Start();
-            await process.WaitForExitAsync().ConfigureAwait(false);
-            return process.ExitCode == 0;
+            using var process = ProcessHelper.CreateProcess("nvidia-smi", "--query-gpu=name --format=csv,noheader");
+            var (exitCode, _, _) = await ProcessHelper.RunAsync(process, cancellationToken: cancellationToken).ConfigureAwait(false);
+            return exitCode == 0;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch
         {
@@ -206,118 +207,67 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
         }
     }
 
-    private async Task<string> GetGpuNameAsync()
+    private async Task<string> GetGpuNameAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            using var process = new SysProcess
+            using var process = ProcessHelper.CreateProcess("nvidia-smi", "--query-gpu=name --format=csv,noheader");
+            var (exitCode, stdout, _) = await ProcessHelper.RunAsync(process, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            if (exitCode == 0 && !string.IsNullOrWhiteSpace(stdout))
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "nvidia-smi",
-                    Arguments = "--query-gpu=name --format=csv,noheader",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-
-            process.Start();
-
-            // Read both streams concurrently to prevent deadlock
-            var stdoutTask = process.StandardOutput.ReadToEndAsync();
-            var stderrTask = process.StandardError.ReadToEndAsync();
-
-            await process.WaitForExitAsync().ConfigureAwait(false);
-
-            var output = await stdoutTask.ConfigureAwait(false);
-            await stderrTask.ConfigureAwait(false);
-
-            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
-            {
-                var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                var lines = stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries);
                 return lines.Length > 0 ? lines[0].Trim() : "Unknown GPU";
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch { }
 
         // Fallback: try lspci
         try
         {
-            using var process = new SysProcess
+            using var process = ProcessHelper.CreateProcess("lspci", "-v");
+            var (exitCode, stdout, _) = await ProcessHelper.RunAsync(process, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            if (exitCode == 0)
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "lspci",
-                    Arguments = "-v",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-
-            process.Start();
-
-            // Read both streams concurrently to prevent deadlock
-            var stdoutTask = process.StandardOutput.ReadToEndAsync();
-            var stderrTask = process.StandardError.ReadToEndAsync();
-
-            await process.WaitForExitAsync().ConfigureAwait(false);
-
-            var output = await stdoutTask.ConfigureAwait(false);
-            await stderrTask.ConfigureAwait(false);
-
-            if (process.ExitCode == 0)
-            {
-                var vgaMatch = VgaControllerRegex().Match(output);
+                var vgaMatch = VgaControllerRegex().Match(stdout);
                 if (vgaMatch.Success)
                 {
                     return vgaMatch.Groups[1].Value.Trim();
                 }
             }
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch { }
 
         return "Unknown GPU";
     }
 
-    private async Task<List<string>> GetAllGpuNamesAsync()
+    private async Task<List<string>> GetAllGpuNamesAsync(CancellationToken cancellationToken = default)
     {
         var gpuList = new List<string>();
 
         try
         {
-            using var process = new SysProcess
+            using var process = ProcessHelper.CreateProcess("nvidia-smi", "--query-gpu=name --format=csv,noheader");
+            var (exitCode, stdout, _) = await ProcessHelper.RunAsync(process, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            if (exitCode == 0)
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "nvidia-smi",
-                    Arguments = "--query-gpu=name --format=csv,noheader",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-
-            process.Start();
-
-            // Read both streams concurrently to prevent deadlock
-            var stdoutTask = process.StandardOutput.ReadToEndAsync();
-            var stderrTask = process.StandardError.ReadToEndAsync();
-
-            await process.WaitForExitAsync().ConfigureAwait(false);
-
-            var output = await stdoutTask.ConfigureAwait(false);
-            await stderrTask.ConfigureAwait(false);
-
-            if (process.ExitCode == 0)
-            {
-                var gpuNames = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                var gpuNames = stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries);
                 gpuList.AddRange(gpuNames.Select(n => n.Trim()));
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch { }
 
@@ -354,7 +304,7 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
         return cpuName.Contains("Intel", StringComparison.OrdinalIgnoreCase);
     }
 
-    private async Task DetectHardwareEncodersAsync(HardwareCapabilities capabilities)
+    private async Task DetectHardwareEncodersAsync(HardwareCapabilities capabilities, CancellationToken cancellationToken = default)
     {
         var encodersToCheck = new Dictionary<string, HardwareEncoderInfo>
         {
@@ -409,38 +359,21 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
 
         try
         {
-            using var process = new SysProcess
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = ffmpegPath,
-                    Arguments = "-encoders",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
+            using var process = ProcessHelper.CreateProcess(ffmpegPath, "-encoders");
+            var (exitCode, stdout, _) = await ProcessHelper.RunAsync(process, cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            process.Start();
-
-            // Read both streams concurrently to prevent deadlock
-            var stdoutTask = process.StandardOutput.ReadToEndAsync();
-            var stderrTask = process.StandardError.ReadToEndAsync();
-
-            await process.WaitForExitAsync().ConfigureAwait(false);
-
-            var output = await stdoutTask.ConfigureAwait(false);
-            await stderrTask.ConfigureAwait(false);
-
-            if (process.ExitCode == 0)
+            if (exitCode == 0)
             {
                 foreach (var encoder in encodersToCheck)
                 {
-                    encoder.Value.IsAvailable = output.Contains(encoder.Key);
+                    encoder.Value.IsAvailable = stdout.Contains(encoder.Key);
                     Debug.WriteLine($"Hardware encoder {encoder.Key}: {(encoder.Value.IsAvailable ? "Available" : "Not available")}");
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -450,7 +383,7 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
         capabilities.SupportedEncoders = encodersToCheck;
     }
 
-    private async Task<bool> IsNvencAvailableAsync()
+    private async Task<bool> IsNvencAvailableAsync(CancellationToken cancellationToken = default)
     {
         var ffmpegPath = executableDetection.DetectFFmpeg(useSvpEncoders: false, customPath: null);
         if (string.IsNullOrEmpty(ffmpegPath))
@@ -458,34 +391,17 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
 
         try
         {
-            using var process = new SysProcess
+            using var process = ProcessHelper.CreateProcess(ffmpegPath, "-encoders");
+            var (exitCode, stdout, _) = await ProcessHelper.RunAsync(process, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            if (exitCode == 0)
             {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = ffmpegPath,
-                    Arguments = "-encoders",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-
-            process.Start();
-
-            // Read both streams concurrently to prevent deadlock
-            var stdoutTask = process.StandardOutput.ReadToEndAsync();
-            var stderrTask = process.StandardError.ReadToEndAsync();
-
-            await process.WaitForExitAsync().ConfigureAwait(false);
-
-            var output = await stdoutTask.ConfigureAwait(false);
-            await stderrTask.ConfigureAwait(false);
-
-            if (process.ExitCode == 0)
-            {
-                return output.Contains("h264_nvenc") || output.Contains("hevc_nvenc");
+                return stdout.Contains("h264_nvenc") || stdout.Contains("hevc_nvenc");
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch { }
 

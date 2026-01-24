@@ -35,7 +35,8 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
     private const string CPU_HIGH_QUALITY_PRESET = "slow";
     private const string CPU_FAST_PRESET = "fast";
 
-    private HardwareCapabilities? _cachedCapabilities;
+    // TODO: Consider refactoring to AsyncLazy<T> for cleaner caching pattern
+    private volatile HardwareCapabilities? _cachedCapabilities;
     private readonly SemaphoreSlim _cacheSemaphore = new(1, 1);
 
     /// <summary>
@@ -46,15 +47,15 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
     {
         ThrowIfNotWindows();
 
-        // Fast path - return cached value without locking
+        // Fast path - return cached value without lock contention (volatile ensures visibility)
         if (_cachedCapabilities != null)
             return _cachedCapabilities;
 
-        // Async-safe locking for initialization
         await _cacheSemaphore.WaitAsync();
         try
         {
-            // Double-check after acquiring lock
+            // Double-check inside lock prevents multiple detections when concurrent calls
+            // arrive before cache is populated - this is the standard double-check locking pattern
             if (_cachedCapabilities != null)
                 return _cachedCapabilities;
 

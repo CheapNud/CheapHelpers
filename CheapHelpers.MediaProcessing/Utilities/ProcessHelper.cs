@@ -9,9 +9,14 @@ namespace CheapHelpers.MediaProcessing.Utilities;
 internal static class ProcessHelper
 {
     /// <summary>
-    /// Default process timeout in milliseconds (30 seconds)
+    /// Default process timeout in milliseconds (30 seconds) - for longer operations like encoding queries
     /// </summary>
     public const int DefaultTimeoutMs = 30_000;
+
+    /// <summary>
+    /// Short timeout for quick detection operations (1 second) - for existence checks like 'which' or '--version'
+    /// </summary>
+    public const int QuickDetectionTimeoutMs = 1_000;
 
     /// <summary>
     /// Characters that are not allowed in executable names for security (command injection prevention)

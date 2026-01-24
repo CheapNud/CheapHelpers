@@ -13,8 +13,6 @@ namespace CheapHelpers.MediaProcessing.Services.Linux;
 [UnsupportedOSPlatform("windows")]
 public class LinuxExecutableDetectionService
 {
-    private const int PROCESS_TIMEOUT_MS = 1000;
-
     /// <summary>
     /// Characters that are not allowed in executable names for security
     /// </summary>
@@ -246,7 +244,7 @@ public class LinuxExecutableDetectionService
         try
         {
             using var process = ProcessHelper.CreateProcess(executableName, "--version");
-            var (exitCode, _, _) = ProcessHelper.Run(process, PROCESS_TIMEOUT_MS);
+            var (exitCode, _, _) = ProcessHelper.Run(process, ProcessHelper.QuickDetectionTimeoutMs);
 
             return exitCode == 0 || exitCode == 1;
         }
@@ -266,7 +264,7 @@ public class LinuxExecutableDetectionService
         try
         {
             using var process = ProcessHelper.CreateProcess("which", executableName);
-            var (exitCode, stdout, _) = ProcessHelper.Run(process, PROCESS_TIMEOUT_MS);
+            var (exitCode, stdout, _) = ProcessHelper.Run(process, ProcessHelper.QuickDetectionTimeoutMs);
 
             if (exitCode == -1)
             {

@@ -409,5 +409,3 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
         return null;
     }
 }
-
-// Backward compatibility alias is in Services/DetectedExecutablesCompat.cs

@@ -135,6 +135,7 @@ public static class ServiceCollectionExtensions
     [SupportedOSPlatform("windows")]
     private static void AddWindowsServices(IServiceCollection services)
     {
+        ArgumentNullException.ThrowIfNull(services);
 #if WINDOWS
         // Windows-only services (SVP, WMI-based detection)
         services.AddSingleton<SvpDetectionService>();
@@ -148,6 +149,7 @@ public static class ServiceCollectionExtensions
     [UnsupportedOSPlatform("windows")]
     private static void AddLinuxServices(IServiceCollection services)
     {
+        ArgumentNullException.ThrowIfNull(services);
 #if !WINDOWS
         // Linux services (nvidia-smi, which command)
         services.AddSingleton<LinuxExecutableDetectionService>();

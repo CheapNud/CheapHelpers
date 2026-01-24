@@ -31,6 +31,7 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
     private const string CPU_HIGH_QUALITY_PRESET = "slow";
     private const string CPU_FAST_PRESET = "fast";
 
+    // TODO: Consider refactoring to AsyncLazy<T> for cleaner caching pattern
     private volatile HardwareCapabilities? _cachedCapabilities;
     private readonly SemaphoreSlim _cacheSemaphore = new(1, 1);
 
@@ -40,13 +41,15 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
     /// <param name="cancellationToken">Cancellation token</param>
     public virtual async Task<HardwareCapabilities> DetectHardwareAsync(CancellationToken cancellationToken = default)
     {
-        // Fast path - return cached value
+        // Fast path - return cached value without lock contention (volatile ensures visibility)
         if (_cachedCapabilities != null)
             return _cachedCapabilities;
 
         await _cacheSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            // Double-check inside lock prevents multiple detections when concurrent calls
+            // arrive before cache is populated - this is the standard double-check locking pattern
             if (_cachedCapabilities != null)
                 return _cachedCapabilities;
 

@@ -32,6 +32,11 @@ public static class ServiceCollectionExtensions
         {
             AddLinuxServices(services);
         }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            throw new PlatformNotSupportedException(
+                "macOS is not currently supported. macOS support is planned for a future release.");
+        }
         else
         {
             throw new PlatformNotSupportedException(
@@ -71,6 +76,11 @@ public static class ServiceCollectionExtensions
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
             AddLinuxServices(services);
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            throw new PlatformNotSupportedException(
+                "macOS is not currently supported. macOS support is planned for a future release.");
         }
         else
         {

@@ -14,6 +14,51 @@ internal static class ProcessHelper
     public const int DefaultTimeoutMs = 30_000;
 
     /// <summary>
+    /// Characters that are not allowed in executable names for security (command injection prevention)
+    /// </summary>
+    private static readonly char[] InvalidExecutableChars = ['&', '|', ';', '$', '`', '"', '\'', '<', '>', '(', ')', '{', '}', '[', ']', '\n', '\r'];
+
+    /// <summary>
+    /// Validates an executable name to prevent command injection
+    /// </summary>
+    /// <param name="executableName">The name to validate</param>
+    /// <returns>True if the name is safe to use</returns>
+    private static bool IsValidExecutableName(string? executableName)
+    {
+        if (string.IsNullOrWhiteSpace(executableName))
+            return false;
+
+        // Check for command injection characters
+        if (executableName.IndexOfAny(InvalidExecutableChars) >= 0)
+            return false;
+
+        // Check for path traversal
+        if (executableName.Contains(".."))
+            return false;
+
+        // Check for invalid filename characters (but allow path separators for full paths)
+        var fileName = Path.GetFileName(executableName);
+        if (fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// Validates an executable name and throws if invalid
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when the executable name contains invalid characters</exception>
+    private static void ValidateExecutableName(string executableName, string paramName)
+    {
+        if (!IsValidExecutableName(executableName))
+        {
+            throw new ArgumentException(
+                $"Invalid executable name '{executableName}'. Name contains characters that could be used for command injection.",
+                paramName);
+        }
+    }
+
+    /// <summary>
     /// Run a process asynchronously with proper timeout and cancellation handling.
     /// </summary>
     /// <param name="process">The process to run (must be configured but not started)</param>
@@ -120,8 +165,14 @@ internal static class ProcessHelper
     /// <summary>
     /// Create a process configured for command execution with output capture.
     /// </summary>
+    /// <param name="fileName">The executable file name or path</param>
+    /// <param name="arguments">Optional command line arguments</param>
+    /// <returns>A configured Process instance ready to start</returns>
+    /// <exception cref="ArgumentException">Thrown when fileName contains invalid characters that could be used for command injection</exception>
     public static SysProcess CreateProcess(string fileName, string? arguments = null)
     {
+        ValidateExecutableName(fileName, nameof(fileName));
+
         var process = new SysProcess
         {
             StartInfo = new ProcessStartInfo

@@ -69,7 +69,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CheapHelpers" Version="2.0.0" />
+    <ProjectReference Include="..\CheapHelpers\CheapHelpers.csproj" />
   </ItemGroup>
 
   <!-- Exclude Windows-specific services from non-Windows build -->

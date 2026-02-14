@@ -39,11 +39,42 @@ jobs:
     - name: Run tests
       run: dotnet test CheapHelpers.CI.sln --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal || echo "No test projects found"
 
-  # Phase 1: Pack base packages (excluding MediaProcessing)
+  # Phase 1a: Pack base packages (excluding MAUI and MediaProcessing)
   pack-base:
     name: Pack Base Packages
     needs: build-and-test
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore base packages
+      run: dotnet restore CheapHelpers.CI.sln -p:EnableWindowsTargeting=true
+
+    - name: Pack base NuGet packages
+      run: dotnet pack CheapHelpers.CI.sln --configuration ${{ env.CONFIGURATION }} --no-restore -p:EnableWindowsTargeting=true --output ./nupkgs
+
+    - name: Upload base NuGet packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages-base
+        path: ./nupkgs/*.nupkg
+        retention-days: 90
+
+  # Phase 1b: Pack MAUI on Windows (MakePri.exe requires native Windows)
+  pack-maui:
+    name: Pack MAUI
+    needs: build-and-test
+    runs-on: windows-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
@@ -63,30 +94,23 @@ jobs:
         dotnet workload install maui
         dotnet workload list
 
-    - name: Restore base packages
-      # CI solution excludes MediaProcessing (packed/published separately)
-      run: dotnet restore CheapHelpers.CI.sln -p:EnableWindowsTargeting=true
+    - name: Restore MAUI
+      run: dotnet restore CheapHelpers.MAUI/CheapHelpers.MAUI.csproj
 
-    - name: Pack base NuGet packages
-      run: dotnet pack CheapHelpers.CI.sln --configuration ${{ env.CONFIGURATION }} --no-restore -p:EnableWindowsTargeting=true --output ./nupkgs
+    - name: Pack MAUI
+      run: dotnet pack CheapHelpers.MAUI/CheapHelpers.MAUI.csproj --configuration ${{ env.CONFIGURATION }} --no-restore --output ./nupkgs
 
-    # MAUI is excluded from CI.sln but we have workloads installed on macos, pack it separately
-    - name: Restore and Pack MAUI
-      run: |
-        dotnet restore CheapHelpers.MAUI/CheapHelpers.MAUI.csproj -p:EnableWindowsTargeting=true
-        dotnet pack CheapHelpers.MAUI/CheapHelpers.MAUI.csproj --configuration ${{ env.CONFIGURATION }} --no-restore -p:EnableWindowsTargeting=true --output ./nupkgs
-
-    - name: Upload base NuGet packages
+    - name: Upload MAUI NuGet package
       uses: actions/upload-artifact@v4
       with:
-        name: nuget-packages-base
+        name: nuget-packages-maui
         path: ./nupkgs/*.nupkg
         retention-days: 90
 
-  # Publish base packages first
+  # Publish base + MAUI packages
   publish-base:
     name: Publish Base Packages
-    needs: pack-base
+    needs: [pack-base, pack-maui]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
 
@@ -95,6 +119,12 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: nuget-packages-base
+        path: ./nupkgs
+
+    - name: Download MAUI NuGet package
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget-packages-maui
         path: ./nupkgs
 
     - name: Setup .NET

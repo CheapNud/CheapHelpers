@@ -10,7 +10,7 @@ namespace CheapHelpers.Settings;
 /// to provide application-specific defaults (e.g., auto-detected paths).
 /// </summary>
 /// <typeparam name="T">The settings type. Must be a reference type with a parameterless constructor.</typeparam>
-public class JsonSettingsService<T> : IJsonSettingsService<T> where T : class, new()
+public class JsonSettingsService<T> : IJsonSettingsService<T>, IDisposable where T : class, new()
 {
     private readonly string _settingsFilePath;
     private readonly SemaphoreSlim _fileLock = new(1, 1);
@@ -150,5 +150,12 @@ public class JsonSettingsService<T> : IJsonSettingsService<T> where T : class, n
         {
             _fileLock.Release();
         }
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        _fileLock.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

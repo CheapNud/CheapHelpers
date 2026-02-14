@@ -27,10 +27,8 @@ public static class FFmpegErrorHandler
             };
         }
 
-        var lowerError = errorOutput.ToLowerInvariant();
-
         // File not found
-        if (lowerError.Contains("no such file") || lowerError.Contains("does not exist"))
+        if (Contains(errorOutput, "no such file") || Contains(errorOutput, "does not exist"))
         {
             return new FFmpegError
             {
@@ -42,7 +40,7 @@ public static class FFmpegErrorHandler
         }
 
         // Permission errors
-        if (lowerError.Contains("permission denied") || lowerError.Contains("access denied"))
+        if (Contains(errorOutput, "permission denied") || Contains(errorOutput, "access denied"))
         {
             return new FFmpegError
             {
@@ -54,8 +52,8 @@ public static class FFmpegErrorHandler
         }
 
         // Corrupt file
-        if (lowerError.Contains("invalid data") || lowerError.Contains("corrupt") ||
-            lowerError.Contains("header missing") || lowerError.Contains("moov atom not found"))
+        if (Contains(errorOutput, "invalid data") || Contains(errorOutput, "corrupt") ||
+            Contains(errorOutput, "header missing") || Contains(errorOutput, "moov atom not found"))
         {
             return new FFmpegError
             {
@@ -67,8 +65,8 @@ public static class FFmpegErrorHandler
         }
 
         // Codec errors
-        if (lowerError.Contains("codec not supported") || lowerError.Contains("unknown codec") ||
-            lowerError.Contains("decoder not found") || lowerError.Contains("encoder not found"))
+        if (Contains(errorOutput, "codec not supported") || Contains(errorOutput, "unknown codec") ||
+            Contains(errorOutput, "decoder not found") || Contains(errorOutput, "encoder not found"))
         {
             return new FFmpegError
             {
@@ -80,9 +78,9 @@ public static class FFmpegErrorHandler
         }
 
         // NVENC / CUDA errors (check before generic OutOfMemory since NVENC OOM is more specific)
-        if (lowerError.Contains("nvenc") || lowerError.Contains("cuda"))
+        if (Contains(errorOutput, "nvenc") || Contains(errorOutput, "cuda"))
         {
-            if (lowerError.Contains("driver") || lowerError.Contains("not found"))
+            if (Contains(errorOutput, "driver") || Contains(errorOutput, "not found"))
             {
                 return new FFmpegError
                 {
@@ -93,7 +91,7 @@ public static class FFmpegErrorHandler
                 };
             }
 
-            if (lowerError.Contains("out of memory") || lowerError.Contains("vram"))
+            if (Contains(errorOutput, "out of memory") || Contains(errorOutput, "vram"))
             {
                 return new FFmpegError
                 {
@@ -114,7 +112,7 @@ public static class FFmpegErrorHandler
         }
 
         // System out of memory
-        if (lowerError.Contains("out of memory") || lowerError.Contains("cannot allocate memory"))
+        if (Contains(errorOutput, "out of memory") || Contains(errorOutput, "cannot allocate memory"))
         {
             return new FFmpegError
             {
@@ -126,7 +124,7 @@ public static class FFmpegErrorHandler
         }
 
         // Disk space
-        if (lowerError.Contains("no space left") || lowerError.Contains("disk full"))
+        if (Contains(errorOutput, "no space left") || Contains(errorOutput, "disk full"))
         {
             return new FFmpegError
             {
@@ -138,7 +136,7 @@ public static class FFmpegErrorHandler
         }
 
         // Frame rate
-        if (lowerError.Contains("frame rate") || lowerError.Contains("invalid framerate"))
+        if (Contains(errorOutput, "frame rate") || Contains(errorOutput, "invalid framerate"))
         {
             return new FFmpegError
             {
@@ -150,8 +148,8 @@ public static class FFmpegErrorHandler
         }
 
         // Resolution
-        if (lowerError.Contains("resolution") || lowerError.Contains("invalid width") ||
-            lowerError.Contains("invalid height"))
+        if (Contains(errorOutput, "resolution") || Contains(errorOutput, "invalid width") ||
+            Contains(errorOutput, "invalid height"))
         {
             return new FFmpegError
             {
@@ -163,7 +161,7 @@ public static class FFmpegErrorHandler
         }
 
         // Bitrate
-        if (lowerError.Contains("bitrate") || lowerError.Contains("invalid bitrate"))
+        if (Contains(errorOutput, "bitrate") || Contains(errorOutput, "invalid bitrate"))
         {
             return new FFmpegError
             {
@@ -175,7 +173,7 @@ public static class FFmpegErrorHandler
         }
 
         // Audio
-        if (lowerError.Contains("audio stream") || lowerError.Contains("no audio"))
+        if (Contains(errorOutput, "audio stream") || Contains(errorOutput, "no audio"))
         {
             return new FFmpegError
             {
@@ -205,4 +203,7 @@ public static class FFmpegErrorHandler
     /// <returns>A multi-line string with the error message and suggestion.</returns>
     public static string GetUserFriendlyMessage(FFmpegError ffmpegError) =>
         $"{ffmpegError.Message}\n\nSuggestion: {ffmpegError.Suggestion}";
+
+    private static bool Contains(string source, string value) =>
+        source.Contains(value, StringComparison.OrdinalIgnoreCase);
 }

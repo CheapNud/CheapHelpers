@@ -19,6 +19,7 @@ public static class TimecodeHelper
     /// </example>
     public static string FramesToTimecode(int frames, double frameRate)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(frameRate);
         var totalSeconds = frames / frameRate;
         var timeSpan = TimeSpan.FromSeconds(totalSeconds);
 
@@ -39,6 +40,7 @@ public static class TimecodeHelper
     /// </example>
     public static int TimecodeToFrames(string timecode, double frameRate)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(frameRate);
         var parts = timecode.Split(':');
         if (parts.Length != 3)
             throw new FormatException($"Timecode must be in HH:MM:SS or HH:MM:SS.mmm format. Got: '{timecode}'");

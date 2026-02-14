@@ -65,6 +65,10 @@ public class JsonSettingsService<T> : IJsonSettingsService<T> where T : class, n
         await _fileLock.WaitAsync();
         try
         {
+            // Double-check after acquiring the lock
+            if (_isLoaded)
+                return Settings;
+
             if (File.Exists(_settingsFilePath))
             {
                 var json = await File.ReadAllTextAsync(_settingsFilePath);
@@ -80,21 +84,28 @@ public class JsonSettingsService<T> : IJsonSettingsService<T> where T : class, n
             }
 
             Debug.WriteLine("No settings file found, creating defaults");
+
+            // Create and persist defaults (inside lock to prevent duplicate writes)
+            _cachedSettings = CreateDefaultSettings();
+            var defaultJson = JsonSerializer.Serialize(_cachedSettings, _jsonOptions);
+            await File.WriteAllTextAsync(_settingsFilePath, defaultJson);
+            _isLoaded = true;
+            Debug.WriteLine("Settings saved");
+            SettingsChanged?.Invoke();
+            return _cachedSettings;
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Error loading settings: {ex.Message}");
+            // Fall back to defaults in memory without persisting
+            _cachedSettings = CreateDefaultSettings();
+            _isLoaded = true;
+            return _cachedSettings;
         }
         finally
         {
             _fileLock.Release();
         }
-
-        // Create and persist defaults
-        _cachedSettings = CreateDefaultSettings();
-        await SaveInternalAsync(_cachedSettings);
-        _isLoaded = true;
-        return _cachedSettings;
     }
 
     /// <inheritdoc />

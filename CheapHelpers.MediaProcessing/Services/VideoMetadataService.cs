@@ -15,8 +15,9 @@ public class VideoMetadataService
     /// Returns null if the file doesn't exist, has no video stream, or analysis fails.
     /// </summary>
     /// <param name="filePath">Path to the video file.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A <see cref="VideoMetadata"/> instance, or null on failure.</returns>
-    public async Task<VideoMetadata?> GetVideoMetadataAsync(string filePath)
+    public async Task<VideoMetadata?> GetVideoMetadataAsync(string filePath, CancellationToken cancellationToken = default)
     {
         if (!File.Exists(filePath))
         {
@@ -26,7 +27,7 @@ public class VideoMetadataService
 
         try
         {
-            var mediaInfo = await FFProbe.AnalyseAsync(filePath);
+            var mediaInfo = await FFProbe.AnalyseAsync(filePath, cancellationToken: cancellationToken);
             if (mediaInfo == null)
             {
                 Debug.WriteLine($"FFProbe returned null for: {filePath}");
@@ -72,8 +73,11 @@ public class VideoMetadataService
     /// Returns metadata on success, or a validation error message on failure.
     /// </summary>
     /// <param name="filePath">Path to the video file.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A tuple of (metadata, errorMessage). If valid, metadata is populated and errorMessage is null.</returns>
-    public async Task<(VideoMetadata? Metadata, string? ErrorMessage)> ValidateVideoAsync(string filePath)
+    public async Task<(VideoMetadata? Metadata, string? ErrorMessage)> ValidateVideoAsync(
+        string filePath,
+        CancellationToken cancellationToken = default)
     {
         if (!File.Exists(filePath))
             return (null, "Video file not found");
@@ -82,7 +86,7 @@ public class VideoMetadataService
         if (fileInfo.Length == 0)
             return (null, "Video file is empty");
 
-        var metadata = await GetVideoMetadataAsync(filePath);
+        var metadata = await GetVideoMetadataAsync(filePath, cancellationToken);
         if (metadata == null)
             return (null, "Failed to analyze video — no video stream found or FFProbe error");
 
@@ -98,13 +102,15 @@ public class VideoMetadataService
     /// <param name="filePath">Path to the output video file.</param>
     /// <param name="expectedDuration">The expected duration.</param>
     /// <param name="toleranceSeconds">Maximum allowed duration difference in seconds. Default is 2.0.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A tuple of (metadata, errorMessage). If valid, metadata is populated and errorMessage is null.</returns>
     public async Task<(VideoMetadata? Metadata, string? ErrorMessage)> ValidateOutputVideoAsync(
         string filePath,
         TimeSpan expectedDuration,
-        double toleranceSeconds = 2.0)
+        double toleranceSeconds = 2.0,
+        CancellationToken cancellationToken = default)
     {
-        var (metadata, validationError) = await ValidateVideoAsync(filePath);
+        var (metadata, validationError) = await ValidateVideoAsync(filePath, cancellationToken);
         if (validationError != null)
             return (null, validationError);
 
@@ -122,8 +128,13 @@ public class VideoMetadataService
     /// <param name="filePath">Path to the video file.</param>
     /// <param name="outputPath">Path for the output thumbnail image.</param>
     /// <param name="timeOffset">Optional time offset for the thumbnail capture. Defaults to 10% of video duration.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>True if the thumbnail was generated successfully.</returns>
-    public async Task<bool> GenerateThumbnailAsync(string filePath, string outputPath, TimeSpan? timeOffset = null)
+    public async Task<bool> GenerateThumbnailAsync(
+        string filePath,
+        string outputPath,
+        TimeSpan? timeOffset = null,
+        CancellationToken cancellationToken = default)
     {
         if (!File.Exists(filePath))
         {
@@ -133,7 +144,7 @@ public class VideoMetadataService
 
         try
         {
-            var mediaInfo = await FFProbe.AnalyseAsync(filePath);
+            var mediaInfo = await FFProbe.AnalyseAsync(filePath, cancellationToken: cancellationToken);
             if (mediaInfo == null) return false;
 
             var captureTime = timeOffset ?? TimeSpan.FromSeconds(
@@ -147,7 +158,7 @@ public class VideoMetadataService
             if (!string.IsNullOrEmpty(outputDir))
                 Directory.CreateDirectory(outputDir);
 
-            await FFMpeg.SnapshotAsync(filePath, outputPath, captureTime: captureTime);
+            await FFMpeg.SnapshotAsync(filePath, outputPath, captureTime: captureTime, cancellationToken: cancellationToken);
             return File.Exists(outputPath);
         }
         catch (Exception ex)
@@ -163,12 +174,13 @@ public class VideoMetadataService
     /// </summary>
     /// <param name="filePath">Path to the video file.</param>
     /// <param name="fps">Target frame rate.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Expected frame count, or 0 on failure.</returns>
-    public async Task<int> CalculateExpectedFrameCountAsync(string filePath, double fps)
+    public async Task<int> CalculateExpectedFrameCountAsync(string filePath, double fps, CancellationToken cancellationToken = default)
     {
         try
         {
-            var mediaInfo = await FFProbe.AnalyseAsync(filePath);
+            var mediaInfo = await FFProbe.AnalyseAsync(filePath, cancellationToken: cancellationToken);
             if (mediaInfo == null) return 0;
 
             var calculatedFrames = (int)Math.Floor(mediaInfo.Duration.TotalSeconds * fps);

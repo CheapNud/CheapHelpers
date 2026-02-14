@@ -21,7 +21,7 @@ jobs:
       with:
         dotnet-version: 10.0.x
     - name: Restore dependencies
-      # Use CI solution which excludes MAUI (requires workloads not available on Ubuntu runners)
+      # CI solution excludes MAUI (requires workloads) and MediaProcessing (packed/published separately)
       run: dotnet restore CheapHelpers.CI.sln
     - name: Build
       run: dotnet build CheapHelpers.CI.sln --no-restore

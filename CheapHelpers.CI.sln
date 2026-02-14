@@ -18,7 +18,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheapHelpers.Networking", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheapHelpers.Avalonia.Bridge", "CheapHelpers.Avalonia.Bridge\CheapHelpers.Avalonia.Bridge.csproj", "{F02F3F41-4BE2-4F45-B40D-42B3B6C067EE}"
 EndProject
-# MediaProcessing excluded - has PackageReference to CheapHelpers, must be built after base packages are published to NuGet
+# MediaProcessing excluded - multi-targets net10.0-windows and is packed/published separately after base packages
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

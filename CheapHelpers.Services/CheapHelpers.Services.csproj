@@ -74,12 +74,12 @@
     <PackageReference Include="itext.pdfoptimizer" Version="4.1.2" />
     <PackageReference Include="MailKit" Version="4.14.1" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Connections" Version="1.2.9" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Graph" Version="5.100.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Graph" Version="5.102.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-    <PackageReference Include="Twilio" Version="7.14.1" />
+    <PackageReference Include="Twilio" Version="7.14.3" />
     <PackageReference Include="UblSharp" Version="1.1.1" />
     <PackageReference Include="ZXing.Net" Version="0.16.11" />
     <PackageReference Include="ZXing.Net.Bindings.ImageSharp.V3" Version="0.16.18" />

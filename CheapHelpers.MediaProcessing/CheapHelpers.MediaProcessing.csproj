@@ -54,22 +54,22 @@
     <PackageReference Include="FFMpegCore" Version="5.4.0" />
 
     <!-- Archive extraction for dependency installation -->
-    <PackageReference Include="SharpCompress" Version="0.44.0" />
+    <PackageReference Include="SharpCompress" Version="0.46.0" />
 
     <!-- Retry logic for downloads -->
     <PackageReference Include="Polly" Version="8.6.5" />
 
     <!-- DI extension -->
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.3" />
   </ItemGroup>
 
   <!-- Windows-only: Hardware detection via WMI -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
-    <PackageReference Include="System.Management" Version="10.0.2" />
+    <PackageReference Include="System.Management" Version="10.0.3" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CheapHelpers" Version="2.0.0" />
+    <ProjectReference Include="..\CheapHelpers\CheapHelpers.csproj" />
   </ItemGroup>
 
   <!-- Exclude Windows-specific services from non-Windows build -->

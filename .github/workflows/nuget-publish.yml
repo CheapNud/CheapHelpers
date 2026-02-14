@@ -30,7 +30,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Restore dependencies
-      # CI solution excludes MAUI and MediaProcessing (has external NuGet dep on CheapHelpers)
+      # CI solution excludes MAUI and MediaProcessing (packed/published separately)
       run: dotnet restore CheapHelpers.CI.sln
 
     - name: Build solution
@@ -64,7 +64,7 @@ jobs:
         dotnet workload list
 
     - name: Restore base packages
-      # Use CI solution which excludes MediaProcessing
+      # CI solution excludes MediaProcessing (packed/published separately)
       run: dotnet restore CheapHelpers.CI.sln -p:EnableWindowsTargeting=true
 
     - name: Pack base NuGet packages
@@ -115,7 +115,7 @@ jobs:
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
-  # Phase 2: Pack and publish MediaProcessing (depends on base packages being on NuGet)
+  # Phase 2: Pack and publish MediaProcessing (uses ProjectReference locally, but consumers need base packages on NuGet)
   # IMPORTANT: Must run on Windows to compile net10.0-windows target (Windows services need WMI, etc.)
   pack-and-publish-dependent:
     name: Pack and Publish MediaProcessing

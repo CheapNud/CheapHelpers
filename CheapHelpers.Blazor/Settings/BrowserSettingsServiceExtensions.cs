@@ -13,7 +13,7 @@ public static class BrowserSettingsServiceExtensions
     /// </summary>
     public static IServiceCollection AddProtectedBrowserSettingsService(this IServiceCollection services)
     {
-        services.AddSingleton<ISettingsService, ProtectedBrowserSettingsService>();
+        services.AddScoped<ISettingsService, ProtectedBrowserSettingsService>();
         return services;
     }
 
@@ -23,7 +23,7 @@ public static class BrowserSettingsServiceExtensions
     /// </summary>
     public static IServiceCollection AddLocalStorageSettingsService(this IServiceCollection services)
     {
-        services.AddSingleton<ISettingsService, LocalStorageSettingsService>();
+        services.AddScoped<ISettingsService, LocalStorageSettingsService>();
         return services;
     }
 }

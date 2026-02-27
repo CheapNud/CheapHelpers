@@ -22,8 +22,8 @@ jobs:
         dotnet-version: 10.0.x
     - name: Restore dependencies
       # CI solution excludes MAUI (requires workloads) and MediaProcessing (packed/published separately)
-      run: dotnet restore CheapHelpers.CI.sln
+      run: dotnet restore CheapHelpers.CI.slnx
     - name: Build
-      run: dotnet build CheapHelpers.CI.sln --no-restore
+      run: dotnet build CheapHelpers.CI.slnx --no-restore
     - name: Test
-      run: dotnet test CheapHelpers.CI.sln --no-build --verbosity normal
+      run: dotnet test CheapHelpers.CI.slnx --no-build --verbosity normal

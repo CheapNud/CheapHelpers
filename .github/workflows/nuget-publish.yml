@@ -31,13 +31,13 @@ jobs:
 
     - name: Restore dependencies
       # CI solution excludes MAUI and MediaProcessing (packed/published separately)
-      run: dotnet restore CheapHelpers.CI.sln
+      run: dotnet restore CheapHelpers.CI.slnx
 
     - name: Build solution
-      run: dotnet build CheapHelpers.CI.sln --configuration ${{ env.CONFIGURATION }} --no-restore
+      run: dotnet build CheapHelpers.CI.slnx --configuration ${{ env.CONFIGURATION }} --no-restore
 
     - name: Run tests
-      run: dotnet test CheapHelpers.CI.sln --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal || echo "No test projects found"
+      run: dotnet test CheapHelpers.CI.slnx --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal || echo "No test projects found"
 
   # Phase 1a: Pack base packages (excluding MAUI and MediaProcessing)
   pack-base:
@@ -58,10 +58,10 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Restore base packages
-      run: dotnet restore CheapHelpers.CI.sln -p:EnableWindowsTargeting=true
+      run: dotnet restore CheapHelpers.CI.slnx -p:EnableWindowsTargeting=true
 
     - name: Pack base NuGet packages
-      run: dotnet pack CheapHelpers.CI.sln --configuration ${{ env.CONFIGURATION }} --no-restore -p:EnableWindowsTargeting=true --output ./nupkgs
+      run: dotnet pack CheapHelpers.CI.slnx --configuration ${{ env.CONFIGURATION }} --no-restore -p:EnableWindowsTargeting=true --output ./nupkgs
 
     - name: Upload base NuGet packages
       uses: actions/upload-artifact@v4

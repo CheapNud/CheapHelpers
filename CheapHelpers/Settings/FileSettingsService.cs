@@ -24,6 +24,10 @@ public class FileSettingsService : ISettingsService, IDisposable
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
+    /// <summary>
+    /// Fired after settings are persisted to disk.
+    /// Subscribers should unsubscribe when no longer needed to avoid leaks, as this service is typically registered as a singleton.
+    /// </summary>
     public event Action? SettingsChanged;
 
     public FileSettingsService(SettingsServiceOptions options, ILogger<FileSettingsService>? logger = null)
@@ -213,7 +217,7 @@ public class FileSettingsService : ISettingsService, IDisposable
     // ───────────────────────────── Internal ───────────────────────────────────
 
     /// <summary>
-    /// Write current state to disk. Caller MUST hold _semaphore.
+    /// Write current state to disk using atomic temp-file + rename pattern. Caller MUST hold _semaphore.
     /// </summary>
     private async Task SaveToDiskAsync()
     {
@@ -224,8 +228,10 @@ public class FileSettingsService : ISettingsService, IDisposable
             var directory = Path.GetDirectoryName(_settingsFilePath)!;
             Directory.CreateDirectory(directory);
 
+            var tempPath = _settingsFilePath + ".tmp";
             var json = _root.ToJsonString(SerializerOptions);
-            await File.WriteAllTextAsync(_settingsFilePath, json);
+            await File.WriteAllTextAsync(tempPath, json);
+            File.Move(tempPath, _settingsFilePath, overwrite: true);
 
             _logger?.LogDebug("Settings saved to {Path}", _settingsFilePath);
         }
@@ -310,6 +316,7 @@ public class FileSettingsService : ISettingsService, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        SettingsChanged = null;
         _semaphore.Dispose();
     }
 }

@@ -134,7 +134,7 @@ else
 
     private async Task ShowGenerateCodesDialog()
     {
-        var result = await DialogService.ShowMessageBox(
+        var result = await DialogService.ShowMessageBoxAsync(
             Loc["GenerateNewCodes"],
             Loc["GenerateNewCodesConfirmation"],
             yesText: Loc["Generate"],
@@ -191,7 +191,7 @@ else
 
     private async Task ShowInfoDialog()
     {
-        await DialogService.ShowMessageBox(
+        await DialogService.ShowMessageBoxAsync(
             Loc["RecoveryCodesInfo"],
             Loc["RecoveryCodesInfoContent"],
             yesText: Loc["Understood"]

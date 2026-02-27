@@ -276,7 +276,7 @@ else if (ShowEmptyState)
             [nameof(file.FileName)] = UseShortNames ? file.FileName.ToShortString() : file.FileName
         };
 
-        var result = await DialogService.ShowMessageBox(
+        var result = await DialogService.ShowMessageBoxAsync(
             title: Loc["ConfirmDeleteTitle"].Value,
             markupMessage: (MarkupString)Loc["ConfirmDeleteMessage"].Value,
             yesText: Loc["Delete"].Value,

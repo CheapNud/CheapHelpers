@@ -8,8 +8,9 @@ namespace CheapHelpers.Settings;
 public static class BrowserSettingsServiceExtensions
 {
     /// <summary>
-    /// Registers <see cref="ProtectedBrowserSettingsService"/> as the <see cref="ISettingsService"/> singleton.
+    /// Registers <see cref="ProtectedBrowserSettingsService"/> as the scoped <see cref="ISettingsService"/>.
     /// Uses ASP.NET Core's ProtectedLocalStorage (encrypted, Blazor Server only).
+    /// Scoped because ProtectedLocalStorage is scoped to the circuit.
     /// </summary>
     public static IServiceCollection AddProtectedBrowserSettingsService(this IServiceCollection services)
     {
@@ -18,8 +19,9 @@ public static class BrowserSettingsServiceExtensions
     }
 
     /// <summary>
-    /// Registers <see cref="LocalStorageSettingsService"/> as the <see cref="ISettingsService"/> singleton.
+    /// Registers <see cref="LocalStorageSettingsService"/> as the scoped <see cref="ISettingsService"/>.
     /// Uses plain localStorage via IJSRuntime (no encryption, works in Server and WebAssembly).
+    /// Scoped because IJSRuntime is scoped to the circuit.
     /// </summary>
     public static IServiceCollection AddLocalStorageSettingsService(this IServiceCollection services)
     {

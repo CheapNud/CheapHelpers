@@ -59,7 +59,9 @@ public interface ISettingsService
     Task ReloadAsync();
 
     /// <summary>
-    /// Fired after settings are persisted to the backing store
+    /// Fired after settings are persisted to the backing store.
+    /// Subscribers must unsubscribe when no longer needed — especially with singleton implementations (e.g. FileSettingsService)
+    /// where the service outlives individual consumers.
     /// </summary>
     event Action? SettingsChanged;
 }

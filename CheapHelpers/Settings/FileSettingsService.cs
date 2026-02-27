@@ -217,7 +217,8 @@ public class FileSettingsService : ISettingsService, IDisposable
     // ───────────────────────────── Internal ───────────────────────────────────
 
     /// <summary>
-    /// Write current state to disk using atomic temp-file + rename pattern. Caller MUST hold _semaphore.
+    /// Write current state to disk using atomic temp-file + rename pattern.
+    /// Internal only — all call sites (SetAsync, DeleteAsync, SetSectionAsync, SaveAsync) acquire _semaphore before calling this.
     /// </summary>
     private async Task SaveToDiskAsync()
     {

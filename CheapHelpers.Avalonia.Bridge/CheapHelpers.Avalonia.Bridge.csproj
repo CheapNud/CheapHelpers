@@ -39,7 +39,7 @@
 
   <ItemGroup>
     <!-- CheapAvaloniaBlazor desktop interop -->
-    <PackageReference Include="CheapAvaloniaBlazor" Version="2.1.1" />
+    <PackageReference Include="CheapAvaloniaBlazor" Version="3.0.0" />
   </ItemGroup>
 
 </Project>

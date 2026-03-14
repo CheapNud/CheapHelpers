@@ -18,7 +18,6 @@ namespace CheapHelpers.EF.Repositories
         private const int DEFAULT_PAGE_SIZE = 10;
         private const int DEFAULT_PAGE_INDEX = 1;
 
-        //TODO: this field should not be public but its used so i left it for now
         public readonly IDbContextFactory<TContext> _factory = factory;
 
         public void Dispose()

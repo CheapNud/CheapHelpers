@@ -90,10 +90,11 @@
     /// Database context factory. Required when Items is not provided.
     /// When Items is provided, this is not needed and can be left unregistered.
     /// </summary>
+    [Parameter]
     public IDbContextFactory<CheapContext<CheapUser>>? Factory { get; set; }
 
     [Inject]
-    private IServiceProvider ServiceProvider { get; set; }
+    private IServiceProvider ServiceProvider { get; set; } = default!;
 #nullable disable
 
     /// <summary>

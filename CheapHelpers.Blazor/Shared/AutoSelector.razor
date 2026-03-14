@@ -113,6 +113,10 @@
     [Parameter]
     public int? SelectFirstWithId { get; set; } = null;
 
+    /// <summary>
+    /// Database context factory. Required — AutoSelector always queries the database on search.
+    /// If your project does not use CheapContext, use Selector with pre-loaded Items instead.
+    /// </summary>
     [Inject]
     public IDbContextFactory<CheapContext<CheapUser>> Factory { get; set; }
 

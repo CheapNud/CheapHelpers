@@ -15,15 +15,11 @@ namespace CheapHelpers.EF.Infrastructure
         /// </summary>
         public static void ApplyAuditTimestamps(ChangeTracker changeTracker)
         {
-            var auditableEntries = changeTracker.Entries()
-                .Where(e => e.Entity is IAuditable &&
-                           e.State is EntityState.Added or EntityState.Modified);
-
-            if (!auditableEntries.Any()) return;
-
             var now = DateTime.UtcNow;
 
-            foreach (var entry in auditableEntries)
+            foreach (var entry in changeTracker.Entries()
+                .Where(e => e.Entity is IAuditable &&
+                           e.State is EntityState.Added or EntityState.Modified))
             {
                 var auditable = (IAuditable)entry.Entity;
 

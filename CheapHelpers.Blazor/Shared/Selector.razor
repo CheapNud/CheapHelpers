@@ -211,7 +211,13 @@
             else
             {
                 ListItems = Items;
-                await OnValueChanged(ListItems.FirstOrDefault());
+
+                if (Value is not null)
+                {
+                    var matchingItem = ListItems.FirstOrDefault(x => x.Id == Value.Id);
+                    if (matchingItem is not null)
+                        await OnValueChanged(matchingItem);
+                }
             }
         }
         catch (Exception ex)

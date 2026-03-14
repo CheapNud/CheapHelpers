@@ -84,7 +84,7 @@ namespace CheapHelpers.EF
         {
             if (_contextOptions.EnableAuditing)
             {
-                AddAuditInfo();
+                AuditHelper.ApplyAuditTimestamps(ChangeTracker);
             }
             return base.SaveChanges();
         }
@@ -93,32 +93,9 @@ namespace CheapHelpers.EF
         {
             if (_contextOptions.EnableAuditing)
             {
-                AddAuditInfo();
+                AuditHelper.ApplyAuditTimestamps(ChangeTracker);
             }
             return base.SaveChangesAsync(cancellationToken);
-        }
-
-        private void AddAuditInfo()
-        {
-            var auditableEntries = ChangeTracker.Entries()
-                .Where(e => e.Entity is IAuditable &&
-                           e.State is EntityState.Added or EntityState.Modified);
-
-            if (!auditableEntries.Any()) return;
-
-            var now = DateTime.UtcNow;
-
-            foreach (var entry in auditableEntries)
-            {
-                var auditable = (IAuditable)entry.Entity;
-
-                if (entry.State == EntityState.Added)
-                {
-                    auditable.CreatedAt = now;
-                }
-
-                auditable.UpdatedAt = now;
-            }
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

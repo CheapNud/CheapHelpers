@@ -1,4 +1,4 @@
-﻿using CheapHelpers.EF.Extensions;
+using CheapHelpers.EF.Extensions;
 using CheapHelpers.EF.Infrastructure;
 using CheapHelpers.Extensions;
 using CheapHelpers.Models.Contracts;
@@ -9,13 +9,17 @@ using System.Linq.Expressions;
 
 namespace CheapHelpers.EF.Repositories
 {
-    public class BaseRepo(IDbContextFactory<CheapContext<CheapUser>> factory) : IDisposable
+    /// <summary>
+    /// Generic base repository that works with any DbContext.
+    /// Use this when your project does not require ASP.NET Identity.
+    /// </summary>
+    public class BaseRepo<TContext>(IDbContextFactory<TContext> factory) : IDisposable where TContext : DbContext
     {
         private const int DEFAULT_PAGE_SIZE = 10;
         private const int DEFAULT_PAGE_INDEX = 1;
 
         //TODO: this field should not be public but its used so i left it for now
-        public readonly IDbContextFactory<CheapContext<CheapUser>> _factory = factory;
+        public readonly IDbContextFactory<TContext> _factory = factory;
 
         public void Dispose()
         {
@@ -503,4 +507,11 @@ namespace CheapHelpers.EF.Repositories
 
         #endregion
     }
+
+    /// <summary>
+    /// Backward-compatible BaseRepo that uses CheapContext with Identity.
+    /// Existing consumers (UserRepo, extensions, UserService) continue to work unchanged.
+    /// </summary>
+    public class BaseRepo(IDbContextFactory<CheapContext<CheapUser>> factory)
+        : BaseRepo<CheapContext<CheapUser>>(factory);
 }

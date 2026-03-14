@@ -109,6 +109,12 @@
     [Parameter]
     public bool UseSelect { get; set; } = false;
 
+    /// <summary>
+    /// When true and Value is null, automatically selects the first item in the list
+    /// </summary>
+    [Parameter]
+    public bool AutoSelectFirst { get; set; } = false;
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -212,10 +218,26 @@
             {
                 ListItems = Items;
 
-                if (Value is not null)
+                if (!ListItems.Any())
+                {
+                    Debug.WriteLine($"Selector<{typeof(C).Name}>: Items list is empty");
+                }
+                else if (Value is not null)
                 {
                     var matchingItem = ListItems.FirstOrDefault(x => x.Id == Value.Id);
-                    await OnValueChanged(matchingItem);
+                    if (matchingItem is not null)
+                    {
+                        await OnValueChanged(matchingItem);
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"Selector<{typeof(C).Name}>: Value with Id={Value.Id} not found in Items, resetting");
+                        await OnValueChanged(OnlyDBValues ? ListItems.First() : null);
+                    }
+                }
+                else if (OnlyDBValues || AutoSelectFirst)
+                {
+                    await OnValueChanged(ListItems.First());
                 }
             }
         }

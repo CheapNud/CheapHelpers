@@ -33,6 +33,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '11.0.x'
+        dotnet-quality: 'preview'
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3

@@ -11,6 +11,7 @@ on:
 
 env:
   DOTNET_VERSION: '11.0.x'
+  DOTNET_QUALITY: 'preview'
   CONFIGURATION: Release
 
 jobs:
@@ -28,6 +29,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: ${{ env.DOTNET_QUALITY }}
 
     - name: Restore dependencies
       # CI solution excludes MAUI and MediaProcessing (packed/published separately)
@@ -56,6 +58,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: ${{ env.DOTNET_QUALITY }}
 
     - name: Restore base packages
       run: dotnet restore CheapHelpers.CI.slnx -p:EnableWindowsTargeting=true
@@ -87,6 +90,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: ${{ env.DOTNET_QUALITY }}
 
     - name: Install MAUI workloads
       run: |
@@ -131,6 +135,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: ${{ env.DOTNET_QUALITY }}
 
     - name: List packages
       run: ls -la ./nupkgs/
@@ -163,6 +168,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: ${{ env.DOTNET_QUALITY }}
 
     # Wait for NuGet to index base packages
     - name: Wait for NuGet indexing

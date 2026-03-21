@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net10.0-windows10.0.19041.0;net10.0-android;net10.0-ios</TargetFrameworks>
+    <TargetFrameworks>net11.0-windows10.0.19041.0;net11.0-android;net11.0-ios</TargetFrameworks>
     <Version>2.0.1</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -42,7 +42,7 @@
   </ItemGroup>
 
   <!-- Android-specific packages -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net11.0-android'">
     <PackageReference Include="Xamarin.Firebase.Messaging" Version="125.0.1.2" />
     <PackageReference Include="Xamarin.GooglePlayServices.Base" Version="118.10.0.1" />
   </ItemGroup>
@@ -54,7 +54,7 @@
   <!-- Exclude platform-specific files to prevent cross-contamination -->
 
   <!-- iOS builds: ALWAYS exclude Android and Windows (iOS/Xcode is strict and fails if it detects other platform files) -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-ios'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net11.0-ios'">
     <None Remove="Platforms\Android\**" />
     <Compile Remove="Platforms\Android\**" />
     <EmbeddedResource Remove="Platforms\Android\**" />
@@ -66,7 +66,7 @@
   </ItemGroup>
 
   <!-- Android Release builds: exclude iOS and Windows -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android' AND '$(Configuration)' == 'Release'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net11.0-android' AND '$(Configuration)' == 'Release'">
     <None Remove="Platforms\iOS\**" />
     <Compile Remove="Platforms\iOS\**" />
     <EmbeddedResource Remove="Platforms\iOS\**" />
@@ -78,7 +78,7 @@
   </ItemGroup>
 
   <!-- Windows Release builds: exclude Android and iOS -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows10.0.19041.0' AND '$(Configuration)' == 'Release'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net11.0-windows10.0.19041.0' AND '$(Configuration)' == 'Release'">
     <None Remove="Platforms\Android\**" />
     <Compile Remove="Platforms\Android\**" />
     <EmbeddedResource Remove="Platforms\Android\**" />

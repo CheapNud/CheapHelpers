@@ -10,7 +10,8 @@ on:
   workflow_dispatch:
 
 env:
-  DOTNET_VERSION: '10.0.x'
+  DOTNET_VERSION: '11.0.x'
+  DOTNET_QUALITY: 'preview'
   CONFIGURATION: Release
 
 jobs:
@@ -28,6 +29,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: ${{ env.DOTNET_QUALITY }}
 
     - name: Restore dependencies
       # CI solution excludes MAUI and MediaProcessing (packed/published separately)
@@ -56,6 +58,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: ${{ env.DOTNET_QUALITY }}
 
     - name: Restore base packages
       run: dotnet restore CheapHelpers.CI.slnx -p:EnableWindowsTargeting=true
@@ -87,6 +90,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: ${{ env.DOTNET_QUALITY }}
 
     - name: Install MAUI workloads
       run: |
@@ -131,6 +135,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: ${{ env.DOTNET_QUALITY }}
 
     - name: List packages
       run: ls -la ./nupkgs/
@@ -146,7 +151,7 @@ jobs:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
   # Phase 2: Pack and publish MediaProcessing (uses ProjectReference locally, but consumers need base packages on NuGet)
-  # IMPORTANT: Must run on Windows to compile net10.0-windows target (Windows services need WMI, etc.)
+  # IMPORTANT: Must run on Windows to compile net11.0-windows target (Windows services need WMI, etc.)
   pack-and-publish-dependent:
     name: Pack and Publish MediaProcessing
     needs: publish-base
@@ -163,6 +168,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: ${{ env.DOTNET_QUALITY }}
 
     # Wait for NuGet to index base packages
     - name: Wait for NuGet indexing

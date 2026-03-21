@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOTNET_VERSION: '10.0.x'
+  DOTNET_VERSION: '11.0.x'
   CONFIGURATION: Release
 
 jobs:
@@ -146,7 +146,7 @@ jobs:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
   # Phase 2: Pack and publish MediaProcessing (uses ProjectReference locally, but consumers need base packages on NuGet)
-  # IMPORTANT: Must run on Windows to compile net10.0-windows target (Windows services need WMI, etc.)
+  # IMPORTANT: Must run on Windows to compile net11.0-windows target (Windows services need WMI, etc.)
   pack-and-publish-dependent:
     name: Pack and Publish MediaProcessing
     needs: publish-base

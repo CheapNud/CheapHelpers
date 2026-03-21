@@ -63,7 +63,7 @@ The MAUI package automatically includes platform-specific dependencies:
 Your MAUI project file should target both platforms:
 
 ```xml
-<TargetFrameworks>net10.0-android;net10.0-ios</TargetFrameworks>
+<TargetFrameworks>net11.0-android;net11.0-ios</TargetFrameworks>
 ```
 
 ## iOS APNS Setup

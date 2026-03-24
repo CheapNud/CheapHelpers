@@ -18,7 +18,7 @@ public class HttpPollingService<TResponse>(
 
     private CancellationTokenSource? _cts;
     private Task? _pollingTask;
-    private int _consecutiveFailures;
+    private volatile int _consecutiveFailures;
 
     public bool IsRunning => _pollingTask is { IsCompleted: false };
     public Func<TResponse, Task>? OnDataReceived { get; set; }
@@ -81,7 +81,7 @@ public class HttpPollingService<TResponse>(
             var pollResponse = await _httpClient.GetFromJsonAsync<TResponse>(
                 (string?)null, timeoutCts.Token);
 
-            _consecutiveFailures = 0;
+            Interlocked.Exchange(ref _consecutiveFailures, 0);
 
             if (pollResponse is not null && OnDataReceived is not null)
             {
@@ -94,21 +94,21 @@ public class HttpPollingService<TResponse>(
         }
         catch (Exception ex)
         {
-            _consecutiveFailures++;
+            var failures = Interlocked.Increment(ref _consecutiveFailures);
             _logger.LogWarning(ex, "Polling failed for {Endpoint} (attempt {Attempt}/{Max})",
-                _pollingOptions.Endpoint, _consecutiveFailures, _pollingOptions.MaxRetries);
+                _pollingOptions.Endpoint, failures, _pollingOptions.MaxRetries);
 
             OnError?.Invoke(ex);
 
-            if (_consecutiveFailures >= _pollingOptions.MaxRetries)
+            if (failures >= _pollingOptions.MaxRetries)
             {
-                var backoff = _pollingOptions.RetryDelay * Math.Pow(2, _consecutiveFailures - _pollingOptions.MaxRetries);
+                var backoff = _pollingOptions.RetryDelay * Math.Pow(2, failures - _pollingOptions.MaxRetries);
                 var maxBackoff = TimeSpan.FromMinutes(5);
                 if (backoff > maxBackoff)
                     backoff = maxBackoff;
 
                 _logger.LogWarning("Backing off for {Backoff}s after {Failures} consecutive failures",
-                    backoff.TotalSeconds, _consecutiveFailures);
+                    backoff.TotalSeconds, failures);
 
                 await Task.Delay(backoff, stoppingToken);
             }

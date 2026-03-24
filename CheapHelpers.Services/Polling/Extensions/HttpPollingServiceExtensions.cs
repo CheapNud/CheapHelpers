@@ -17,6 +17,7 @@ public static class HttpPollingServiceExtensions
     {
         var pollingOptions = new HttpPollingOptions();
         configureOptions(pollingOptions);
+        pollingOptions.Validate();
 
         services.AddSingleton(pollingOptions);
 
@@ -36,6 +37,7 @@ public static class HttpPollingServiceExtensions
         this IServiceCollection services,
         HttpPollingOptions pollingOptions)
     {
+        pollingOptions.Validate();
         services.AddSingleton(pollingOptions);
 
         services.AddHttpClient<IHttpPollingService<TResponse>, HttpPollingService<TResponse>>(client =>

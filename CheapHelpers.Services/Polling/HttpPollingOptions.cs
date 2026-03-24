@@ -29,4 +29,16 @@ public class HttpPollingOptions
     /// HTTP request timeout per individual poll.
     /// </summary>
     public TimeSpan RequestTimeout { get; set; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// Validates that required options are configured correctly.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when <see cref="Endpoint"/> is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when <see cref="Endpoint"/> is not an absolute URI.</exception>
+    public void Validate()
+    {
+        ArgumentNullException.ThrowIfNull(Endpoint, nameof(Endpoint));
+        if (!Endpoint.IsAbsoluteUri)
+            throw new ArgumentException("Endpoint must be an absolute URI.", nameof(Endpoint));
+    }
 }

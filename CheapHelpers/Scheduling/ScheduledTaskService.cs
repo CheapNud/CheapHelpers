@@ -100,8 +100,8 @@ public class ScheduledTaskService(ILogger<ScheduledTaskService> logger) : Backgr
         try
         {
             _logger.LogDebug("Executing scheduled task '{TaskName}'", taskName);
-            entry.LastRun = DateTimeOffset.UtcNow;
             await entry.Work(cts.Token);
+            entry.LastRun = DateTimeOffset.UtcNow;
             _logger.LogDebug("Scheduled task '{TaskName}' completed", taskName);
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -124,10 +124,15 @@ public class ScheduledTaskService(ILogger<ScheduledTaskService> logger) : Backgr
     /// </summary>
     private static bool IsWithinScheduleWindow(DateTimeOffset now, TimeOnly scheduledTime)
     {
-        var nowTime = TimeOnly.FromTimeSpan(now.TimeOfDay);
-        // IsBetween handles midnight wrap internally
-        var windowEnd = scheduledTime.AddMinutes(2);
-        return nowTime.IsBetween(scheduledTime, windowEnd);
+        var nowMinutes = now.Hour * 60 + now.Minute;
+        var schedMinutes = scheduledTime.Hour * 60 + scheduledTime.Minute;
+        var diff = nowMinutes - schedMinutes;
+
+        // Handle midnight wrap: e.g. scheduled 23:59, now 00:00 → diff = -1439 → +1440 = 1
+        if (diff < 0)
+            diff += 1440;
+
+        return diff >= 0 && diff < 2;
     }
 
     private static bool HasNotRunToday(ScheduledTaskEntry entry, DateTimeOffset now) =>

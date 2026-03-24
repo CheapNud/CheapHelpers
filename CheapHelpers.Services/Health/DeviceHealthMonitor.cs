@@ -80,14 +80,18 @@ public class DeviceHealthMonitor(
             _logger.LogWarning(ex, "Health check failed for {DeviceName}", check.DeviceName);
         }
 
-        // Detect status transition
-        if (_lastResults.TryGetValue(check.DeviceName, out var previousResult)
-            && previousResult.IsHealthy != checkResult.IsHealthy
-            && OnHealthChanged is not null)
+        // Detect status transition (including initial check — no previous result counts as a transition)
+        var hasPrevious = _lastResults.TryGetValue(check.DeviceName, out var previousResult);
+        var isTransition = !hasPrevious || previousResult!.IsHealthy != checkResult.IsHealthy;
+
+        if (isTransition && OnHealthChanged is not null)
         {
             try
             {
-                await OnHealthChanged(previousResult, checkResult);
+                // For initial checks, previous is a synthetic "unknown" result
+                var previous = previousResult ?? new DeviceHealthResult(
+                    !checkResult.IsHealthy, check.DeviceName, null, TimeSpan.Zero, DateTimeOffset.MinValue);
+                await OnHealthChanged(previous, checkResult);
             }
             catch (Exception ex)
             {

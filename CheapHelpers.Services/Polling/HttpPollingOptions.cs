@@ -1,6 +1,12 @@
 namespace CheapHelpers.Services.Polling;
 
 /// <summary>
+/// Typed wrapper for <see cref="HttpPollingOptions"/> keyed by <typeparamref name="TResponse"/>,
+/// enabling multiple polling services with different configurations in the same DI container.
+/// </summary>
+public class HttpPollingOptions<TResponse> : HttpPollingOptions;
+
+/// <summary>
 /// Configuration options for <see cref="IHttpPollingService{TResponse}"/>.
 /// </summary>
 public class HttpPollingOptions

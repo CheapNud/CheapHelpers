@@ -9,16 +9,17 @@ namespace CheapHelpers.Services.Polling;
 /// </summary>
 public class HttpPollingService<TResponse>(
     HttpClient httpClient,
-    HttpPollingOptions pollingOptions,
+    HttpPollingOptions<TResponse> pollingOptions,
     ILogger<HttpPollingService<TResponse>> logger) : IHttpPollingService<TResponse>, IAsyncDisposable
 {
     private readonly HttpClient _httpClient = httpClient;
-    private readonly HttpPollingOptions _pollingOptions = pollingOptions;
+    private readonly HttpPollingOptions<TResponse> _pollingOptions = pollingOptions;
     private readonly ILogger<HttpPollingService<TResponse>> _logger = logger;
 
     private CancellationTokenSource? _cts;
     private Task? _pollingTask;
     private volatile int _consecutiveFailures;
+    private int _started; // 0 = stopped, 1 = running
 
     public bool IsRunning => _pollingTask is { IsCompleted: false };
     public Func<TResponse, Task>? OnDataReceived { get; set; }
@@ -26,8 +27,8 @@ public class HttpPollingService<TResponse>(
 
     public Task StartAsync(CancellationToken cancellationToken = default)
     {
-        if (IsRunning)
-            return Task.CompletedTask;
+        if (Interlocked.CompareExchange(ref _started, 1, 0) != 0)
+            return Task.CompletedTask; // Already started
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _pollingTask = PollLoopAsync(_cts.Token);
@@ -55,6 +56,7 @@ public class HttpPollingService<TResponse>(
             }
         }
 
+        Interlocked.Exchange(ref _started, 0);
         _logger.LogInformation("HTTP polling stopped for {Endpoint}", _pollingOptions.Endpoint);
     }
 

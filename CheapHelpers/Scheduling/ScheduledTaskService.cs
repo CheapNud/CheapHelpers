@@ -13,6 +13,7 @@ public class ScheduledTaskService(ILogger<ScheduledTaskService> logger) : Backgr
     private readonly ILogger<ScheduledTaskService> _logger = logger;
     private readonly ConcurrentDictionary<string, ScheduledTaskEntry> _tasks = new();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _runningTasks = new();
+    private readonly ConcurrentDictionary<string, Task> _activeTasks = new();
 
     public IReadOnlyCollection<string> RegisteredTasks => _tasks.Keys.ToArray();
 
@@ -68,10 +69,15 @@ public class ScheduledTaskService(ILogger<ScheduledTaskService> logger) : Backgr
             {
                 if (ShouldRun(entry))
                 {
-                    _ = RunTaskAsync(taskName, entry, stoppingToken);
+                    var task = RunTaskAsync(taskName, entry, stoppingToken);
+                    _activeTasks[taskName] = task;
+                    _ = task.ContinueWith(_ => _activeTasks.TryRemove(taskName, out _), TaskContinuationOptions.ExecuteSynchronously);
                 }
             }
         }
+
+        // Await all running tasks on shutdown
+        await Task.WhenAll(_activeTasks.Values);
     }
 
     private bool ShouldRun(ScheduledTaskEntry entry)

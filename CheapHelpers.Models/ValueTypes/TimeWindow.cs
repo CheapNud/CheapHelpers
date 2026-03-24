@@ -35,7 +35,9 @@ public readonly record struct TimeWindow(DateTimeOffset Start, DateTimeOffset En
     }
 
     /// <summary>
-    /// Creates a time window starting at the current moment with the specified duration.
+    /// Creates a time window for the current interval, aligned to the UTC epoch.
+    /// Windows align to clock boundaries only when <paramref name="interval"/> evenly divides a day
+    /// (e.g., 15 minutes, 1 hour). Non-divisible intervals (e.g., 7 minutes) will not align to clock hours.
     /// </summary>
     public static TimeWindow Current(TimeSpan interval)
     {
@@ -48,7 +50,8 @@ public readonly record struct TimeWindow(DateTimeOffset Start, DateTimeOffset En
     }
 
     /// <summary>
-    /// Creates a time window for a specific interval aligned to the given base time.
+    /// Creates a time window for a specific interval aligned to the UTC epoch.
+    /// See <see cref="Current"/> for alignment semantics with non-divisible intervals.
     /// </summary>
     public static TimeWindow ForInterval(DateTimeOffset baseTime, TimeSpan interval)
     {

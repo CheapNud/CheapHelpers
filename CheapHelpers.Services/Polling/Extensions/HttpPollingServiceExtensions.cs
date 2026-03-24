@@ -1,10 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace CheapHelpers.Services.Polling.Extensions;
 
 /// <summary>
 /// Extension methods for registering <see cref="IHttpPollingService{TResponse}"/> with DI.
+/// Each TResponse type gets its own <see cref="HttpPollingOptions{TResponse}"/> singleton,
+/// so multiple polling services can coexist with independent configurations.
 /// </summary>
 public static class HttpPollingServiceExtensions
 {
@@ -13,9 +14,9 @@ public static class HttpPollingServiceExtensions
     /// </summary>
     public static IServiceCollection AddHttpPolling<TResponse>(
         this IServiceCollection services,
-        Action<HttpPollingOptions> configureOptions)
+        Action<HttpPollingOptions<TResponse>> configureOptions)
     {
-        var pollingOptions = new HttpPollingOptions();
+        var pollingOptions = new HttpPollingOptions<TResponse>();
         configureOptions(pollingOptions);
         pollingOptions.Validate();
 
@@ -35,7 +36,7 @@ public static class HttpPollingServiceExtensions
     /// </summary>
     public static IServiceCollection AddHttpPolling<TResponse>(
         this IServiceCollection services,
-        HttpPollingOptions pollingOptions)
+        HttpPollingOptions<TResponse> pollingOptions)
     {
         pollingOptions.Validate();
         services.AddSingleton(pollingOptions);

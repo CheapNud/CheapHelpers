@@ -143,9 +143,14 @@ public class HttpPollingService<TResponse>(
         GC.SuppressFinalize(this);
     }
 
+    /// <summary>
+    /// Signals cancellation without awaiting the polling task.
+    /// Prefer <see cref="DisposeAsync"/> or <see cref="StopAsync"/> for graceful shutdown.
+    /// </summary>
     public void Dispose()
     {
-        DisposeAsync().AsTask().GetAwaiter().GetResult();
+        _cts?.Cancel();
+        _cts?.Dispose();
         GC.SuppressFinalize(this);
     }
 }

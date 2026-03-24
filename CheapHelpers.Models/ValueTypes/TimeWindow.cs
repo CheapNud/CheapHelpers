@@ -39,6 +39,8 @@ public readonly record struct TimeWindow(DateTimeOffset Start, DateTimeOffset En
     /// </summary>
     public static TimeWindow Current(TimeSpan interval)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(interval.Ticks, 0, nameof(interval));
+
         var now = DateTimeOffset.UtcNow;
         long ticks = now.Ticks / interval.Ticks;
         var windowStart = new DateTimeOffset(ticks * interval.Ticks, TimeSpan.Zero);
@@ -50,6 +52,8 @@ public readonly record struct TimeWindow(DateTimeOffset Start, DateTimeOffset En
     /// </summary>
     public static TimeWindow ForInterval(DateTimeOffset baseTime, TimeSpan interval)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(interval.Ticks, 0, nameof(interval));
+
         long ticks = baseTime.Ticks / interval.Ticks;
         var windowStart = new DateTimeOffset(ticks * interval.Ticks, TimeSpan.Zero);
         return new TimeWindow(windowStart, windowStart + interval);
@@ -60,6 +64,8 @@ public readonly record struct TimeWindow(DateTimeOffset Start, DateTimeOffset En
     /// </summary>
     public static IEnumerable<TimeWindow> Enumerate(DateTimeOffset from, DateTimeOffset until, TimeSpan interval)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(interval.Ticks, 0, nameof(interval));
+
         var current = ForInterval(from, interval);
         while (current.Start < until)
         {

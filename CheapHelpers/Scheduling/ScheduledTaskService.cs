@@ -120,13 +120,14 @@ public class ScheduledTaskService(ILogger<ScheduledTaskService> logger) : Backgr
 
     /// <summary>
     /// Checks if the current time is within a 2-minute window of the scheduled time,
-    /// preventing missed executions due to timer drift.
+    /// preventing missed executions due to timer drift. Handles midnight wrap correctly.
     /// </summary>
     private static bool IsWithinScheduleWindow(DateTimeOffset now, TimeOnly scheduledTime)
     {
         var nowTime = TimeOnly.FromTimeSpan(now.TimeOfDay);
-        var diff = nowTime.ToTimeSpan() - scheduledTime.ToTimeSpan();
-        return diff >= TimeSpan.Zero && diff < TimeSpan.FromMinutes(2);
+        // IsBetween handles midnight wrap internally
+        var windowEnd = scheduledTime.AddMinutes(2);
+        return nowTime.IsBetween(scheduledTime, windowEnd);
     }
 
     private static bool HasNotRunToday(ScheduledTaskEntry entry, DateTimeOffset now) =>
@@ -149,6 +150,12 @@ public class ScheduledTaskService(ILogger<ScheduledTaskService> logger) : Backgr
         public TimeSpan? Interval { get; } = Interval;
         public TimeOnly? RunAt { get; } = RunAt;
         public int? DayOfMonth { get; } = DayOfMonth;
-        public DateTimeOffset LastRun { get; set; } = DateTimeOffset.MinValue;
+        private long _lastRunTicks = DateTimeOffset.MinValue.Ticks;
+
+        public DateTimeOffset LastRun
+        {
+            get => new(Interlocked.Read(ref _lastRunTicks), TimeSpan.Zero);
+            set => Interlocked.Exchange(ref _lastRunTicks, value.Ticks);
+        }
     }
 }

@@ -5,7 +5,7 @@ namespace CheapHelpers.Services.Polling;
 /// and invokes callbacks with the deserialized response.
 /// </summary>
 /// <typeparam name="TResponse">The type to deserialize the HTTP response into.</typeparam>
-public interface IHttpPollingService<TResponse> : IDisposable
+public interface IHttpPollingService<TResponse> : IDisposable, IAsyncDisposable
 {
     /// <summary>
     /// Starts polling the configured endpoint.

@@ -82,26 +82,20 @@ public class ScheduledTaskService(ILogger<ScheduledTaskService> logger) : Backgr
         return entry.Type switch
         {
             ScheduleType.Interval => elapsed >= entry.Interval,
-            ScheduleType.Daily => elapsed >= TimeSpan.FromMinutes(1)
-                && now.Hour == entry.RunAt!.Value.Hour
-                && now.Minute == entry.RunAt.Value.Minute
-                && (now.Date != entry.LastRun.Date || entry.LastRun == DateTimeOffset.MinValue),
-            ScheduleType.Monthly => elapsed >= TimeSpan.FromMinutes(1)
+            ScheduleType.Daily => HasNotRunToday(entry, now)
+                && IsWithinScheduleWindow(now, entry.RunAt!.Value),
+            ScheduleType.Monthly => HasNotRunThisMonth(entry, now)
                 && now.Day == entry.DayOfMonth
-                && now.Hour == entry.RunAt!.Value.Hour
-                && now.Minute == entry.RunAt.Value.Minute
-                && (now.Month != entry.LastRun.Month || now.Year != entry.LastRun.Year || entry.LastRun == DateTimeOffset.MinValue),
+                && IsWithinScheduleWindow(now, entry.RunAt!.Value),
             _ => false
         };
     }
 
     private async Task RunTaskAsync(string taskName, ScheduledTaskEntry entry, CancellationToken stoppingToken)
     {
-        if (_runningTasks.ContainsKey(taskName))
-            return; // Already running, skip overlapping execution
-
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-        _runningTasks[taskName] = cts;
+        if (!_runningTasks.TryAdd(taskName, cts))
+            return; // Already running, skip overlapping execution
 
         try
         {
@@ -123,6 +117,23 @@ public class ScheduledTaskService(ILogger<ScheduledTaskService> logger) : Backgr
             _runningTasks.TryRemove(taskName, out _);
         }
     }
+
+    /// <summary>
+    /// Checks if the current time is within a 2-minute window of the scheduled time,
+    /// preventing missed executions due to timer drift.
+    /// </summary>
+    private static bool IsWithinScheduleWindow(DateTimeOffset now, TimeOnly scheduledTime)
+    {
+        var nowTime = TimeOnly.FromTimeSpan(now.TimeOfDay);
+        var diff = nowTime.ToTimeSpan() - scheduledTime.ToTimeSpan();
+        return diff >= TimeSpan.Zero && diff < TimeSpan.FromMinutes(2);
+    }
+
+    private static bool HasNotRunToday(ScheduledTaskEntry entry, DateTimeOffset now) =>
+        now.Date != entry.LastRun.Date || entry.LastRun == DateTimeOffset.MinValue;
+
+    private static bool HasNotRunThisMonth(ScheduledTaskEntry entry, DateTimeOffset now) =>
+        now.Month != entry.LastRun.Month || now.Year != entry.LastRun.Year || entry.LastRun == DateTimeOffset.MinValue;
 
     private enum ScheduleType { Interval, Daily, Monthly }
 

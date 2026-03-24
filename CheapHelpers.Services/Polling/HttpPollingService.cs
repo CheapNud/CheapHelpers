@@ -10,7 +10,7 @@ namespace CheapHelpers.Services.Polling;
 public class HttpPollingService<TResponse>(
     HttpClient httpClient,
     HttpPollingOptions pollingOptions,
-    ILogger<HttpPollingService<TResponse>> logger) : IHttpPollingService<TResponse>
+    ILogger<HttpPollingService<TResponse>> logger) : IHttpPollingService<TResponse>, IAsyncDisposable
 {
     private readonly HttpClient _httpClient = httpClient;
     private readonly HttpPollingOptions _pollingOptions = pollingOptions;
@@ -79,7 +79,7 @@ public class HttpPollingService<TResponse>(
             timeoutCts.CancelAfter(_pollingOptions.RequestTimeout);
 
             var pollResponse = await _httpClient.GetFromJsonAsync<TResponse>(
-                _pollingOptions.Endpoint, timeoutCts.Token);
+                (string?)null, timeoutCts.Token);
 
             _consecutiveFailures = 0;
 
@@ -115,10 +115,37 @@ public class HttpPollingService<TResponse>(
         }
     }
 
+    public async ValueTask DisposeAsync()
+    {
+        if (_cts is not null)
+        {
+            await _cts.CancelAsync();
+
+            if (_pollingTask is not null)
+            {
+                try
+                {
+                    await _pollingTask.WaitAsync(TimeSpan.FromSeconds(5));
+                }
+                catch (OperationCanceledException)
+                {
+                    // Expected
+                }
+                catch (TimeoutException)
+                {
+                    _logger.LogWarning("Polling task did not complete within 5s during dispose");
+                }
+            }
+
+            _cts.Dispose();
+        }
+
+        GC.SuppressFinalize(this);
+    }
+
     public void Dispose()
     {
-        _cts?.Cancel();
-        _cts?.Dispose();
+        DisposeAsync().AsTask().GetAwaiter().GetResult();
         GC.SuppressFinalize(this);
     }
 }

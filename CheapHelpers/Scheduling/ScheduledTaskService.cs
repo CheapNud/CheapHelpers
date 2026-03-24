@@ -53,6 +53,31 @@ public class ScheduledTaskService(ILogger<ScheduledTaskService> logger) : Backgr
             cts.Cancel();
             cts.Dispose();
         }
+
+        _tasks.TryRemove(taskName, out _);
+
+        // Note: if the task is still running in _activeTasks, it will complete
+        // on its own via CTS cancellation. Use UnregisterTaskAsync for awaitable completion.
+        return true;
+    }
+
+    /// <summary>
+    /// Unregisters a task and awaits its completion if it's currently running.
+    /// </summary>
+    public async Task<bool> UnregisterTaskAsync(string taskName)
+    {
+        if (_runningTasks.TryRemove(taskName, out var cts))
+        {
+            cts.Cancel();
+            cts.Dispose();
+        }
+
+        if (_activeTasks.TryRemove(taskName, out var activeTask))
+        {
+            try { await activeTask; }
+            catch (OperationCanceledException) { }
+        }
+
         return _tasks.TryRemove(taskName, out _);
     }
 
@@ -71,7 +96,16 @@ public class ScheduledTaskService(ILogger<ScheduledTaskService> logger) : Backgr
                 {
                     var task = RunTaskAsync(taskName, entry, stoppingToken);
                     _activeTasks[taskName] = task;
-                    _ = task.ContinueWith(_ => _activeTasks.TryRemove(taskName, out _), TaskContinuationOptions.ExecuteSynchronously);
+                    _ = task.ContinueWith(
+                        (_, state) =>
+                        {
+                            var (dict, name) = ((ConcurrentDictionary<string, Task>, string))state!;
+                            dict.TryRemove(name, out _);
+                        },
+                        (_activeTasks, taskName),
+                        CancellationToken.None,
+                        TaskContinuationOptions.ExecuteSynchronously,
+                        TaskScheduler.Default);
                 }
             }
         }
@@ -106,8 +140,8 @@ public class ScheduledTaskService(ILogger<ScheduledTaskService> logger) : Backgr
         try
         {
             _logger.LogDebug("Executing scheduled task '{TaskName}'", taskName);
+            entry.LastRun = DateTimeOffset.UtcNow; // Stamp before execution to prevent double-fire from polling
             await entry.Work(cts.Token);
-            entry.LastRun = DateTimeOffset.UtcNow;
             _logger.LogDebug("Scheduled task '{TaskName}' completed", taskName);
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

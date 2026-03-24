@@ -20,6 +20,7 @@ public class HttpPollingService<TResponse>(
     private Task? _pollingTask;
     private volatile int _consecutiveFailures;
     private int _started; // 0 = stopped, 1 = running
+    private int _disposed; // 0 = not disposed, 1 = disposed
 
     public bool IsRunning => _pollingTask is { IsCompleted: false };
     public Func<TResponse, Task>? OnDataReceived { get; set; }
@@ -119,6 +120,9 @@ public class HttpPollingService<TResponse>(
 
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0)
+            return;
+
         if (_cts is not null)
         {
             await _cts.CancelAsync();
@@ -151,6 +155,9 @@ public class HttpPollingService<TResponse>(
     /// </summary>
     public void Dispose()
     {
+        if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0)
+            return;
+
         _cts?.Cancel();
         _cts?.Dispose();
         GC.SuppressFinalize(this);

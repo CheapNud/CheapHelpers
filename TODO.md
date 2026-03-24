@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-03-21
+  Last updated: 2026-03-24 (blockers completed)
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -17,6 +17,7 @@
       [user] = explicitly requested by the user
   - For [code-todo] items, ALWAYS include file:line reference so devs can navigate directly
   - Categories: Blocking, Planned, Future, Done
+  - [voltiq-dep] = required by Voltiq project (../Voltiq) before scaffolding can proceed
   - New items go at the TOP of their category
   - Do not create separate TODO_*.md files — everything goes here
   - Keep it terse. If it needs more than 3 sub-bullets, link to a plan document.
@@ -29,11 +30,6 @@
 _Nothing blocking._
 
 ## Planned
-
-- [ ] (2026-03-17) Fix CheapContext `DATETIME('now')` per-provider detection (CheapHelpers.EF) [bug]
-  - `CheapContext.OnModelCreating` should detect `Database.ProviderName` → `NOW()` for Npgsql, `DATETIME('now')` for SQLite
-  - Currently hardcodes SQLite syntax, breaks PostgreSQL migrations
-  - CheapManga has a `PendingModelChangesWarning` suppression as workaround
 - [ ] (2026-03-17) Add `SanitizeFileName()` to `StringExtensions` (CheapHelpers) [audit]
   - `Path.GetInvalidFileNameChars()`-based — more correct than generic `Sanitize()` for file paths
   - CheapManga.DownloadService has this as a private method currently
@@ -85,4 +81,17 @@ _Nothing yet._
 
 ## Done
 
-_Tracked in release notes._
+- [x] (2026-03-24 → 2026-03-24) Add `TimeWindow` value type to CheapHelpers.Models [voltiq-dep]
+  - `CheapHelpers.Models/ValueTypes/TimeWindow.cs` — record struct with `Duration`, `Contains`, `Overlaps`, `Intersect`, `Current`, `ForInterval`, `Enumerate`
+- [x] (2026-03-24 → 2026-03-24) Add unit conversion extension methods to CheapHelpers [voltiq-dep]
+  - `CheapHelpers/Extensions/UnitConversionExtensions.cs` — Power, Energy, Volume (double + decimal)
+- [x] (2026-03-24 → 2026-03-24) Add `IHttpPollingService` to CheapHelpers.Services [voltiq-dep]
+  - `CheapHelpers.Services/Polling/` — interface, impl with PeriodicTimer + exponential backoff, options, DI extension
+- [x] (2026-03-24 → 2026-03-24) Add `IScheduledTaskService` to CheapHelpers [voltiq-dep]
+  - `CheapHelpers/Scheduling/` — interface, BackgroundService impl with interval/daily/monthly, DI extension
+  - Added `Microsoft.Extensions.Hosting.Abstractions` to CheapHelpers.csproj
+- [x] (2026-03-24 → 2026-03-24) Add `IDeviceHealthCheck` to CheapHelpers.Services [voltiq-dep]
+  - `CheapHelpers.Services/Health/` — IDeviceHealthCheck, IDeviceHealthMonitor, DeviceHealthResult record, hosted monitor with transition detection, DI extension
+- [x] (2026-03-17 → 2026-03-24) Fix CheapContext `DATETIME('now')` per-provider detection (CheapHelpers.EF) [bug] [voltiq-dep]
+  - `CheapContext.GetUtcNowFunction()` now switches on `Database.ProviderName` — SQLite, SQL Server, Npgsql
+  - Added `Constants.Database.NpgsqlUtcNowFunction` and `Constants.Database.ProviderNames` static class

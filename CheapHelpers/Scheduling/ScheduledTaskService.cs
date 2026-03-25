@@ -21,6 +21,7 @@ public class ScheduledTaskService(ILogger<ScheduledTaskService> logger) : Backgr
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(taskName);
         ArgumentNullException.ThrowIfNull(work);
+        ArgumentOutOfRangeException.ThrowIfLessThan(interval, TimeSpan.FromSeconds(30), nameof(interval));
 
         _tasks[taskName] = new ScheduledTaskEntry(ScheduleType.Interval, work, interval);
         _logger.LogInformation("Registered interval task '{TaskName}' every {Interval}", taskName, interval);

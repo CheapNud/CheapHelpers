@@ -77,7 +77,13 @@ _Nothing blocking._
 
 ## Future
 
-_Nothing yet._
+- [ ] (2026-03-27) Extract generic `IMdnsDiscoveryService` from existing mDNS code [plan]
+  - CheapHelpers.Networking already has `MdnsDetector` (Makaretu.Dns.Multicast.New) but it's only a device type classifier, not a standalone discovery service
+  - Calculus.DeviceManagement has battle-tested `GatewayDiscovery` (MeaMod.DNS) with persistent listener, GUID caching from split A/AAAA responses, TXT record parsing — WPF-coupled, needs extracting
+  - Goal: generic `IMdnsDiscoveryService` — `DiscoverAsync(string serviceType, CancellationToken)` → `List<MdnsDevice>` with IP, name, TXT records
+  - Consolidate on one mDNS library (evaluate Makaretu vs MeaMod — both work, pick one)
+  - Voltiq use case: HomeWizard P1 meters advertise via `_hwenergy._tcp.local` — auto-discover meter IP for Tier 2 plug-and-play
+  - Consumers: Voltiq (HomeWizard), CheapHelpers.Networking (upgrade MdnsDetector), CheapCOVAS (Elite Dangerous companion)
 
 ## Done
 

@@ -46,12 +46,12 @@
     <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
 
     <PackageReference Include="BlazorZXingJs" Version="0.5.13" />
-    <PackageReference Include="File.TypeChecker" Version="4.3.0" />
+    <PackageReference Include="File.TypeChecker" Version="4.4.0" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
-    <PackageReference Include="Mapster" Version="7.4.0" />
+    <PackageReference Include="Mapster" Version="10.0.6" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="10.0.5" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.3.9" />
-    <PackageReference Include="MudBlazor" Version="9.1.0" />
+    <PackageReference Include="MudBlazor" Version="9.2.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using Microsoft.Extensions.DependencyInjection;
+using MimeMapping;
 
 namespace CheapHelpers.Services.Auth.Plex.Extensions;
 
@@ -30,7 +31,7 @@ public static class PlexAuthServiceExtensions
 
         services.AddHttpClient<IPlexAuthService, PlexAuthService>(client =>
         {
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(KnownMimeTypes.Json));
             client.DefaultRequestHeaders.Add(PlexConstants.Headers.ClientIdentifier, plexOptions.ClientIdentifier);
             client.DefaultRequestHeaders.Add(PlexConstants.Headers.Product, plexOptions.ProductName);
         });

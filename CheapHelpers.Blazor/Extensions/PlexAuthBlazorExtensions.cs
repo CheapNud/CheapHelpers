@@ -1,9 +1,12 @@
 using System.Security.Claims;
+using CheapHelpers.Models.Entities;
+using CheapHelpers.Services.Auth;
 using CheapHelpers.Services.Auth.Plex;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -114,6 +117,32 @@ public static class PlexAuthBlazorExtensions
                     IsPersistent = true,
                     ExpiresUtc = DateTimeOffset.UtcNow.Add(plexOptions.CookieExpiration),
                 });
+
+            // Optional: provision or link a CheapUser via IExternalUserProvisioner (only if registered)
+            var provisioner = httpContext.RequestServices.GetService<IExternalUserProvisioner>();
+            if (provisioner is not null)
+            {
+                var userInfo = new ExternalUserInfo(
+                    ProviderName: "Plex",
+                    ExternalId: plexUser.Id.ToString(),
+                    Email: plexUser.Email,
+                    Username: plexUser.Username,
+                    AvatarUrl: plexUser.Thumb);
+
+                var provisionResult = await provisioner.FindOrCreateUserAsync(userInfo, httpContext.RequestAborted);
+                if (provisionResult is { Success: true, SignInRequired: true })
+                {
+                    var signInManager = httpContext.RequestServices.GetRequiredService<SignInManager<CheapUser>>();
+                    var identityUserManager = httpContext.RequestServices.GetRequiredService<UserManager<CheapUser>>();
+                    var identityUser = await identityUserManager.FindByIdAsync(provisionResult.UserId!);
+                    if (identityUser is not null)
+                    {
+                        await signInManager.SignInAsync(identityUser, isPersistent: true);
+                        logger.LogInformation("Plex user {Username} (ID: {PlexId}) provisioned and signed in via Identity", plexUser.Username, plexUser.Id);
+                        return Results.Redirect(plexOptions.PostLoginRedirect);
+                    }
+                }
+            }
 
             logger.LogInformation("Plex user {Username} (ID: {PlexId}) signed in successfully", plexUser.Username, plexUser.Id);
             return Results.Redirect(plexOptions.PostLoginRedirect);

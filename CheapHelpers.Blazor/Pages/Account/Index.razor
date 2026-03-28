@@ -84,9 +84,9 @@
         }
         
         @* Custom Tabs *@
-@*         @if (CustomTabs != null)
+        @if (_authorizedTabs is { Count: > 0 })
         {
-            @foreach (var tab in CustomTabs.Where(t => IsTabAuthorized(t)))
+            @foreach (var tab in _authorizedTabs)
             {
                 <MudTabPanel Text="@tab.Title">
                     <CascadingValue Value="CurrentUser">
@@ -94,7 +94,7 @@
                     </CascadingValue>
                 </MudTabPanel>
             }
-        } *@
+        }
     </MudTabs>
 }
 
@@ -124,6 +124,7 @@
 
     protected CheapUser? CurrentUser { get; set; }
     private bool wasDarkMode;
+    private List<AccountTabDefinition> _authorizedTabs = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -131,6 +132,15 @@
         if (CurrentUser != null)
         {
             wasDarkMode = CurrentUser.IsDarkMode;
+        }
+
+        if (CustomTabs is not null)
+        {
+            foreach (var tab in CustomTabs.OrderBy(t => t.Order))
+            {
+                if (await IsTabAuthorized(tab))
+                    _authorizedTabs.Add(tab);
+            }
         }
     }
 

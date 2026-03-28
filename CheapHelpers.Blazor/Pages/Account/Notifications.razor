@@ -1,73 +1,290 @@
-﻿@using Microsoft.AspNetCore.Identity
-@using MoreLinq
+@page "/Account/Notifications"
+@using CheapHelpers.Blazor.Services
+@using CheapHelpers.Extensions
+@using CheapHelpers.Models.Entities
+@using CheapHelpers.Models.Enums
+@using CheapHelpers.Services.Notifications
+@using CheapHelpers.Services.Notifications.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@attribute [Authorize]
 
-@* <MudGrid>
-    <AuthorizeView Policy="@Policies.ServiceExternal">
-        <MudItem xs="6">
-            <MudText Typo="Typo.h6">Nieuw</MudText>
-            @if (UnreadServiceChatsNew != null && UnreadServiceChatsNew?.Count > 0)
+<MudText Typo="Typo.h5">@Loc["Notifications"]</MudText>
+
+<MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" Class="mt-3" PanelClass="pa-4">
+    <MudTabPanel Text="@Loc["Notifications"]">
+        @* Filter chips *@
+        <MudStack Row="true" Spacing="2" Class="mb-3">
+            <MudChipSet T="string" SelectedValue="@_readFilter" SelectedValueChanged="@(async (v) => await OnFilterChanged(v))" Mandatory="true">
+                <MudChip T="string" Value="@("all")" Color="Color.Default">@Loc["All"]</MudChip>
+                <MudChip T="string" Value="@("unread")" Color="Color.Primary">@Loc["Unread"]</MudChip>
+                <MudChip T="string" Value="@("read")" Color="Color.Default">@Loc["Read"]</MudChip>
+            </MudChipSet>
+
+            <MudSpacer />
+
+            @if (_unreadCount > 0)
             {
-                <Notification UnreadServiceChats="UnreadServiceChatsNew.Select(y => y as ServiceChat).ToList()"></Notification>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                           OnClick="MarkAllAsRead">
+                    @Loc["MarkAllRead"]
+                </MudButton>
             }
-            <MudText Class="mt-3" Typo="Typo.h6">Lopend</MudText>
-            @if (UnreadServiceChats != null && UnreadServiceChats?.Count > 0)
-            {
-                <Notification UnreadServiceChats="UnreadServiceChats.Select(y => y as ServiceChat).ToList()"></Notification>
-            }
-        </MudItem>
-    </AuthorizeView>
-    <AuthorizeView Policy="@Policies.ServiceSupplier">
-        <MudItem xs="6">
-            <MudText Typo="Typo.h6">Nieuw (Leverancier)</MudText>
-            @if (UnreadServiceSupplierChatsNew != null && UnreadServiceSupplierChatsNew?.Count > 0)
-            {
-                <Notification UnreadServiceChats="UnreadServiceSupplierChatsNew.Select(y => y as ServiceChat).ToList()"></Notification>
-            }
-            <MudText Class="mt-3" Typo="Typo.h6">Lopend (Leverancier)</MudText>
-            @if (UnreadServiceSupplierChats != null && UnreadServiceSupplierChats?.Count > 0)
-            {
-                <Notification UnreadServiceChats="UnreadServiceSupplierChats.Select(y => y as ServiceChat).ToList()"></Notification>
-            }
-        </MudItem>
-    </AuthorizeView>
-</MudGrid> *@
+        </MudStack>
+
+        @* Notification table *@
+        <MudTable T="InAppNotification" ServerData="LoadNotifications" @ref="_table" Dense="true" Hover="true"
+                  RowClass="cursor-pointer" OnRowClick="OnRowClick" Loading="@_loading">
+            <HeaderContent>
+                <MudTh></MudTh>
+                <MudTh>@Loc["Title"]</MudTh>
+                <MudTh>@Loc["Message"]</MudTh>
+                <MudTh>@Loc["Date"]</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>
+                    <MudIcon Icon="@GetPriorityIcon(context.Priority)" Color="@GetPriorityColor(context.Priority)" Size="Size.Small" />
+                </MudTd>
+                <MudTd>
+                    <MudText Style="@(context.IsRead ? "" : "font-weight: bold")">@context.Title</MudText>
+                </MudTd>
+                <MudTd>
+                    <MudText Typo="Typo.body2">@context.Body?.TrimWithEllipsis(80)</MudText>
+                </MudTd>
+                <MudTd>
+                    <MudText Typo="Typo.caption">@context.CreatedAt.ToString("g")</MudText>
+                </MudTd>
+                <MudTd>
+                    <MudStack Row="true" Spacing="1">
+                        @if (!context.IsRead)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.DoneAll" Size="Size.Small"
+                                           Title="@Loc["MarkAsRead"]"
+                                           OnClick="@(() => MarkAsRead(context))" />
+                        }
+                        <MudIconButton Icon="@Icons.Material.Filled.Archive" Size="Size.Small"
+                                       Title="@Loc["Archive"]"
+                                       OnClick="@(() => Archive(context))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                       Title="@Loc["Delete"]"
+                                       OnClick="@(() => Delete(context))" />
+                    </MudStack>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Typo="Typo.body1" Color="Color.Default" Class="pa-4">@Loc["NoNotifications"]</MudText>
+            </NoRecordsContent>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </MudTabPanel>
+
+    <MudTabPanel Text="@Loc["Preferences"]">
+        @if (NotificationTypes is { Count: > 0 })
+        {
+            <MudTable T="NotificationPreferenceRow" Items="_preferenceRows" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>@Loc["NotificationType"]</MudTh>
+                    <MudTh>@Loc["InApp"]</MudTh>
+                    <MudTh>@Loc["Email"]</MudTh>
+                    <MudTh>@Loc["Sms"]</MudTh>
+                    <MudTh>@Loc["Push"]</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.NotificationType</MudTd>
+                    <MudTd><MudSwitch T="bool" Value="@context.InApp" ValueChanged="@(v => ToggleChannel(context, NotificationChannelFlags.InApp, v))" Color="Color.Primary" /></MudTd>
+                    <MudTd><MudSwitch T="bool" Value="@context.EmailEnabled" ValueChanged="@(v => ToggleChannel(context, NotificationChannelFlags.Email, v))" Color="Color.Primary" /></MudTd>
+                    <MudTd><MudSwitch T="bool" Value="@context.Sms" ValueChanged="@(v => ToggleChannel(context, NotificationChannelFlags.Sms, v))" Color="Color.Primary" /></MudTd>
+                    <MudTd><MudSwitch T="bool" Value="@context.PushEnabled" ValueChanged="@(v => ToggleChannel(context, NotificationChannelFlags.Push, v))" Color="Color.Primary" /></MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            <MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" OnClick="SavePreferences">
+                @Loc["Save"]
+            </MudButton>
+        }
+        else
+        {
+            <MudText Typo="Typo.body1" Color="Color.Default" Class="pa-4">
+                @Loc["NoNotificationTypesConfigured"]
+            </MudText>
+        }
+    </MudTabPanel>
+</MudTabs>
 
 @code {
-    // public IdentityUser User { get; set; }
-    // public List<ServiceUserChat> UnreadServiceChats { get; set; }
-    // public List<ServiceUserChat> UnreadServiceChatsNew { get; set; }
-    // public List<ServiceSupplierChat> UnreadServiceSupplierChats { get; set; }
-    // public List<ServiceSupplierChat> UnreadServiceSupplierChatsNew { get; set; }
+    /// <summary>
+    /// List of notification types the consuming app supports.
+    /// </summary>
+    [Parameter]
+    public List<string> NotificationTypes { get; set; } = [];
 
-    // [CascadingParameter]
-    // private Task<AuthenticationState> AuthenticationState { get; set; }
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
 
-    // [Inject]
-    // private ServiceRepo Serviceservice { get; set; }
+    [Inject] protected UserService UserService { get; set; } = default!;
+    [Inject] protected IInAppNotificationService NotificationService { get; set; } = default!;
+    [Inject] protected ISnackbar ToastService { get; set; } = default!;
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] protected NavigationManager Nav { get; set; } = default!;
 
-    // [Inject]
-    // private IAuthorizationService AuthorizationService { get; set; }
+    private MudTable<InAppNotification> _table = default!;
+    private string? _userId;
+    private string _readFilter = "all";
+    private int _unreadCount;
+    private bool _loading;
+    private List<NotificationPreferenceRow> _preferenceRows = [];
 
-    // protected override async Task OnInitializedAsync()
-    // {
-    //     var auth = await AuthenticationState;
-    //     var user = auth.User;
-    //     User = await UserService.GetUserAsync(auth.User);
-    //     await RefreshNotifiations();
-    //     UserService.RefreshNotifications += (async () => await RefreshNotifiations());
-    // }
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await UserService.GetUserAsync(AuthenticationState);
+        _userId = user.Id;
+        _unreadCount = await NotificationService.GetUnreadCountAsync(_userId);
+        await LoadPreferences();
+    }
 
-    // private async Task RefreshNotifiations()
-    // {
-    //     var customers = User.Customers.Select(x => x.Customer.Id).ToArray();
+    private async Task<TableData<InAppNotification>> LoadNotifications(TableState tableState, CancellationToken ct)
+    {
+        if (_userId is null) return new TableData<InAppNotification>();
 
-    //     UnreadServiceChatsNew = await Serviceservice.GetNotifications(User.Id, customers, true);
-    //     UnreadServiceChats = await Serviceservice.GetNotifications(User.Id, customers, false);
+        var filter = new InAppNotificationFilter
+        {
+            Skip = tableState.Page * tableState.PageSize,
+            Take = tableState.PageSize,
+            SortBy = "CreatedAt",
+            SortDescending = true,
+            IsRead = _readFilter switch
+            {
+                "unread" => false,
+                "read" => true,
+                _ => null
+            }
+        };
 
-    //     UnreadServiceSupplierChatsNew = await Serviceservice.GetSupplierNotifications(User.Id, customers, true);
-    //     UnreadServiceSupplierChats = await Serviceservice.GetSupplierNotifications(User.Id, customers, false);
-    //     Debug.WriteLine(@$"{UnreadServiceSupplierChats} {UnreadServiceSupplierChatsNew}");
+        var notifications = await NotificationService.GetUserNotificationsAsync(_userId, filter, ct);
+        var totalCount = await NotificationService.GetUnreadCountAsync(_userId, ct: ct);
 
-    //     StateHasChanged();
-    // }
+        // Approximate total — use unread count for unread filter, otherwise use page heuristic
+        var total = _readFilter == "unread" ? totalCount : notifications.Count < tableState.PageSize
+            ? tableState.Page * tableState.PageSize + notifications.Count
+            : (tableState.Page + 2) * tableState.PageSize;
+
+        return new TableData<InAppNotification> { Items = notifications, TotalItems = total };
+    }
+
+    private async Task OnFilterChanged(string filterValue)
+    {
+        _readFilter = filterValue;
+        await _table.ReloadServerData();
+    }
+
+    private async Task MarkAsRead(InAppNotification notification)
+    {
+        if (_userId is null) return;
+        await NotificationService.MarkAsReadAsync(notification.Id, _userId);
+        notification.MarkAsRead();
+        _unreadCount = Math.Max(0, _unreadCount - 1);
+    }
+
+    private async Task MarkAllAsRead()
+    {
+        if (_userId is null) return;
+        await NotificationService.MarkAllAsReadAsync(_userId);
+        _unreadCount = 0;
+        await _table.ReloadServerData();
+        ToastService.Add(Loc["AllMarkedAsRead"], Severity.Success);
+    }
+
+    private async Task Archive(InAppNotification notification)
+    {
+        if (_userId is null) return;
+        await NotificationService.ArchiveAsync(notification.Id, _userId);
+        await _table.ReloadServerData();
+    }
+
+    private async Task Delete(InAppNotification notification)
+    {
+        if (_userId is null) return;
+        await NotificationService.DeleteAsync(notification.Id, _userId);
+        await _table.ReloadServerData();
+    }
+
+    private void OnRowClick(TableRowClickEventArgs<InAppNotification> args)
+    {
+        if (!string.IsNullOrEmpty(args.Item?.ActionUrl))
+        {
+            Nav.NavigateTo(args.Item.ActionUrl);
+        }
+    }
+
+    #region Preferences
+
+    private async Task LoadPreferences()
+    {
+        if (_userId is null) return;
+
+        _preferenceRows = [];
+        foreach (var notificationType in NotificationTypes)
+        {
+            var pref = await NotificationService.GetUserPreferencesAsync(_userId, notificationType);
+            _preferenceRows.Add(new NotificationPreferenceRow
+            {
+                NotificationType = notificationType,
+                Preference = pref
+            });
+        }
+    }
+
+    private void ToggleChannel(NotificationPreferenceRow row, NotificationChannelFlags channel, bool enabled)
+    {
+        if (enabled)
+            row.Preference.EnableChannel(channel);
+        else
+            row.Preference.DisableChannel(channel);
+    }
+
+    private async Task SavePreferences()
+    {
+        foreach (var row in _preferenceRows)
+        {
+            await NotificationService.UpdateUserPreferencesAsync(row.Preference);
+        }
+        ToastService.Add(Loc["Saved"], Severity.Success);
+    }
+
+    #endregion
+
+    #region Helpers
+
+    private Color GetPriorityColor(NotificationPriority priority) => priority switch
+    {
+        NotificationPriority.Low => Color.Default,
+        NotificationPriority.Normal => Color.Info,
+        NotificationPriority.High => Color.Warning,
+        NotificationPriority.Urgent => Color.Error,
+        _ => Color.Default
+    };
+
+    private string GetPriorityIcon(NotificationPriority priority) => priority switch
+    {
+        NotificationPriority.Low => Icons.Material.Filled.Info,
+        NotificationPriority.Normal => Icons.Material.Filled.Notifications,
+        NotificationPriority.High => Icons.Material.Filled.Warning,
+        NotificationPriority.Urgent => Icons.Material.Filled.Error,
+        _ => Icons.Material.Filled.Notifications
+    };
+
+    #endregion
+
+    private class NotificationPreferenceRow
+    {
+        public string NotificationType { get; set; } = "";
+        public UserNotificationPreference Preference { get; set; } = new();
+
+        public bool InApp => Preference.IsChannelEnabled(NotificationChannelFlags.InApp);
+        public bool EmailEnabled => Preference.IsChannelEnabled(NotificationChannelFlags.Email);
+        public bool Sms => Preference.IsChannelEnabled(NotificationChannelFlags.Sms);
+        public bool PushEnabled => Preference.IsChannelEnabled(NotificationChannelFlags.Push);
+    }
 }

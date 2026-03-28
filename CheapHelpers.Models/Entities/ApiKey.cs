@@ -60,6 +60,11 @@ public class ApiKey : IEntityId, IAuditable
     public int RateLimitPerDay { get; set; }
 
     /// <summary>
+    /// Optional billing plan for metered usage. Null means no billing.
+    /// </summary>
+    public int? BillingPlanId { get; set; }
+
+    /// <summary>
     /// ID of the user who created this key (may differ from UserId in admin/delegation scenarios).
     /// </summary>
     [MaxLength(450)]

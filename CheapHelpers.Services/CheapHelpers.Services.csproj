@@ -42,6 +42,9 @@
     <None Remove="Email\Templates\Header.liquid" />
     <None Remove="Email\Templates\Master.liquid" />
     <None Remove="Email\Templates\WelcomeEmailTemplateBody.liquid" />
+    <None Remove="Email\Templates\EmailConfirmationTemplateBody.liquid" />
+    <None Remove="Email\Templates\PasswordResetTemplateBody.liquid" />
+    <None Remove="Email\Templates\ExceptionReportTemplateBody.liquid" />
   </ItemGroup>
 
   <ItemGroup>
@@ -55,6 +58,15 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
     <EmbeddedResource Include="Email\Templates\WelcomeEmailTemplateBody.liquid">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Email\Templates\EmailConfirmationTemplateBody.liquid">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Email\Templates\PasswordResetTemplateBody.liquid">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Email\Templates\ExceptionReportTemplateBody.liquid">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>

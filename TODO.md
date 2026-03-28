@@ -40,13 +40,12 @@ _Nothing blocking._
   - `CheapHelpers.Services/Voice/` — `ISpeechToText`, `SttResult`, `SttOptions`, DI extension
   - Whisper provider (OpenAI-compatible, works with local whisper.cpp) — extract from CheapCOVAS
   - Azure Speech Services provider
-- [ ] (2026-03-28) Add logging to NotificationBell empty catch blocks [audit]
-  - `CheapHelpers.Blazor/Components/NotificationBell.razor:205,225,272,308,370` — 4 silent exception swallows
-- [ ] (2026-03-28) Add null/bounds validation to `CollectionExtensions.Replace` methods [audit]
-  - `CheapHelpers/Extensions/CollectionExtensions.cs:36-38` — comments outline missing checks
-- [ ] (2026-03-17) Add `SanitizeFileName()` to `StringExtensions` (CheapHelpers) [audit]
-  - `Path.GetInvalidFileNameChars()`-based — more correct than generic `Sanitize()` for file paths
-  - CheapManga.DownloadService has this as a private method currently
+- [x] (2026-03-28 → 2026-03-28) Add logging to NotificationBell empty catch blocks [audit]
+  - Injected `ILogger<NotificationBell>`, replaced 5 silent catch blocks with `LogWarning`/`LogError`
+- [x] (2026-03-28 → 2026-03-28) Add null/bounds validation to `CollectionExtensions.Replace` methods [audit]
+  - Added `ArgumentNullException` guards, not-found checks, multi-match detection for predicate overload
+- [x] (2026-03-17 → 2026-03-28) Add `SanitizeFileName()` to `StringExtensions` (CheapHelpers) [audit]
+  - Added `Path.GetInvalidFileNameChars()`-based method with configurable replacement char
 - [ ] (2026-03-17) Add shared Plex SSO auth provider [user]
   - New folder: `CheapHelpers/Auth/Plex/` — PlexAuthProvider, PlexUser, PlexPin
   - Design `IExternalAuthProvider` interface for future Google/Discord/etc.
@@ -65,13 +64,14 @@ _Nothing blocking._
   - `CheapHelpers.Blazor/Hybrid/Extensions/BlazorHybridServiceExtensions.cs:141`
 - [ ] (2026-03-17) Implement iLovePDF API for PdfOptimizationService [code-todo]
   - `CheapHelpers.Services/DataExchange/Pdf/PdfOptimizationService.cs:25`
-- [ ] (2026-03-21) Clean up `JsonService` — old implementation commented out, marked "fix and cleanup" [code-todo]
-  - `CheapHelpers.Services/DataExchange/Json/JsonService.cs:3`
-- [ ] (2026-03-21) Replace legacy email HTML templating with a templating engine [code-todo]
-  - `CheapHelpers.Services/Email/EmailExtensions.cs:67` — marked `[Obsolete]`
-  - Manual string building for exception emails, needs proper templating
-- [ ] (2026-03-21) Make notification cleanup interval configurable via `NotificationOptions` [code-todo]
-  - `CheapHelpers.Services/Notifications/NotificationCleanupService.cs:45` — hardcoded to 1 hour
+- [x] (2026-03-21 → 2026-03-28) Clean up `JsonService` — old implementation commented out, marked "fix and cleanup" [code-todo]
+  - Removed dead commented-out code, modernized to file-scoped namespace and using declarations
+- [x] (2026-03-21 → 2026-03-28) Replace legacy email HTML templating with a templating engine [code-todo]
+  - Migrated `SendEmailConfirmationAsync`, `SendPasswordTokenAsync`, `SendDeveloperAsync` to Fluid/Liquid templates
+  - Created `EmailConfirmationTemplateData`, `PasswordResetTemplateData`, `ExceptionReportTemplateData` + `.liquid` files
+  - Removed `ToHtmlString`, `FormatExceptionReportAsHtml`, `AppendExceptionAsHtml` and all `[Obsolete]` attributes
+- [x] (2026-03-21 → 2026-03-28) Make notification cleanup interval configurable via `NotificationOptions` [code-todo]
+  - Added `CleanupIntervalMinutes` property (default 60), wired into `NotificationCleanupService`
 - [ ] (2026-03-21) Use user timezone instead of UTC for Do Not Disturb [code-todo]
   - `CheapHelpers.Services/Notifications/Subscriptions/GlobalUserPreferencesProvider.cs:115`
 

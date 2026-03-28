@@ -1,0 +1,25 @@
+<div style='font-family: monospace; font-size: 10pt;'>
+    <p><b>Assembly:</b> {{ Data.Report.MainException.AssemblyName }}</p>
+    <p><b>Source:</b> {{ Data.Report.MainException.Source }}</p>
+    <p><b>Time:</b> {{ Data.Report.MainException.Timestamp | date: "MM/dd/yyyy HH:mm" }}</p>
+    <p><b>Exception Type:</b> {{ Data.Report.MainException.ExceptionType }}</p>
+    <p><b>Message:</b> {{ Data.Report.MainException.Message }}</p>
+    <p><b>StackTrace:</b> {{ Data.Report.MainException.StackTrace }}</p>
+
+    {% for inner in Data.Report.InnerExceptions %}
+    <br><p><b>InnerException</b></p><br>
+    <p><b>Assembly:</b> {{ inner.AssemblyName }}</p>
+    <p><b>Source:</b> {{ inner.Source }}</p>
+    <p><b>Time:</b> {{ inner.Timestamp | date: "MM/dd/yyyy HH:mm" }}</p>
+    <p><b>Exception Type:</b> {{ inner.ExceptionType }}</p>
+    <p><b>Message:</b> {{ inner.Message }}</p>
+    <p><b>StackTrace:</b> {{ inner.StackTrace }}</p>
+    {% endfor %}
+
+    {% if Data.AdditionalParameters %}
+    <br><p><b>Parameters:</b></p>
+    {% for param in Data.AdditionalParameters %}
+    <p>{{ param }}</p>
+    {% endfor %}
+    {% endif %}
+</div>

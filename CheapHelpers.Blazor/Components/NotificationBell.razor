@@ -4,6 +4,7 @@
 @using CheapHelpers.Services.Notifications.Models
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.SignalR.Client
+@using Humanizer
 @using Microsoft.Extensions.Logging
 @inject IInAppNotificationService NotificationService
 @inject NavigationManager Navigation
@@ -402,28 +403,8 @@
         };
     }
 
-    /// <summary>
-    /// Converts a timestamp to a human-readable relative time string.
-    /// TODO: Consider using Humanizer library for more sophisticated formatting.
-    /// </summary>
-    private string HumanizeTimestamp(DateTime timestamp)
-    {
-        var timeSpan = DateTime.UtcNow - timestamp;
-
-        if (timeSpan.TotalMinutes < 1)
-            return "Just now";
-
-        if (timeSpan.TotalMinutes < 60)
-            return $"{(int)timeSpan.TotalMinutes} minutes ago";
-
-        if (timeSpan.TotalHours < 24)
-            return $"{(int)timeSpan.TotalHours} hours ago";
-
-        if (timeSpan.TotalDays < 7)
-            return $"{(int)timeSpan.TotalDays} days ago";
-
-        return timestamp.ToString("MMM dd, yyyy");
-    }
+    private static string HumanizeTimestamp(DateTime timestamp) =>
+        timestamp.Humanize(utcDate: true);
 
     /// <summary>
     /// Disposes the SignalR hub connection.

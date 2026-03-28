@@ -129,4 +129,31 @@
   <data name="Visible" xml:space="preserve">
     <value>Visible</value>
   </data>
+  <data name="FileTooLarge" xml:space="preserve">
+    <value>File too large</value>
+  </data>
+  <data name="NoUploadPath" xml:space="preserve">
+    <value>No upload path set</value>
+  </data>
+  <data name="NoExtension" xml:space="preserve">
+    <value>Files without extensions are not allowed</value>
+  </data>
+  <data name="DangerousExtension" xml:space="preserve">
+    <value>File extension '{0}' is not allowed for security reasons</value>
+  </data>
+  <data name="UnrecognizableFileType" xml:space="preserve">
+    <value>Unable to determine file type for '{0}'. The file may be corrupted, empty, or of an unsupported format.</value>
+  </data>
+  <data name="DisallowedFileType" xml:space="preserve">
+    <value>File type '{0}' (MIME: {1}, Extension: .{2}) is not allowed. Only the following types are permitted: {3}</value>
+  </data>
+  <data name="PathTraversal" xml:space="preserve">
+    <value>Path traversal detected: attempting to write outside upload directory</value>
+  </data>
+  <data name="SymbolicLinkNotAllowed" xml:space="preserve">
+    <value>Symbolic links are not allowed in upload paths</value>
+  </data>
+  <data name="FilenameNullOrEmpty" xml:space="preserve">
+    <value>Filename cannot be null or empty</value>
+  </data>
 </root>

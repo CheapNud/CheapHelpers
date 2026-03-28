@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-03-28 (email broadcast/sanitizer added)
+  Last updated: 2026-03-28 (Google/Microsoft OAuth added)
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -32,6 +32,10 @@
 _Nothing blocking._
 
 ## Planned
+- [ ] (2026-03-28) Add GitHub and Apple OAuth providers to CheapHelpers auth [user]
+  - `CheapHelpers.Services/Auth/OAuth/` — `GitHubAuthOptions`, `AppleAuthOptions` extending `OAuthProviderOptions`
+  - `CheapHelpers.Blazor/Extensions/OAuthBlazorExtensions.cs` — add `AddGitHubAuth()`, `AddAppleAuth()` + map endpoints
+  - Apple Sign In requires JWT client secret generation (ES256 key) — more complex than Google/Microsoft
 - [ ] (2026-03-28) Add generic TTS abstraction to CheapHelpers.Services [user]
   - `CheapHelpers.Services/Voice/` — `ITextToSpeech`, `TtsOptions`, DI extension
   - Edge TTS provider (free, WebSocket-based, no API key) — extract from CheapCOVAS
@@ -88,10 +92,10 @@ _Nothing blocking._
   - Integrate with existing `EmailTemplateService` and `PdfOptimizationService`
 - [ ] (2026-03-28) Complete `ImagePanel.AnalyzeImageAsync` Azure Vision integration [code-todo]
   - `CheapHelpers.Blazor/Shared/ImagePanel.razor:295` — skeleton with example code, waiting for VisionServiceOptions config
-- [ ] (2026-03-28) Consider Humanizer library for NotificationBell timestamps [code-todo]
-  - `CheapHelpers.Blazor/Components/NotificationBell.razor:406` — manual relative time formatting
-- [ ] (2026-03-28) Move validation message constants to .resx for localization [code-todo]
-  - `CheapHelpers/Constants/Constants.cs:452`
+- [x] (2026-03-28 → 2026-03-28) Consider Humanizer library for NotificationBell timestamps [code-todo]
+  - Replaced manual `HumanizeTimestamp` with `Humanizer.Core` (v2.14.1) `DateTime.Humanize()`
+- [x] (2026-03-28 → 2026-03-28) Move validation message constants to .resx for localization [code-todo]
+  - Added user-facing resource keys to `Language.resx`, added `*Key` constants alongside existing internal message strings
 - [ ] (2026-03-28) Add MCP (Model Context Protocol) tool hosting abstraction [user]
   - `IMcpToolHost` — expose CheapHelpers services (barcode, PDF, email, etc.) as MCP tools
   - MCP is still evolving — monitor spec stability before implementing

@@ -56,30 +56,5 @@ namespace CheapHelpers.Extensions
             if (string.IsNullOrEmpty(value)) return defaultValue;
             return (TEnum)Enum.Parse(typeof(TEnum), value, true);
         }
-
-        ///// <summary>
-        ///// EXAMPLE DO NOT USE
-        ///// </summary>
-        //private static readonly Dictionary<BlobContainers, string> _configLookup = new Dictionary<BlobContainers, string>{
-        //	{ BlobContainers.AnomalyContainer, "anomaly" },
-        //};
-
-        ///// <summary>
-        ///// EXAMPLE DO NOT USE
-        ///// </summary>
-        ///// <param name="configOption"></param>
-        ///// <returns></returns>
-        //private static string GetContainer(BlobContainers configOption)
-        //{
-        //	if (!_configLookup.TryGetValue(configOption, out string value))
-        //	{
-        //		Debug.WriteLine("value not present config dictionary");
-        //		return null;
-        //		// Handle error
-        //	}
-
-        //	return value;
-        //	// Use value retrieved from dictionary.
-        //}
     }
 }

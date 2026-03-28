@@ -43,18 +43,5 @@ namespace MecamApplication.Blazor.Services
 
             return !result.Canceled && result.Data is T entity ? entity : default;
         }
-
-        ///// <summary>
-        ///// Search for a product
-        ///// </summary>
-        //public async Task<Product?> SearchProductAsync()
-        //{
-        //    return await SearchEntityAsync<Product>(
-        //        title: "Search Product",
-        //        label: "Product",
-        //        displayProp: p => $"{p.Code} - {p.Name}",
-        //        orderBy: x => x.Name);
-        //}
-
     }
 }

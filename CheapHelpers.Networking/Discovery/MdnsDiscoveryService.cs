@@ -22,6 +22,7 @@ public sealed class MdnsDiscoveryService(
 {
     private readonly MdnsDiscoveryOptions _options = options.Value;
     private readonly SemaphoreSlim _stateLock = new(1, 1);
+    private readonly Lock _initLock = new();
 
     // Persistent listener — created lazily on first use, never recreated until disposal
     private MulticastService? _mdns;
@@ -131,20 +132,28 @@ public sealed class MdnsDiscoveryService(
 
     /// <summary>
     /// Lazily initializes the persistent multicast listener.
-    /// Called under various paths but safe to call multiple times.
+    /// Thread-safe via dedicated init lock — safe to call from multiple paths concurrently.
     /// </summary>
     private void EnsureStarted()
     {
         if (_mdns is not null) return;
 
-        _mdns = new MulticastService();
-        _serviceDiscovery = new ServiceDiscovery(_mdns);
+        lock (_initLock)
+        {
+            if (_mdns is not null) return;
 
-        _serviceDiscovery.ServiceInstanceDiscovered += OnServiceInstanceDiscovered;
-        _mdns.AnswerReceived += OnAnswerReceived;
-        _mdns.Start();
+            var mdns = new MulticastService();
+            var sd = new ServiceDiscovery(mdns);
 
-        logger.LogInformation("mDNS persistent listener started (all interfaces)");
+            sd.ServiceInstanceDiscovered += OnServiceInstanceDiscovered;
+            mdns.AnswerReceived += OnAnswerReceived;
+            mdns.Start();
+
+            _serviceDiscovery = sd;
+            _mdns = mdns; // Publish last — this is the flag other threads check
+
+            logger.LogInformation("mDNS persistent listener started (all interfaces)");
+        }
     }
 
     /// <summary>
@@ -413,9 +422,9 @@ public sealed class MdnsDiscoveryService(
         return builder.InstanceName.Contains(filter, StringComparison.OrdinalIgnoreCase);
     }
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        if (_disposed) return;
+        if (_disposed) return ValueTask.CompletedTask;
         _disposed = true;
         _isListening = false;
         _onDeviceFound = null;
@@ -438,10 +447,19 @@ public sealed class MdnsDiscoveryService(
 
         logger.LogDebug("mDNS discovery service disposed");
 
-        await Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
-    public void Dispose() => DisposeAsync().AsTask().GetAwaiter().GetResult();
+    /// <summary>
+    /// Sets the disposed flag to stop processing. Prefer <see cref="DisposeAsync"/>
+    /// for clean shutdown — the DI container calls it automatically for singletons.
+    /// </summary>
+    public void Dispose()
+    {
+        _disposed = true;
+        _isListening = false;
+        _onDeviceFound = null;
+    }
 
     /// <summary>
     /// Mutable builder that accumulates partial mDNS records across messages.

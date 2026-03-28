@@ -134,6 +134,11 @@ public class ScheduledTaskService(ILogger<ScheduledTaskService> logger) : Backgr
 
     private async Task RunTaskAsync(string taskName, ScheduledTaskEntry entry, CancellationToken stoppingToken)
     {
+        // Stamp before TryAdd to close the window where a concurrent tick could
+        // evaluate ShouldRun as true between the check and the guard.
+        // Harmless if TryAdd fails — the task is already running with the same stamp.
+        entry.LastRun = DateTimeOffset.UtcNow;
+
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         if (!_runningTasks.TryAdd(taskName, cts))
             return; // Already running, skip overlapping execution
@@ -141,7 +146,6 @@ public class ScheduledTaskService(ILogger<ScheduledTaskService> logger) : Backgr
         try
         {
             _logger.LogDebug("Executing scheduled task '{TaskName}'", taskName);
-            entry.LastRun = DateTimeOffset.UtcNow; // Stamp before execution to prevent double-fire from polling
             await entry.Work(cts.Token);
             _logger.LogDebug("Scheduled task '{TaskName}' completed", taskName);
         }

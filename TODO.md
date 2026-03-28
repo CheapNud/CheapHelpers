@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-03-28 (TTS/STT/MCP added)
+  Last updated: 2026-03-28 (email broadcast/sanitizer added)
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -98,6 +98,16 @@ _Nothing blocking._
 
 ## Done
 
+- [x] (2026-03-28 → 2026-03-28) Finish and flesh out Blazor account module [user]
+  - Fixed Register.razor: uses CheapUser via UserFactory parameter, wired RegisterValidator, localized, removed MoreLinq
+  - Fixed Authenticator.razor: removed hardcoded localhost HttpClient, injected UserManager directly, extracted shared AuthenticatorHelper
+  - Implemented ConfirmEmailChange.razor: email change confirmation with ChangeEmailAsync flow
+  - Rebuilt Notifications.razor: generic notification list with server-side paging + notification preferences management
+  - Cleaned LoginDisplay.razor: localized, generic notification count, simplified avatar
+  - Enabled CustomTabs in Index.razor: pre-filtered async authorization, sorted by Order
+  - Added generic external auth provisioning bridge: IExternalUserProvisioner, ExternalUserInfo, ExternalProvisionResult
+  - Default ExternalUserProvisioner with find-or-create logic, opt-in via AddExternalUserProvisioning<TUser>()
+  - Hooked into PlexAuthBlazorExtensions for optional Identity session provisioning
 - [x] (2026-03-28 → 2026-03-28) Remove obsolete methods and rename static IV encryption [audit]
   - Removed `TokenRefreshed` event from interface + iOS/Android implementations, migrated `WaitForTokenAsync` to use `OnTokenReceived`/`OnTokenUpdated`
   - Removed sync `Send()` from `ISmsService`/`TwilioSmsService`

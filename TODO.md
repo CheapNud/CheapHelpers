@@ -98,6 +98,10 @@ _Nothing blocking._
 
 ## Done
 
+- [x] (2026-03-28 → 2026-03-28) Add SendGrid email service implementation [user]
+  - `CheapHelpers.Services/Email/SendGridEmailService.cs` — implements `IEmailService` using SendGrid API
+  - Follows same pattern as MailKitEmailService/GraphService: primary constructor, dev mode override, attachment support
+  - Added `SendGrid` NuGet package v9.29.3
 - [x] (2026-03-28 → 2026-03-28) Finish and flesh out Blazor account module [user]
   - Fixed Register.razor: uses CheapUser via UserFactory parameter, wired RegisterValidator, localized, removed MoreLinq
   - Fixed Authenticator.razor: removed hardcoded localhost HttpClient, injected UserManager directly, extracted shared AuthenticatorHelper

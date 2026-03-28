@@ -497,10 +497,10 @@ public class App : Application
         InitializeComponent();
 
         // Subscribe to token refresh
-        _deviceService.OnTokenUpdated += OnOnTokenUpdated;
+        _deviceService.OnTokenUpdated += OnTokenChanged;
     }
 
-    private async void OnOnTokenUpdated(string newToken)
+    private async void OnTokenChanged(string newToken)
     {
         Debug.WriteLine($"Token refreshed: {newToken[..Math.Min(8, newToken.Length)]}...");
 

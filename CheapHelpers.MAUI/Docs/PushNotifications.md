@@ -726,10 +726,10 @@ public class NotificationManager
         _backend = backend;
 
         // Subscribe to token refresh
-        _deviceService.OnTokenUpdated += OnOnTokenUpdated;
+        _deviceService.OnTokenUpdated += OnTokenChanged;
     }
 
-    private async void OnOnTokenUpdated(string newToken)
+    private async void OnTokenChanged(string newToken)
     {
         Debug.WriteLine($"Token refreshed: {newToken[..8]}...");
 

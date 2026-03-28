@@ -5,8 +5,8 @@ AES-256 encryption utilities with machine-specific key generation.
 ## Overview
 
 The `EncryptionHelper` class provides AES-256-CBC encryption and decryption methods with two approaches:
-- **Static IV** (deterministic encryption) - for URL parameters and cache keys
-- **Random IV** (secure encryption) - for sensitive data (RECOMMENDED)
+- **Deterministic** (`EncryptDeterministic`/`DecryptDeterministic`) - for URL parameters and cache keys
+- **Random IV** (`EncryptWithRandomIV`/`DecryptWithRandomIV`) - for sensitive data (RECOMMENDED)
 
 ## Namespace
 
@@ -81,14 +81,13 @@ string encrypted = userRecord.EncryptedPassword;
 string password = EncryptionHelper.DecryptWithRandomIV(encrypted);
 ```
 
-### Encrypt (OBSOLETE - Static IV)
+### EncryptDeterministic
 
-Encrypts data using a static, machine-specific IV.
+Encrypts data using a static, machine-specific IV. Same plaintext always produces the same ciphertext.
 
 **Signature:**
 ```csharp
-[Obsolete("Use EncryptWithRandomIV() instead unless you specifically need deterministic encryption")]
-public static string Encrypt(string plainText)
+public static string EncryptDeterministic(string plainText)
 ```
 
 **Parameters:**
@@ -96,7 +95,7 @@ public static string Encrypt(string plainText)
 
 **Returns:** Base64 encoded encrypted string
 
-**Security Warning:** Uses static IV - same plaintext always produces same ciphertext.
+**Security Note:** Uses static IV — only use when deterministic output is required.
 
 **Valid Use Cases:**
 - URL/route parameters that need to be matched or compared
@@ -107,22 +106,21 @@ public static string Encrypt(string plainText)
 ```csharp
 // URL parameter encryption (deterministic required)
 string userId = "12345";
-string encryptedId = EncryptionHelper.Encrypt(userId);
+string encryptedId = EncryptionHelper.EncryptDeterministic(userId);
 string url = $"https://example.com/user/{encryptedId}";
 
 // Same user ID always produces same URL
-string encryptedId2 = EncryptionHelper.Encrypt(userId);
+string encryptedId2 = EncryptionHelper.EncryptDeterministic(userId);
 // encryptedId == encryptedId2 (deterministic)
 ```
 
-### Decrypt (OBSOLETE - Static IV)
+### DecryptDeterministic
 
-Decrypts data that was encrypted with the static IV `Encrypt` method.
+Decrypts data that was encrypted with `EncryptDeterministic`.
 
 **Signature:**
 ```csharp
-[Obsolete("Use DecryptWithRandomIV() instead unless you specifically need deterministic encryption")]
-public static string Decrypt(string cipherText)
+public static string DecryptDeterministic(string cipherText)
 ```
 
 **Parameters:**
@@ -135,7 +133,7 @@ public static string Decrypt(string cipherText)
 **Example:**
 ```csharp
 string encryptedId = GetUrlParameter("id");
-string userId = EncryptionHelper.Decrypt(encryptedId);
+string userId = EncryptionHelper.DecryptDeterministic(encryptedId);
 ```
 
 ## Algorithm Details
@@ -180,18 +178,14 @@ public class UrlGenerator
     public string GenerateSecureUrl(int recordId)
     {
         // Use static IV for consistent URLs
-        #pragma warning disable CS0618 // Type or member is obsolete
-        string encryptedId = EncryptionHelper.Encrypt(recordId.ToString());
-        #pragma warning restore CS0618
+        string encryptedId = EncryptionHelper.EncryptDeterministic(recordId.ToString());
 
         return $"https://example.com/record/{encryptedId}";
     }
 
     public int DecodeRecordId(string encryptedId)
     {
-        #pragma warning disable CS0618
-        string decrypted = EncryptionHelper.Decrypt(encryptedId);
-        #pragma warning restore CS0618
+        string decrypted = EncryptionHelper.DecryptDeterministic(encryptedId);
 
         return int.Parse(decrypted);
     }
@@ -218,18 +212,14 @@ public class SecureCacheService
         string encrypted = EncryptionHelper.EncryptWithRandomIV(sensitiveData);
 
         // Use deterministic encryption for cache key if needed
-        #pragma warning disable CS0618
-        string cacheKey = EncryptionHelper.Encrypt(key);
-        #pragma warning restore CS0618
+        string cacheKey = EncryptionHelper.EncryptDeterministic(key);
 
         _cache.Set(cacheKey, encrypted);
     }
 
     public string RetrieveSecureData(string key)
     {
-        #pragma warning disable CS0618
-        string cacheKey = EncryptionHelper.Encrypt(key);
-        #pragma warning restore CS0618
+        string cacheKey = EncryptionHelper.EncryptDeterministic(key);
 
         var encrypted = _cache.GetCachedItem(cacheKey);
         if (encrypted == null)
@@ -324,10 +314,8 @@ public class EncryptionMigration
         {
             if (IsStaticIvEncryption(user.EncryptedApiKey))
             {
-                // Decrypt with old method
-                #pragma warning disable CS0618
-                string plainText = EncryptionHelper.Decrypt(user.EncryptedApiKey);
-                #pragma warning restore CS0618
+                // Decrypt with deterministic method
+                string plainText = EncryptionHelper.DecryptDeterministic(user.EncryptedApiKey);
 
                 // Re-encrypt with new method
                 user.EncryptedApiKey = EncryptionHelper.EncryptWithRandomIV(plainText);
@@ -384,7 +372,7 @@ public class EncryptionMigration
    - Database storage
    - XML attributes
 
-7. **Do Not Mix Methods**: Data encrypted with `Encrypt` cannot be decrypted with `DecryptWithRandomIV` and vice versa.
+7. **Do Not Mix Methods**: Data encrypted with `EncryptDeterministic` cannot be decrypted with `DecryptWithRandomIV` and vice versa.
 
 8. **Machine Dependency**: Encrypted data can only be decrypted on the same machine (same system characteristics). For multi-server deployments, implement custom key storage.
 

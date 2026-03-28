@@ -15,12 +15,6 @@ public interface ISmsService
     Task<SmsResult> SendAsync(string number, string body, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Legacy method for backward compatibility
-    /// </summary>
-    [Obsolete("Use SendAsync instead for better error handling and performance")]
-    Task Send(string number, string body);
-
-    /// <summary>
     /// Sends SMS messages to multiple recipients
     /// </summary>
     /// <param name="recipients">Dictionary of phone numbers and their respective messages</param>

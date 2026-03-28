@@ -66,18 +66,6 @@ _Nothing blocking._
   - `CheapHelpers.Services/Notifications/NotificationCleanupService.cs:45` — hardcoded to 1 hour
 - [ ] (2026-03-21) Use user timezone instead of UTC for Do Not Disturb [code-todo]
   - `CheapHelpers.Services/Notifications/Subscriptions/GlobalUserPreferencesProvider.cs:115`
-- [ ] (2026-03-21) Remove obsolete `OnTokenRefresh` property (replaced by `OnTokenReceived`/`OnTokenUpdated`) [audit]
-  - `CheapHelpers.MAUI/Platforms/Android/DeviceInstallationService.cs:36`
-  - `CheapHelpers.MAUI/Platforms/iOS/DeviceInstallationService.cs:63`
-  - `CheapHelpers.Blazor/Hybrid/Abstractions/IDeviceInstallationService.cs:66`
-- [ ] (2026-03-21) Remove obsolete sync `Send()` from SMS service (replaced by `SendAsync`) [audit]
-  - `CheapHelpers.Services/Communication/Sms/ISmsService.cs:20`
-  - `CheapHelpers.Services/Communication/Sms/TwilioSmsService.cs:72`
-- [ ] (2026-03-21) Remove obsolete sync barcode methods (replaced by async versions) [audit]
-  - `CheapHelpers.Services/Communication/Barcode/IBarcodeService.cs:34,47,63`
-  - `CheapHelpers.Services/Communication/Barcode/BarcodeService.cs:85,124,170`
-- [ ] (2026-03-21) Remove obsolete `Encrypt`/`Decrypt` with static IV (replaced by random IV versions) [audit]
-  - `CheapHelpers/Helpers/Encryption/EncryptionHelper.cs:85,121`
 
 ## Future
 
@@ -99,6 +87,12 @@ _Nothing blocking._
 
 ## Done
 
+- [x] (2026-03-28 → 2026-03-28) Remove obsolete methods and rename static IV encryption [audit]
+  - Removed `TokenRefreshed` event from interface + iOS/Android implementations, migrated `WaitForTokenAsync` to use `OnTokenReceived`/`OnTokenUpdated`
+  - Removed sync `Send()` from `ISmsService`/`TwilioSmsService`
+  - Removed sync `GetBarcode`, `OnScan`, `ReadBarcodeAsync(bytes, width, height)` from `IBarcodeService`/`BarcodeService`
+  - Renamed `Encrypt`/`Decrypt` → `EncryptDeterministic`/`DecryptDeterministic` (consumers need deterministic encryption for URL routes)
+  - Updated `EncryptedRouteConstraint` and `CustomNavigationService` to use renamed methods, removed pragma suppressions
 - [x] (2026-03-28 → 2026-03-28) Delete dead code and orphaned comments [audit]
   - Deleted `WebExceptionHelper.cs` (Dutch-localized legacy error strings)
   - Deleted `ExampleProgram.cs` and `ExampleStartup.cs` (entirely commented-out legacy Startup pattern)

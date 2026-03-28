@@ -80,13 +80,6 @@ public class BarcodeService : IBarcodeService
     }
 
     /// <summary>
-    /// Legacy synchronous method for backward compatibility
-    /// </summary>
-    [Obsolete("Use GetBarcodeAsync instead for better performance")]
-    public byte[] GetBarcode(string input, int height = DefaultHeight, int width = DefaultWidth)
-        => GetBarcodeAsync(input, height, width).GetAwaiter().GetResult();
-
-    /// <summary>
     /// Triggers the barcode scanned event with the provided barcode data
     /// </summary>
     /// <param name="barcode">The scanned barcode data</param>
@@ -117,13 +110,6 @@ public class BarcodeService : IBarcodeService
             throw;
         }
     }
-
-    /// <summary>
-    /// Legacy synchronous method for backward compatibility
-    /// </summary>
-    [Obsolete("Use OnScanAsync instead for better performance")]
-    public void OnScan(string barcode)
-        => OnScanAsync(barcode).GetAwaiter().GetResult();
 
     /// <summary>
     /// Reads barcode data from image bytes
@@ -163,18 +149,4 @@ public class BarcodeService : IBarcodeService
         }
     }
 
-    /// <summary>
-    /// Legacy method signature for backward compatibility
-    /// Note: width and height parameters are ignored in the new implementation as ImageSharp handles this automatically
-    /// </summary>
-    [Obsolete("Use ReadBarcodeAsync(byte[]) instead. Width and height parameters are no longer needed.")]
-    public async Task<(string Text, string Format)?> ReadBarcodeAsync(
-        byte[] bytes,
-        int width,
-        int height,
-        CancellationToken cancellationToken = default)
-    {
-        Debug.WriteLine($"Legacy ReadBarcode called with width={width}, height={height}. These parameters are ignored.");
-        return await ReadBarcodeAsync(bytes, cancellationToken);
-    }
 }

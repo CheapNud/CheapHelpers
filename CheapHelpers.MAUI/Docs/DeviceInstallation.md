@@ -77,7 +77,8 @@ public interface IDeviceInstallationService
     Task<bool> CheckPermissionsAsync();
 
     // Events
-    event Action<string>? TokenRefreshed;       // Fired when token updates
+    event Action<string>? OnTokenReceived;      // Fired on first token
+    event Action<string>? OnTokenUpdated;       // Fired when token refreshes
 }
 ```
 
@@ -162,11 +163,11 @@ Checks current permission status without requesting:
 
 ### Events
 
-#### TokenRefreshed
+#### OnTokenReceived / OnTokenUpdated
 Fired when platform token is updated:
 
 ```csharp
-deviceService.TokenRefreshed += async (newToken) =>
+deviceService.OnTokenUpdated += async (newToken) =>
 {
     Debug.WriteLine($"Token updated: {newToken[..8]}...");
 
@@ -217,7 +218,7 @@ public class DeviceInstallationService : IDeviceInstallationService
 
         if (!string.IsNullOrEmpty(_token) && _token != oldToken)
         {
-            TokenRefreshed?.Invoke(_token);
+            OnTokenUpdated?.Invoke(_token);
         }
     }
 
@@ -315,7 +316,7 @@ public async Task<bool> WaitForTokenAsync(int timeoutSeconds = 10)
     var tokenReceived = false;
     void handler(string token) => tokenReceived = true;
 
-    TokenRefreshed += handler;
+    OnTokenUpdated += handler;
 
     var waitCount = 0;
     while (!tokenReceived && waitCount < timeoutSeconds * 2)
@@ -330,7 +331,7 @@ public async Task<bool> WaitForTokenAsync(int timeoutSeconds = 10)
         }
     }
 
-    TokenRefreshed -= handler;
+    OnTokenUpdated -= handler;
     return tokenReceived;
 }
 ```
@@ -496,10 +497,10 @@ public class App : Application
         InitializeComponent();
 
         // Subscribe to token refresh
-        _deviceService.TokenRefreshed += OnTokenRefreshed;
+        _deviceService.OnTokenUpdated += OnOnTokenUpdated;
     }
 
-    private async void OnTokenRefreshed(string newToken)
+    private async void OnOnTokenUpdated(string newToken)
     {
         Debug.WriteLine($"Token refreshed: {newToken[..Math.Min(8, newToken.Length)]}...");
 
@@ -893,7 +894,7 @@ if (!DeviceService.NotificationsSupported)
 
 ```csharp
 // Subscribe during initialization
-DeviceService.TokenRefreshed += async (token) =>
+DeviceService.OnTokenUpdated += async (token) =>
 {
     await ReregisterDeviceAsync();
 };
@@ -1032,7 +1033,7 @@ if (backend == null)
 
 **Token changes unexpectedly:**
 - This is normal behavior on app reinstall
-- Handle via `TokenRefreshed` event
+- Handle via `OnTokenUpdated` event
 - Ensure backend updates registration
 
 ## Next Steps

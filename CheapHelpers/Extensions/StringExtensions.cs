@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 
 namespace CheapHelpers.Extensions
@@ -173,6 +174,28 @@ namespace CheapHelpers.Extensions
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Sanitizes a string for use as a file name by replacing invalid characters with a replacement character.
+        /// Uses <see cref="Path.GetInvalidFileNameChars"/> for correctness across platforms.
+        /// </summary>
+        /// <param name="fileName">The file name to sanitize</param>
+        /// <param name="replacement">Character to replace invalid characters with (default: '_')</param>
+        /// <returns>Sanitized file name safe for the file system</returns>
+        public static string SanitizeFileName(this string fileName, char replacement = '_')
+        {
+            if (string.IsNullOrEmpty(fileName)) return fileName;
+
+            ReadOnlySpan<char> invalidChars = Path.GetInvalidFileNameChars();
+            var sb = new System.Text.StringBuilder(fileName.Length);
+
+            foreach (char c in fileName)
+            {
+                sb.Append(invalidChars.Contains(c) ? replacement : c);
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>

@@ -28,6 +28,11 @@ public class NotificationOptions
     public bool EnableAutoCleanup { get; set; } = true;
 
     /// <summary>
+    /// Interval between cleanup runs in minutes (default: 60 minutes / 1 hour)
+    /// </summary>
+    public int CleanupIntervalMinutes { get; set; } = 60;
+
+    /// <summary>
     /// Real-time notification provider to use: "SignalR" or "RabbitMQ" (default: "SignalR")
     /// </summary>
     public string RealTimeProvider { get; set; } = "SignalR";

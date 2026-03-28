@@ -42,9 +42,7 @@ public class NotificationCleanupService(
         {
             try
             {
-                // TODO: Make cleanup interval configurable via NotificationOptions
-                // Currently hardcoded to 1 hour
-                await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                await Task.Delay(TimeSpan.FromMinutes(_options.CleanupIntervalMinutes), stoppingToken);
 
                 using var scope = _serviceScopeFactory.CreateScope();
                 var notificationService = scope.ServiceProvider.GetRequiredService<IInAppNotificationService>();

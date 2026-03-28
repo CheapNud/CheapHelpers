@@ -114,12 +114,21 @@
   - Tightened generic constraint from `IdentityUser` to `CheapUser` on provider + DI extension
 
 ## Future
-- [ ] (2026-03-28) Add billing service attached to API key usage [user]
-  - Metered billing based on API call volume
-  - Ties into API key distribution system
-- [ ] (2026-03-28) Add reporting service tied to PDF/mailing [user]
-  - Generate and distribute reports via PDF export and email
-  - Integrate with existing `EmailTemplateService` and `PdfOptimizationService`
+- [x] (2026-03-28 → 2026-03-29) Add billing service with PEPPOL BIS 3.0 invoicing [user]
+  - UBL Invoice/CreditNote DTOs + PEPPOL constants (BIS 3.0 CustomizationId, ProfileId, Belgian endpoint schemes)
+  - `UblInvoiceService` with `CreateInvoiceAsync`/`CreateCreditNoteAsync` using UblSharp InvoiceType/CreditNoteType
+  - `UblPartyMapper` extracted from UblService (shared party/address/contact conversion)
+  - `PeppolInvoiceValidator` with Belgian VAT/enterprise number validation
+  - `IUsageMeterService` + `IBillingService` with metered billing, usage aggregation, invoice generation
+  - `BillingPlan`, `BillingInvoice`, `UsageRecord`, `UsageAggregate` entities with EF configuration
+  - `AddCheapBilling<TUser>()` DI extension
+- [x] (2026-03-28 → 2026-03-29) Add reporting service with full pipeline (generate, store, distribute) [user]
+  - `IReportService` with PDF/Excel generation, storage, download, expiration cleanup
+  - `IReportStorageProvider` with `AzureBlobReportStorageProvider` and `LocalFileReportStorageProvider`
+  - `IReportDistributionService` for email distribution with attachments
+  - `IScheduledReportService` wrapping IScheduledTaskService for recurring reports
+  - `Report` entity with lifecycle tracking (Queued → Generating → Completed/Failed → Expired)
+  - `AddCheapReporting<TUser>()` DI extension with configurable storage provider
 - [ ] (2026-03-28) Complete `ImagePanel.AnalyzeImageAsync` Azure Vision integration [code-todo]
   - `CheapHelpers.Blazor/Shared/ImagePanel.razor:295` — skeleton with example code, waiting for VisionServiceOptions config
 - [x] (2026-03-28 → 2026-03-28) Consider Humanizer library for NotificationBell timestamps [code-todo]

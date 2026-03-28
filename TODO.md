@@ -51,9 +51,9 @@ _Nothing blocking._
   - Design `IExternalAuthProvider` interface for future Google/Discord/etc.
   - Endpoint mapper helper for `/auth/plex-start`, `/auth/plex-callback`, `/auth/logout`
   - Consumers: CheapManga, CheapNights (both currently have their own copies)
-- [ ] (2026-03-17) Refactor `AsyncLazy<T>` for HardwareDetectionService caching [code-todo]
-  - `CheapHelpers.MediaProcessing/Services/HardwareDetectionService.cs:38`
-  - `CheapHelpers.MediaProcessing/Services/Linux/LinuxHardwareDetectionService.cs:34`
+- [x] (2026-03-17 → 2026-03-28) Refactor `AsyncLazy<T>` for HardwareDetectionService caching [code-todo]
+  - Created `CheapHelpers/Threading/AsyncLazy.cs` — generic async lazy with `GetAwaiter` support
+  - Replaced volatile + SemaphoreSlim double-check pattern in both Windows and Linux services
 - [ ] (2026-03-17) Implement Redis caching support for notifications [code-todo]
   - `CheapHelpers.Services/Notifications/Extensions/NotificationServiceExtensions.cs:98`
 - [ ] (2026-03-17) Implement RabbitMQ real-time notification support [code-todo]

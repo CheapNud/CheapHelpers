@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-03-28 (mDNS done, new features + audit items added, dead code cleanup)
+  Last updated: 2026-03-28 (TTS/STT/MCP added)
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -32,6 +32,14 @@
 _Nothing blocking._
 
 ## Planned
+- [ ] (2026-03-28) Add generic TTS abstraction to CheapHelpers.Services [user]
+  - `CheapHelpers.Services/Voice/` — `ITextToSpeech`, `TtsOptions`, DI extension
+  - Edge TTS provider (free, WebSocket-based, no API key) — extract from CheapCOVAS
+  - Azure Cognitive Services TTS provider (production quality)
+- [ ] (2026-03-28) Add generic STT abstraction to CheapHelpers.Services [user]
+  - `CheapHelpers.Services/Voice/` — `ISpeechToText`, `SttResult`, `SttOptions`, DI extension
+  - Whisper provider (OpenAI-compatible, works with local whisper.cpp) — extract from CheapCOVAS
+  - Azure Speech Services provider
 - [ ] (2026-03-28) Add logging to NotificationBell empty catch blocks [audit]
   - `CheapHelpers.Blazor/Components/NotificationBell.razor:205,225,272,308,370` — 4 silent exception swallows
 - [ ] (2026-03-28) Add null/bounds validation to `CollectionExtensions.Replace` methods [audit]
@@ -84,6 +92,9 @@ _Nothing blocking._
   - `CheapHelpers.Blazor/Components/NotificationBell.razor:406` — manual relative time formatting
 - [ ] (2026-03-28) Move validation message constants to .resx for localization [code-todo]
   - `CheapHelpers/Constants/Constants.cs:452`
+- [ ] (2026-03-28) Add MCP (Model Context Protocol) tool hosting abstraction [user]
+  - `IMcpToolHost` — expose CheapHelpers services (barcode, PDF, email, etc.) as MCP tools
+  - MCP is still evolving — monitor spec stability before implementing
 
 ## Done
 

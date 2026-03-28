@@ -82,7 +82,7 @@ public class HttpPollingService<TResponse>(
             timeoutCts.CancelAfter(_pollingOptions.RequestTimeout);
 
             var pollResponse = await _httpClient.GetFromJsonAsync<TResponse>(
-                (string?)null, timeoutCts.Token);
+                string.Empty, timeoutCts.Token);
 
             Interlocked.Exchange(ref _consecutiveFailures, 0);
 
@@ -150,7 +150,7 @@ public class HttpPollingService<TResponse>(
     }
 
     /// <summary>
-    /// Signals cancellation without awaiting the polling task.
+    /// Cancels polling and waits briefly for the task to complete.
     /// Prefer <see cref="DisposeAsync"/> or <see cref="StopAsync"/> for graceful shutdown.
     /// </summary>
     public void Dispose()
@@ -159,6 +159,11 @@ public class HttpPollingService<TResponse>(
             return;
 
         _cts?.Cancel();
+
+        // Best-effort sync wait so the HttpClient isn't used after the caller considers us disposed
+        if (_pollingTask is { IsCompleted: false })
+            _pollingTask.Wait(TimeSpan.FromSeconds(3));
+
         _cts?.Dispose();
         GC.SuppressFinalize(this);
     }

@@ -48,12 +48,8 @@ public sealed class MdnsDiscoveryService(
 
         EnsureStarted();
 
-        // Clear stale entries for this service type (keep other service types intact)
-        foreach (var key in _deviceCache.Keys)
-        {
-            if (key.StartsWith(serviceType + '|', StringComparison.OrdinalIgnoreCase))
-                _deviceCache.TryRemove(key, out _);
-        }
+        // Don't clear the cache — the persistent listener accumulates results across calls.
+        // Clearing would corrupt concurrent DiscoverAsync calls for the same service type.
 
         // Initial query
         _serviceDiscovery!.QueryServiceInstances(serviceType);
@@ -424,11 +420,20 @@ public sealed class MdnsDiscoveryService(
 
     public ValueTask DisposeAsync()
     {
-        if (_disposed) return ValueTask.CompletedTask;
+        ReleaseResources();
+        return ValueTask.CompletedTask;
+    }
+
+    public void Dispose() => ReleaseResources();
+
+    private void ReleaseResources()
+    {
+        if (_disposed) return;
         _disposed = true;
         _isListening = false;
         _onDeviceFound = null;
 
+        // MeaMod.DNS Stop/Dispose are synchronous — safe from both paths
         if (_serviceDiscovery is not null)
         {
             _serviceDiscovery.ServiceInstanceDiscovered -= OnServiceInstanceDiscovered;
@@ -446,19 +451,6 @@ public sealed class MdnsDiscoveryService(
         _stateLock.Dispose();
 
         logger.LogDebug("mDNS discovery service disposed");
-
-        return ValueTask.CompletedTask;
-    }
-
-    /// <summary>
-    /// Sets the disposed flag to stop processing. Prefer <see cref="DisposeAsync"/>
-    /// for clean shutdown — the DI container calls it automatically for singletons.
-    /// </summary>
-    public void Dispose()
-    {
-        _disposed = true;
-        _isListening = false;
-        _onDeviceFound = null;
     }
 
     /// <summary>

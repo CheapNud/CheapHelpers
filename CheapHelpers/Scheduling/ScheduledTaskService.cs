@@ -55,11 +55,9 @@ public class ScheduledTaskService(ILogger<ScheduledTaskService> logger) : Backgr
             cts.Dispose();
         }
 
-        _tasks.TryRemove(taskName, out _);
-
         // Note: if the task is still running in _activeTasks, it will complete
         // on its own via CTS cancellation. Use UnregisterTaskAsync for awaitable completion.
-        return true;
+        return _tasks.TryRemove(taskName, out _);
     }
 
     /// <summary>

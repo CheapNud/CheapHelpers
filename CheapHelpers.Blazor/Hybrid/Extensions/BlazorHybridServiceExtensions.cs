@@ -1,7 +1,9 @@
 using CheapHelpers.Blazor.Hybrid.Abstractions;
+using CheapHelpers.Blazor.Hybrid.Notifications.Backends;
 using CheapHelpers.Blazor.Hybrid.Notifications.Core;
 using CheapHelpers.Blazor.Hybrid.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace CheapHelpers.Blazor.Hybrid.Extensions;
 
@@ -134,12 +136,16 @@ public class PushNotificationOptions
     public bool ForegroundNotifications { get; set; } = true;
 
     /// <summary>
-    /// Configure Azure Notification Hubs backend
+    /// Configure Azure Notification Hubs as the push notification backend.
     /// </summary>
+    /// <param name="connectionString">Azure Notification Hub connection string (from Azure Portal → Access Policies).</param>
+    /// <param name="hubName">Name of the Notification Hub.</param>
     public void UseAzureNotificationHubs(string connectionString, string hubName)
     {
-        // TODO: Implement Azure NH backend when ready
-        throw new NotImplementedException("Azure Notification Hubs backend not yet implemented");
+        BackendFactory = sp => new AzureNotificationHubBackend(
+            connectionString,
+            hubName,
+            sp.GetService<ILogger<AzureNotificationHubBackend>>());
     }
 
     /// <summary>

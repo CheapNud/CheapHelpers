@@ -64,10 +64,16 @@ _Nothing blocking._
   - `CheapHelpers.Services/Notifications/Extensions/NotificationServiceExtensions.cs:113`
 - [ ] (2026-03-17) Implement WebViewStorageBridge registration [code-todo]
   - `CheapHelpers.Blazor/Hybrid/Extensions/BlazorHybridServiceExtensions.cs:51`
-- [ ] (2026-03-17) Implement Azure Notification Hub backend [code-todo]
-  - `CheapHelpers.Blazor/Hybrid/Extensions/BlazorHybridServiceExtensions.cs:141`
-- [ ] (2026-03-17) Implement iLovePDF API for PdfOptimizationService [code-todo]
-  - `CheapHelpers.Services/DataExchange/Pdf/PdfOptimizationService.cs:25`
+- [x] (2026-03-17 → 2026-03-28) Implement Azure Notification Hub backend [code-todo]
+  - `CheapHelpers.Blazor/Hybrid/Notifications/Backends/AzureNotificationHubBackend.cs` — implements `IPushNotificationBackend`
+  - Wired `UseAzureNotificationHubs(connectionString, hubName)` in `PushNotificationOptions` (was `NotImplementedException`)
+  - Device registration via Installation API, tag-based + device-targeted sending, FCMv1/APNS payloads
+  - Added `Microsoft.Azure.NotificationHubs` v4.2.0
+- [x] (2026-03-17 → 2026-03-28) Implement iLovePDF API for PdfOptimizationService [code-todo]
+  - File path overload: `CreateTask<CompressTask>` → `AddFile` → `Process` → `DownloadFile`
+  - Stream overload: uploads byte array, downloads via `DownloadFileAsByteArrayAsync`
+  - Maps `PdfOptimizationLevel` → `CompressionLevels` (Low/Recommended/Extreme)
+  - `IsILovePdfAvailable` now returns true when API credentials configured
 - [x] (2026-03-21 → 2026-03-28) Clean up `JsonService` — old implementation commented out, marked "fix and cleanup" [code-todo]
   - Removed dead commented-out code, modernized to file-scoped namespace and using declarations
 - [x] (2026-03-21 → 2026-03-28) Replace legacy email HTML templating with a templating engine [code-todo]

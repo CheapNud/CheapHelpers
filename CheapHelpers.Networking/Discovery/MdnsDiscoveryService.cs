@@ -36,7 +36,7 @@ public sealed class MdnsDiscoveryService(
     private Func<MdnsDevice, Task>? _onDeviceFound;
     private string? _activeServiceType;
     private bool _isListening;
-    private bool _disposed;
+    private int _disposed;
 
     public bool IsListening => _isListening;
 
@@ -44,7 +44,7 @@ public sealed class MdnsDiscoveryService(
 
     public async Task<List<MdnsDevice>> DiscoverAsync(string serviceType, CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed != 0, this);
 
         EnsureStarted();
 
@@ -86,7 +86,7 @@ public sealed class MdnsDiscoveryService(
         Func<MdnsDevice, Task> onDeviceFound,
         CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ObjectDisposedException.ThrowIf(_disposed != 0, this);
 
         await _stateLock.WaitAsync(cancellationToken);
         try
@@ -105,7 +105,8 @@ public sealed class MdnsDiscoveryService(
         }
         finally
         {
-            _stateLock.Release();
+            if (_disposed == 0)
+                _stateLock.Release();
         }
     }
 
@@ -122,7 +123,8 @@ public sealed class MdnsDiscoveryService(
         }
         finally
         {
-            _stateLock.Release();
+            if (_disposed == 0)
+                _stateLock.Release();
         }
     }
 
@@ -428,8 +430,8 @@ public sealed class MdnsDiscoveryService(
 
     private void ReleaseResources()
     {
-        if (_disposed) return;
-        _disposed = true;
+        if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0)
+            return;
         _isListening = false;
         _onDeviceFound = null;
 

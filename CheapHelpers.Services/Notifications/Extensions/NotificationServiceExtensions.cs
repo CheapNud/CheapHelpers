@@ -1,8 +1,8 @@
+using CheapHelpers.Models.Entities;
 using CheapHelpers.Models.Enums;
 using CheapHelpers.Services.Notifications.Channels;
 using CheapHelpers.Services.Notifications.Configuration;
 using CheapHelpers.Services.Notifications.Subscriptions;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CheapHelpers.Services.Notifications.Extensions;
@@ -41,7 +41,7 @@ public static class NotificationServiceExtensions
     public static IServiceCollection AddCheapNotifications<TUser>(
         this IServiceCollection services,
         Action<NotificationOptions>? configureOptions = null)
-        where TUser : IdentityUser
+        where TUser : CheapUser
     {
         // Create and configure options
         NotificationOptions options = new();

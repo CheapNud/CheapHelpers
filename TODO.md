@@ -76,8 +76,9 @@ _Nothing blocking._
   - Removed `ToHtmlString`, `FormatExceptionReportAsHtml`, `AppendExceptionAsHtml` and all `[Obsolete]` attributes
 - [x] (2026-03-21 → 2026-03-28) Make notification cleanup interval configurable via `NotificationOptions` [code-todo]
   - Added `CleanupIntervalMinutes` property (default 60), wired into `NotificationCleanupService`
-- [ ] (2026-03-21) Use user timezone instead of UTC for Do Not Disturb [code-todo]
-  - `CheapHelpers.Services/Notifications/Subscriptions/GlobalUserPreferencesProvider.cs:115`
+- [x] (2026-03-21 → 2026-03-28) Use user timezone instead of UTC for Do Not Disturb [code-todo]
+  - Queries `CheapUser.TimeZoneInfoId` from DB, converts UTC to user's local time for DND check
+  - Tightened generic constraint from `IdentityUser` to `CheapUser` on provider + DI extension
 
 ## Future
 

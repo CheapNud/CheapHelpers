@@ -1,6 +1,6 @@
 using CheapHelpers.EF;
+using CheapHelpers.Models.Entities;
 using CheapHelpers.Models.Enums;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -10,11 +10,11 @@ namespace CheapHelpers.Services.Notifications.Subscriptions;
 /// Global user preferences provider that returns channel preferences from the UserNotificationPreferences table.
 /// This is a fallback provider with the lowest priority (0) that is always available.
 /// </summary>
-/// <typeparam name="TUser">The user type derived from IdentityUser</typeparam>
+/// <typeparam name="TUser">The user type derived from CheapUser</typeparam>
 public class GlobalUserPreferencesProvider<TUser>(
     CheapContext<TUser> dbContext,
     ILogger<GlobalUserPreferencesProvider<TUser>> logger) : INotificationSubscriptionProvider
-    where TUser : IdentityUser
+    where TUser : CheapUser
 {
     /// <summary>
     /// Gets the priority of this provider. Returns 0 (lowest) as this is a fallback provider.
@@ -112,8 +112,17 @@ public class GlobalUserPreferencesProvider<TUser>(
             return null;
         }
 
-        // TODO: Use user's timezone instead of UTC - for now using UTC as a simplification
-        var currentHour = DateTime.UtcNow.Hour;
+        // Resolve the user's local time from their configured timezone
+        var userTimeZoneId = await dbContext.Users
+            .Where(u => u.Id == userId)
+            .Select(u => u.TimeZoneInfoId)
+            .FirstOrDefaultAsync(ct);
+
+        var userTimeZone = !string.IsNullOrEmpty(userTimeZoneId)
+            ? TimeZoneInfo.FindSystemTimeZoneById(userTimeZoneId)
+            : TimeZoneInfo.Utc;
+
+        var currentHour = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTimeZone).Hour;
         var startHour = preferences.DoNotDisturbStartHour!.Value;
         var endHour = preferences.DoNotDisturbEndHour!.Value;
 
@@ -135,22 +144,24 @@ public class GlobalUserPreferencesProvider<TUser>(
         {
             var dndChannels = NotificationChannelFlags.Push | NotificationChannelFlags.Sms;
             logger.LogDebug(
-                "User {UserId} is in DND period (Start={Start}, End={End}, CurrentHour={CurrentHour}), disabling channels: {Channels}",
+                "User {UserId} is in DND period (Start={Start}, End={End}, CurrentHour={CurrentHour}, TimeZone={TimeZone}), disabling channels: {Channels}",
                 userId,
                 startHour,
                 endHour,
                 currentHour,
+                userTimeZone.Id,
                 dndChannels);
 
             return dndChannels;
         }
 
         logger.LogDebug(
-            "User {UserId} is NOT in DND period (Start={Start}, End={End}, CurrentHour={CurrentHour})",
+            "User {UserId} is NOT in DND period (Start={Start}, End={End}, CurrentHour={CurrentHour}, TimeZone={TimeZone})",
             userId,
             startHour,
             endHour,
-            currentHour);
+            currentHour,
+            userTimeZone.Id);
 
         return null;
     }

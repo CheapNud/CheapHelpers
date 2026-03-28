@@ -1,9 +1,11 @@
 using CheapHelpers.Networking.Core;
 using CheapHelpers.Networking.Detection;
+using CheapHelpers.Networking.Discovery;
 using CheapHelpers.Networking.MacResolution;
 using CheapHelpers.Networking.Storage;
 using CheapHelpers.Networking.Subnet;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Runtime.InteropServices;
 
 namespace CheapHelpers.Networking.Extensions;
@@ -76,7 +78,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddEnhancedDetectors(this IServiceCollection services)
     {
         services.AddSingleton<IDeviceTypeDetector, UpnpDetector>();
-        services.AddSingleton<IDeviceTypeDetector, MdnsDetector>();
+        services.AddMdnsDetector();
 
         return services;
     }
@@ -107,14 +109,36 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Adds mDNS/Zeroconf/Bonjour device detector
-    /// Discovers devices like printers, Apple devices, IoT devices, and network services
+    /// Adds mDNS/Zeroconf/Bonjour device detector.
+    /// Automatically registers <see cref="IMdnsDiscoveryService"/> if not already present.
     /// </summary>
     /// <param name="services">The service collection</param>
     /// <returns>The service collection for chaining</returns>
     public static IServiceCollection AddMdnsDetector(this IServiceCollection services)
     {
+        services.AddMdnsDiscovery();
         services.AddSingleton<IDeviceTypeDetector, MdnsDetector>();
+        return services;
+    }
+
+    /// <summary>
+    /// Adds generic mDNS discovery service for finding devices by service type.
+    /// Uses a persistent multicast listener shared across all consumers.
+    /// </summary>
+    /// <param name="services">The service collection</param>
+    /// <param name="configure">Optional configuration for discovery options</param>
+    /// <returns>The service collection for chaining</returns>
+    public static IServiceCollection AddMdnsDiscovery(
+        this IServiceCollection services,
+        Action<MdnsDiscoveryOptions>? configure = null)
+    {
+        if (configure is not null)
+            services.Configure(configure);
+        else
+            services.Configure<MdnsDiscoveryOptions>(_ => { });
+
+        services.TryAddSingleton<IMdnsDiscoveryService, MdnsDiscoveryService>();
+
         return services;
     }
 

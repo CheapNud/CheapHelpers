@@ -197,6 +197,21 @@ namespace CheapHelpers
             public const string SqlServerUtcNowFunction = "GETUTCDATE()";
 
             /// <summary>
+            /// PostgreSQL function to get current UTC datetime (also works with TimescaleDB)
+            /// </summary>
+            public const string NpgsqlUtcNowFunction = "NOW() AT TIME ZONE 'UTC'";
+
+            /// <summary>
+            /// Known EF Core database provider names for runtime detection.
+            /// </summary>
+            public static class ProviderNames
+            {
+                public const string Sqlite = "Microsoft.EntityFrameworkCore.Sqlite";
+                public const string SqlServer = "Microsoft.EntityFrameworkCore.SqlServer";
+                public const string Npgsql = "Npgsql.EntityFrameworkCore.PostgreSQL";
+            }
+
+            /// <summary>
             /// Index name prefix for FileAttachments table
             /// </summary>
             public const string FileAttachmentsIndexPrefix = "IX_FileAttachments_";

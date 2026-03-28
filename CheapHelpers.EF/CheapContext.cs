@@ -178,12 +178,10 @@ namespace CheapHelpers.EF
                 // Default values
                 entity.Property(e => e.Visible).HasDefaultValue(true);
                 entity.Property(e => e.DisplayIndex).HasDefaultValue(0);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql(Constants.Database.SqliteUtcNowFunction); // SQLite
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql(Constants.Database.SqliteUtcNowFunction); // SQLite
 
-                // For SQL Server, use these instead:
-                // entity.Property(e => e.CreatedAt).HasDefaultValueSql(Constants.Database.SqlServerUtcNowFunction);
-                // entity.Property(e => e.UpdatedAt).HasDefaultValueSql(Constants.Database.SqlServerUtcNowFunction);
+                var utcNowSql = GetUtcNowFunction();
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql(utcNowSql);
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql(utcNowSql);
             });
 
 
@@ -224,6 +222,21 @@ namespace CheapHelpers.EF
                       .HasDatabaseName(Constants.Database.NotificationPreferencesUserIdTypeIndex);
             });
 
+        }
+
+        /// <summary>
+        /// Returns the appropriate UTC now SQL function based on the configured database provider.
+        /// </summary>
+        private string GetUtcNowFunction()
+        {
+            var providerName = Database.ProviderName;
+
+            return providerName switch
+            {
+                Constants.Database.ProviderNames.SqlServer => Constants.Database.SqlServerUtcNowFunction,
+                Constants.Database.ProviderNames.Npgsql => Constants.Database.NpgsqlUtcNowFunction,
+                _ => Constants.Database.SqliteUtcNowFunction // SQLite as default fallback
+            };
         }
 
         /// <summary>

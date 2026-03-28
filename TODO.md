@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-03-21
+  Last updated: 2026-03-28 (mDNS moved to Planned, new rules added)
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -17,9 +17,12 @@
       [user] = explicitly requested by the user
   - For [code-todo] items, ALWAYS include file:line reference so devs can navigate directly
   - Categories: Blocking, Planned, Future, Done
+  - [voltiq-dep] = required by Voltiq project (../Voltiq) before scaffolding can proceed
   - New items go at the TOP of their category
   - Do not create separate TODO_*.md files — everything goes here
   - Keep it terse. If it needs more than 3 sub-bullets, link to a plan document.
+  - Do NOT create, rename, or remove categories — the fixed set is: Blocking, Planned, Future, Done
+  - When asked for planned work or TODO analysis, ALWAYS include Future items too — list them below Planned and note them as future work
 -->
 
 # TODO
@@ -29,11 +32,13 @@
 _Nothing blocking._
 
 ## Planned
-
-- [ ] (2026-03-17) Fix CheapContext `DATETIME('now')` per-provider detection (CheapHelpers.EF) [bug]
-  - `CheapContext.OnModelCreating` should detect `Database.ProviderName` → `NOW()` for Npgsql, `DATETIME('now')` for SQLite
-  - Currently hardcodes SQLite syntax, breaks PostgreSQL migrations
-  - CheapManga has a `PendingModelChangesWarning` suppression as workaround
+- [ ] (2026-03-27) Extract generic `IMdnsDiscoveryService` from existing mDNS code [plan]
+  - CheapHelpers.Networking already has `MdnsDetector` (Makaretu.Dns.Multicast.New) but it's only a device type classifier, not a standalone discovery service
+  - Calculus.DeviceManagement has battle-tested `GatewayDiscovery` (MeaMod.DNS) with persistent listener, GUID caching from split A/AAAA responses, TXT record parsing — WPF-coupled, needs extracting
+  - Goal: generic `IMdnsDiscoveryService` — `DiscoverAsync(string serviceType, CancellationToken)` → `List<MdnsDevice>` with IP, name, TXT records
+  - Consolidate on one mDNS library (evaluate Makaretu vs MeaMod — both work, pick one)
+  - Voltiq use case: HomeWizard P1 meters advertise via `_hwenergy._tcp.local` — auto-discover meter IP for Tier 2 plug-and-play
+  - Consumers: Voltiq (HomeWizard), CheapHelpers.Networking (upgrade MdnsDetector), CheapCOVAS (Elite Dangerous companion)
 - [ ] (2026-03-17) Add `SanitizeFileName()` to `StringExtensions` (CheapHelpers) [audit]
   - `Path.GetInvalidFileNameChars()`-based — more correct than generic `Sanitize()` for file paths
   - CheapManga.DownloadService has this as a private method currently
@@ -81,8 +86,21 @@ _Nothing blocking._
 
 ## Future
 
-_Nothing yet._
+_Nothing in future._
 
 ## Done
 
-_Tracked in release notes._
+- [x] (2026-03-24 → 2026-03-24) Add `TimeWindow` value type to CheapHelpers.Models [voltiq-dep]
+  - `CheapHelpers.Models/ValueTypes/TimeWindow.cs` — record struct with `Duration`, `Contains`, `Overlaps`, `Intersect`, `Current`, `ForInterval`, `Enumerate`
+- [x] (2026-03-24 → 2026-03-24) Add unit conversion extension methods to CheapHelpers [voltiq-dep]
+  - `CheapHelpers/Extensions/UnitConversionExtensions.cs` — Power, Energy, Volume (double + decimal)
+- [x] (2026-03-24 → 2026-03-24) Add `IHttpPollingService` to CheapHelpers.Services [voltiq-dep]
+  - `CheapHelpers.Services/Polling/` — interface, impl with PeriodicTimer + exponential backoff, options, DI extension
+- [x] (2026-03-24 → 2026-03-24) Add `IScheduledTaskService` to CheapHelpers [voltiq-dep]
+  - `CheapHelpers/Scheduling/` — interface, BackgroundService impl with interval/daily/monthly, DI extension
+  - Added `Microsoft.Extensions.Hosting.Abstractions` to CheapHelpers.csproj
+- [x] (2026-03-24 → 2026-03-24) Add `IDeviceHealthCheck` to CheapHelpers.Services [voltiq-dep]
+  - `CheapHelpers.Services/Health/` — IDeviceHealthCheck, IDeviceHealthMonitor, DeviceHealthResult record, hosted monitor with transition detection, DI extension
+- [x] (2026-03-17 → 2026-03-24) Fix CheapContext `DATETIME('now')` per-provider detection (CheapHelpers.EF) [bug] [voltiq-dep]
+  - `CheapContext.GetUtcNowFunction()` now switches on `Database.ProviderName` — SQLite, SQL Server, Npgsql
+  - Added `Constants.Database.NpgsqlUtcNowFunction` and `Constants.Database.ProviderNames` static class

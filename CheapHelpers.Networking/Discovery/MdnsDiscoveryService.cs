@@ -105,8 +105,8 @@ public sealed class MdnsDiscoveryService(
         }
         finally
         {
-            if (_disposed == 0)
-                _stateLock.Release();
+            try { _stateLock.Release(); }
+            catch (ObjectDisposedException) { /* Disposal raced — safe to swallow */ }
         }
     }
 
@@ -123,8 +123,8 @@ public sealed class MdnsDiscoveryService(
         }
         finally
         {
-            if (_disposed == 0)
-                _stateLock.Release();
+            try { _stateLock.Release(); }
+            catch (ObjectDisposedException) { /* Disposal raced — safe to swallow */ }
         }
     }
 

@@ -24,10 +24,14 @@ public class ApiKeyService<TUser>(
         List<string>? scopes = null,
         DateTime? expiresAt = null,
         string? description = null,
+        string? prefixOverride = null,
+        string? createdBy = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+        var prefix = prefixOverride ?? apiKeyOptions.KeyPrefix;
 
         var rawKeyBytes = RandomNumberGenerator.GetBytes(apiKeyOptions.KeyLengthBytes);
         var rawKeyBase64 = Convert.ToBase64String(rawKeyBytes)
@@ -35,7 +39,7 @@ public class ApiKeyService<TUser>(
             .Replace('/', '_')
             .TrimEnd('=');
 
-        var fullKey = $"{apiKeyOptions.KeyPrefix}{rawKeyBase64}";
+        var fullKey = $"{prefix}{rawKeyBase64}";
         var keyHash = ComputeHash(fullKey);
         var keyPrefix = fullKey[..Math.Min(fullKey.Length, 12)] + "...";
 
@@ -46,6 +50,7 @@ public class ApiKeyService<TUser>(
             Name = name,
             Description = description,
             UserId = userId,
+            CreatedBy = createdBy ?? userId,
             RateLimitPerMinute = apiKeyOptions.DefaultRateLimitPerMinute,
             RateLimitPerDay = apiKeyOptions.DefaultRateLimitPerDay,
             ExpiresAt = expiresAt,
@@ -57,7 +62,7 @@ public class ApiKeyService<TUser>(
         dbContext.ApiKeys.Add(apiKey);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        logger.LogInformation("Generated API key {KeyPrefix} for user {UserId}", keyPrefix, userId);
+        logger.LogInformation("Generated API key {KeyPrefix} for user {UserId} (created by {CreatedBy})", keyPrefix, userId, apiKey.CreatedBy);
         return ApiKeyCreateResult.Succeeded(apiKey.Id, fullKey, keyPrefix);
     }
 
@@ -150,6 +155,7 @@ public class ApiKeyService<TUser>(
             Name = existingKey.Name,
             Description = existingKey.Description,
             UserId = existingKey.UserId,
+            CreatedBy = existingKey.CreatedBy,
             ScopesJson = existingKey.ScopesJson,
             RateLimitPerMinute = existingKey.RateLimitPerMinute,
             RateLimitPerDay = existingKey.RateLimitPerDay,

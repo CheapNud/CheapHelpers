@@ -59,6 +59,12 @@ public class ApiKey : IEntityId, IAuditable
     /// </summary>
     public int RateLimitPerDay { get; set; }
 
+    /// <summary>
+    /// ID of the user who created this key (may differ from UserId in admin/delegation scenarios).
+    /// </summary>
+    [MaxLength(450)]
+    public string? CreatedBy { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
@@ -87,6 +93,31 @@ public class ApiKey : IEntityId, IAuditable
     /// </summary>
     [NotMapped]
     public bool IsValid => IsActive && RevokedAt is null && (ExpiresAt is null || ExpiresAt > DateTime.UtcNow);
+
+    /// <summary>
+    /// Returns a masked representation of the key prefix for safe display (e.g., "ch_Ab3x...z12").
+    /// Uses the stored <see cref="KeyPrefix"/> since the full key is never persisted.
+    /// </summary>
+    public string MaskKey()
+    {
+        if (string.IsNullOrEmpty(KeyPrefix))
+            return "****";
+
+        // KeyPrefix is already truncated (e.g., "ch_Ab3xYz12..."), just return it
+        return KeyPrefix;
+    }
+
+    /// <summary>
+    /// Static helper to mask a full raw key for one-time display after generation.
+    /// Shows first 8 and last 4 characters with masking in between.
+    /// </summary>
+    public static string MaskFullKey(string fullKey)
+    {
+        if (string.IsNullOrEmpty(fullKey) || fullKey.Length < 16)
+            return "****";
+
+        return $"{fullKey[..8]}...{fullKey[^4..]}";
+    }
 
     /// <summary>
     /// Deserialized scopes from <see cref="ScopesJson"/>. Empty list if no scopes are set.

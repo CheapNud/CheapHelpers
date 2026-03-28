@@ -12,12 +12,22 @@ public interface IApiKeyService
     /// Generates a new API key for the specified user.
     /// The <see cref="ApiKeyCreateResult.FullKey"/> is only available in this result — store it immediately.
     /// </summary>
+    /// <param name="userId">Owner of the key.</param>
+    /// <param name="name">Human-readable name.</param>
+    /// <param name="scopes">Optional scope list (null = all scopes).</param>
+    /// <param name="expiresAt">Optional expiry date.</param>
+    /// <param name="description">Optional description.</param>
+    /// <param name="prefixOverride">Override the default key prefix (e.g., "VTQ" → "VTQ-a7f3bc91..."). Null uses <see cref="ApiKeyOptions.KeyPrefix"/>.</param>
+    /// <param name="createdBy">ID of the user creating this key (for admin/delegation audit). Null defaults to <paramref name="userId"/>.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     Task<ApiKeyCreateResult> GenerateAsync(
         string userId,
         string name,
         List<string>? scopes = null,
         DateTime? expiresAt = null,
         string? description = null,
+        string? prefixOverride = null,
+        string? createdBy = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

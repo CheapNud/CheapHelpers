@@ -29,7 +29,25 @@
 
 ## Blocking
 
-_Nothing blocking._
+- [x] (2026-03-28 → 2026-03-28) API key system — configurable prefix support (`GenerateKey("VTQ")` → `VTQ-a7f3bc91...`) [voltiq-dep]
+  - Added `prefixOverride` parameter to `GenerateAsync` (null defaults to `ApiKeyOptions.KeyPrefix`)
+- [x] (2026-03-28 → 2026-03-28) API key system — hash storage, NEVER store plaintext in DB, `GenerateKey()` returns plaintext once [voltiq-dep]
+  - Already implemented: SHA-256 via `ComputeHash()`, `FullKey` only in `ApiKeyCreateResult`
+- [x] (2026-03-28 → 2026-03-28) API key system — `IApiKeyValidator<TEntity>` generic validation service (hash + DB lookup) [voltiq-dep]
+  - Created `IApiKeyValidator<TEntity>` with `ValidateForEntityAsync` + `ApiKeyEntityValidationResult`
+- [x] (2026-03-28 → 2026-03-28) API key system — `MaskKey()` standardized display masking (`xxxx...yyyy`) [voltiq-dep]
+  - Added `MaskKey()` instance method + `MaskFullKey(string)` static helper on `ApiKey` entity
+- [x] (2026-03-28 → 2026-03-28) API key system — expiry support (`ExpiresAt?` nullable DateTime) for billing tier enforcement [voltiq-dep]
+  - Already implemented: `ExpiresAt` property, checked in `IsValid` computed property
+- [x] (2026-03-28 → 2026-03-28) API key system — rate limiting metadata per key (requests per minute/hour) [voltiq-dep]
+  - Already implemented: `RateLimitPerMinute`, `RateLimitPerDay` on entity, enforced in middleware
+- [x] (2026-03-28 → 2026-03-28) API key system — audit trail fields (`CreatedAt`, `LastUsedAt`, `CreatedBy`) [voltiq-dep]
+  - Added `CreatedBy` field (nullable, defaults to `UserId`). `CreatedAt`, `LastUsedAt` already existed.
+- [x] (2026-03-28 → 2026-03-28) API key system — multiple keys per entity (1:N relationship) [voltiq-dep]
+  - Already implemented: `UserId` FK allows multiple, `GetUserKeysAsync()` returns all
+- [x] (2026-03-28 → 2026-03-28) API key system — scoped permissions (read-only vs read-write key types) [voltiq-dep]
+  - Already implemented: `ScopesJson` stores scope array, deserialized via `Scopes` property, passed as claims
+- [ ] (2026-03-28) Publish CheapHelpers NuGet with complete API key system [voltiq-dep]
 
 ## Planned
 - [x] (2026-03-28 → 2026-03-28) Add API key distribution system tied to user identity [user]

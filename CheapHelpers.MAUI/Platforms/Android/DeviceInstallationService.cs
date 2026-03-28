@@ -31,12 +31,6 @@ public class DeviceInstallationService : IDeviceInstallationService
     public bool IsRegistered => !string.IsNullOrEmpty(_token);
 
     /// <summary>
-    /// Event fired when FCM token is refreshed
-    /// </summary>
-    [Obsolete("Use OnTokenReceived for initial token or OnTokenUpdated for refreshes")]
-    public event Action<string>? TokenRefreshed;
-
-    /// <summary>
     /// Event triggered when a push token is received for the first time
     /// </summary>
     public event Action<string>? OnTokenReceived;
@@ -72,10 +66,6 @@ public class DeviceInstallationService : IDeviceInstallationService
                 OnTokenUpdated?.Invoke(_token);
             }
 
-            // Keep backward compatibility
-#pragma warning disable CS0618 // Type or member is obsolete
-            TokenRefreshed?.Invoke(_token);
-#pragma warning restore CS0618 // Type or member is obsolete
         }
     }
 
@@ -247,7 +237,8 @@ public class DeviceInstallationService : IDeviceInstallationService
             tokenReceived = true;
         }
 
-        TokenRefreshed += handler;
+        OnTokenReceived += handler;
+        OnTokenUpdated += handler;
 
         var waitCount = 0;
         while (!tokenReceived && waitCount < timeoutSeconds * 2) // Check every 500ms
@@ -263,7 +254,8 @@ public class DeviceInstallationService : IDeviceInstallationService
             }
         }
 
-        TokenRefreshed -= handler;
+        OnTokenReceived -= handler;
+        OnTokenUpdated -= handler;
 
         Debug.WriteLine($"FCM token wait result: {(tokenReceived ? "SUCCESS" : "TIMEOUT")}");
         return tokenReceived;

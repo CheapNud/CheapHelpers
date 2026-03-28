@@ -700,13 +700,13 @@ Both platforms automatically handle token refresh:
 - Token generated on first permission grant
 - Token can change when app is reinstalled or restored
 - `ApnsDelegate` automatically captures new tokens
-- `TokenRefreshed` event fires on update
+- `OnTokenUpdated` event fires on update
 
 **Android FCM:**
 - Token generated when Firebase initializes
 - Token refreshes when app is updated or reinstalled
 - `FcmService.OnNewToken()` handles refreshes
-- `TokenRefreshed` event fires on update
+- `OnTokenUpdated` event fires on update
 
 ### Handling Token Refresh
 
@@ -726,10 +726,10 @@ public class NotificationManager
         _backend = backend;
 
         // Subscribe to token refresh
-        _deviceService.TokenRefreshed += OnTokenRefreshed;
+        _deviceService.OnTokenUpdated += OnTokenChanged;
     }
 
-    private async void OnTokenRefreshed(string newToken)
+    private async void OnTokenChanged(string newToken)
     {
         Debug.WriteLine($"Token refreshed: {newToken[..8]}...");
 
@@ -906,7 +906,7 @@ This is normal when:
 - Reinstalling app
 - Restoring to new device
 - iOS updates
-- Solution: Handle `TokenRefreshed` event to update backend
+- Solution: Handle `OnTokenUpdated` event to update backend
 
 ### Android Issues
 

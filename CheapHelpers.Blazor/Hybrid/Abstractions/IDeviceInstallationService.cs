@@ -61,12 +61,6 @@ public interface IDeviceInstallationService
     Task<bool> CheckPermissionsAsync();
 
     /// <summary>
-    /// Event triggered when the push token is refreshed or updated
-    /// </summary>
-    [Obsolete("Use OnTokenReceived for initial token or OnTokenUpdated for refreshes")]
-    event Action<string>? TokenRefreshed;
-
-    /// <summary>
     /// Event triggered when a push token is received for the first time
     /// </summary>
     event Action<string>? OnTokenReceived;

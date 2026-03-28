@@ -110,7 +110,8 @@ public interface IDeviceInstallationService
     Task<bool> CheckPermissionsAsync();   // Check without requesting
 
     // Events
-    event Action<string>? TokenRefreshed; // Token changed/refreshed
+    event Action<string>? OnTokenReceived; // First token received
+    event Action<string>? OnTokenUpdated;  // Token refreshed
 }
 ```
 
@@ -436,7 +437,7 @@ public class MauiDeviceInstallationService : IDeviceInstallationService
             new OnSuccessListener(token =>
             {
                 _token = token;
-                TokenRefreshed?.Invoke(token);
+                OnTokenUpdated?.Invoke(token);
             }));
     }
 
@@ -515,7 +516,7 @@ public class MauiDeviceInstallationService : IDeviceInstallationService
         };
     }
 
-    public event Action<string>? TokenRefreshed;
+    public event Action<string>? OnTokenUpdated;
 }
 
 // Helper for Android 13+ notification permission
@@ -594,7 +595,7 @@ public class MauiDeviceInstallationService : IDeviceInstallationService
     {
         _token = token;
         IsRegistered = true;
-        TokenRefreshed?.Invoke(token);
+        OnTokenUpdated?.Invoke(token);
     }
 
     public DeviceInstallation GetDeviceInstallation(params string[] tags)
@@ -608,7 +609,7 @@ public class MauiDeviceInstallationService : IDeviceInstallationService
         };
     }
 
-    public event Action<string>? TokenRefreshed;
+    public event Action<string>? OnTokenUpdated;
 }
 ```
 
@@ -795,7 +796,7 @@ public class PhotinoDeviceInstallationService : IDeviceInstallationService
         };
     }
 
-    public event Action<string>? TokenRefreshed;
+    public event Action<string>? OnTokenUpdated;
 }
 ```
 

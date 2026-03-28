@@ -61,29 +61,11 @@ namespace CheapHelpers.Helpers.Encryption
         }
 
         /// <summary>
-        /// Encrypts a plain text string using AES-256-CBC with a STATIC/DETERMINISTIC IV.
+        /// Encrypts using a deterministic (static) IV — same plaintext always produces the same ciphertext.
+        /// Only use for URL/route parameters, cache keys, or deduplication where deterministic output is required.
+        /// For general encryption, use <see cref="EncryptWithRandomIV"/> instead.
         /// </summary>
-        /// <param name="plainText">Text to encrypt</param>
-        /// <returns>Base64 encoded encrypted string</returns>
-        /// <remarks>
-        /// <para><strong>SECURITY WARNING:</strong> This method uses a static, machine-specific IV that is reused for every encryption operation.</para>
-        /// <para><strong>When NOT to use this method:</strong></para>
-        /// <list type="bullet">
-        /// <item><description>Encrypting sensitive user data (passwords, API keys, personal information)</description></item>
-        /// <item><description>Encrypting data that will be stored long-term</description></item>
-        /// <item><description>Any scenario where pattern analysis could reveal information</description></item>
-        /// <item><description>When the same plaintext should produce different ciphertexts each time</description></item>
-        /// </list>
-        /// <para><strong>Valid use cases (deterministic encryption required):</strong></para>
-        /// <list type="bullet">
-        /// <item><description>URL/route parameters that need to be matched or compared</description></item>
-        /// <item><description>Cache keys or database lookups where same plaintext = same ciphertext is required</description></item>
-        /// <item><description>Scenarios where you need deterministic encryption for deduplication</description></item>
-        /// </list>
-        /// <para><strong>For most use cases, use <see cref="EncryptWithRandomIV"/> instead.</strong></para>
-        /// </remarks>
-        [Obsolete("This method uses a static IV which is cryptographically weak for most use cases. Use EncryptWithRandomIV() instead unless you specifically need deterministic encryption (e.g., for URL parameters or cache keys).")]
-        public static string Encrypt(string plainText)
+        public static string EncryptDeterministic(string plainText)
         {
             if (string.IsNullOrEmpty(plainText))
                 return string.Empty;
@@ -91,7 +73,7 @@ namespace CheapHelpers.Helpers.Encryption
             var (key, iv) = _keyIvPair.Value;
 
             using var aes = Aes.Create();
-            aes.KeySize = 256; // Use AES-256
+            aes.KeySize = 256;
             aes.Key = key;
             aes.IV = iv;
             aes.Mode = CipherMode.CBC;
@@ -110,16 +92,9 @@ namespace CheapHelpers.Helpers.Encryption
         }
 
         /// <summary>
-        /// Decrypts a Base64 encoded encrypted string using AES-256-CBC with a STATIC/DETERMINISTIC IV.
+        /// Decrypts data encrypted with <see cref="EncryptDeterministic"/>.
         /// </summary>
-        /// <param name="cipherText">Base64 encoded encrypted text (encrypted with <see cref="Encrypt"/>)</param>
-        /// <returns>Decrypted plain text string</returns>
-        /// <remarks>
-        /// <para>This method is the counterpart to <see cref="Encrypt"/> and uses the same static IV.</para>
-        /// <para>For decrypting data encrypted with <see cref="EncryptWithRandomIV"/>, use <see cref="DecryptWithRandomIV"/> instead.</para>
-        /// </remarks>
-        [Obsolete("This method uses a static IV which is cryptographically weak for most use cases. Use DecryptWithRandomIV() instead unless you specifically need deterministic encryption (e.g., for URL parameters or cache keys).")]
-        public static string Decrypt(string cipherText)
+        public static string DecryptDeterministic(string cipherText)
         {
             if (string.IsNullOrEmpty(cipherText))
                 return string.Empty;
@@ -129,7 +104,7 @@ namespace CheapHelpers.Helpers.Encryption
             try
             {
                 using var aes = Aes.Create();
-                aes.KeySize = 256; // Use AES-256
+                aes.KeySize = 256;
                 aes.Key = key;
                 aes.IV = iv;
                 aes.Mode = CipherMode.CBC;
@@ -170,7 +145,7 @@ namespace CheapHelpers.Helpers.Encryption
         /// <item><description>Any scenario where security is prioritized over deterministic output</description></item>
         /// </list>
         /// <para>The IV is automatically prepended to the ciphertext and extracted during decryption by <see cref="DecryptWithRandomIV"/>.</para>
-        /// <para>Note: If you need deterministic encryption (same plaintext = same ciphertext) for URL parameters or cache keys, use <see cref="Encrypt"/> instead, but be aware of its security limitations.</para>
+        /// <para>Note: For deterministic encryption (same plaintext = same ciphertext) for URL parameters or cache keys, use <see cref="EncryptDeterministic"/> instead.</para>
         /// </remarks>
         public static string EncryptWithRandomIV(string plainText)
         {
@@ -210,7 +185,6 @@ namespace CheapHelpers.Helpers.Encryption
         /// <remarks>
         /// <para>This method automatically extracts the IV from the beginning of the ciphertext and uses it for decryption.</para>
         /// <para>Only use this method to decrypt data that was encrypted with <see cref="EncryptWithRandomIV"/>.</para>
-        /// <para>For data encrypted with the legacy <see cref="Encrypt"/> method, use <see cref="Decrypt"/> instead.</para>
         /// </remarks>
         public static string DecryptWithRandomIV(string cipherText)
         {

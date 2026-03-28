@@ -67,20 +67,6 @@ public class TwilioSmsService : ISmsService, IDisposable
     }
 
     /// <summary>
-    /// Legacy method for backward compatibility
-    /// </summary>
-    [Obsolete("Use SendAsync instead for better error handling and performance")]
-    public async Task Send(string number, string body)
-    {
-        var result = await SendAsync(number, body);
-        if (!result.IsSuccess)
-        {
-            var exception = result.Exception ?? new InvalidOperationException(result.ErrorMessage);
-            throw exception;
-        }
-    }
-
-    /// <summary>
     /// Sends SMS messages to multiple recipients
     /// </summary>
     /// <param name="recipients">Dictionary of phone numbers and their respective messages</param>

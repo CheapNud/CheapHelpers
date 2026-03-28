@@ -19,7 +19,6 @@ namespace CheapHelpers.Extensions
         /// <returns>the index replaced</returns>
         public static T Replace<T>(this IList<T> list, T oldItem, T newItem)
         {
-            //new Thread(new ThreadStart(sss));
             var oldItemIndex = list.IndexOf(oldItem);
             return list[oldItemIndex] = newItem;
         }

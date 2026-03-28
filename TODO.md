@@ -32,10 +32,10 @@
 _Nothing blocking._
 
 ## Planned
-- [ ] (2026-03-28) Add GitHub and Apple OAuth providers to CheapHelpers auth [user]
-  - `CheapHelpers.Services/Auth/OAuth/` — `GitHubAuthOptions`, `AppleAuthOptions` extending `OAuthProviderOptions`
-  - `CheapHelpers.Blazor/Extensions/OAuthBlazorExtensions.cs` — add `AddGitHubAuth()`, `AddAppleAuth()` + map endpoints
-  - Apple Sign In requires JWT client secret generation (ES256 key) — more complex than Google/Microsoft
+- [x] (2026-03-28 → 2026-03-28) Add GitHub and Apple OAuth providers to CheapHelpers auth [user]
+  - `GitHubAuthOptions` with `EnterpriseDomain`, `AppleAuthOptions` with `TeamId`, `KeyId`, `PrivateKeyPath`/`PrivateKeyContent`
+  - Extended `OAuthBlazorExtensions` with `AddGitHubAuth()`, `AddAppleAuth()`, refactored `MapOAuthEndpoints` to shared `MapProviderEndpoints`
+  - Added `AspNet.Security.OAuth.GitHub` v10.0.0, `AspNet.Security.OAuth.Apple` v10.0.0
 - [ ] (2026-03-28) Add generic TTS abstraction to CheapHelpers.Services [user]
   - `CheapHelpers.Services/Voice/` — `ITextToSpeech`, `TtsOptions`, DI extension
   - Edge TTS provider (free, WebSocket-based, no API key) — extract from CheapCOVAS

@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using AspNet.Security.OAuth.Apple;
+using AspNet.Security.OAuth.GitHub;
 using CheapHelpers.Models.Entities;
 using CheapHelpers.Services.Auth;
 using CheapHelpers.Services.Auth.OAuth;
@@ -16,8 +18,8 @@ using Microsoft.Extensions.Logging;
 namespace CheapHelpers.Blazor.Extensions;
 
 /// <summary>
-/// Extension methods for registering Google and Microsoft OAuth authentication providers.
-/// Wraps ASP.NET Core's built-in AddGoogle/AddMicrosoftAccount handlers.
+/// Extension methods for registering OAuth authentication providers (Google, Microsoft, GitHub, Apple).
+/// Wraps ASP.NET Core's built-in and aspnet-contrib OAuth handlers.
 /// </summary>
 public static class OAuthBlazorExtensions
 {
@@ -102,41 +104,144 @@ public static class OAuthBlazorExtensions
     }
 
     /// <summary>
-    /// Maps OAuth start and callback endpoints for all registered OAuth providers (Google, Microsoft).
+    /// Adds GitHub OAuth authentication using the aspnet-contrib GitHub handler.
+    /// Registers <see cref="IExternalAuthProvider"/> and maps the <c>user:email</c> scope by default.
+    /// </summary>
+    public static IServiceCollection AddGitHubAuth(
+        this IServiceCollection services,
+        Action<GitHubAuthOptions> configureOptions)
+    {
+        ArgumentNullException.ThrowIfNull(configureOptions);
+
+        var githubOptions = new GitHubAuthOptions();
+        configureOptions(githubOptions);
+
+        services.AddSingleton(githubOptions);
+        services.AddSingleton<IExternalAuthProvider>(new SimpleAuthProvider("GitHub"));
+
+        EnsureExternalCookieScheme(services);
+
+        services.AddAuthentication()
+            .AddGitHub(GitHubAuthenticationDefaults.AuthenticationScheme, opt =>
+            {
+                opt.ClientId = githubOptions.ClientId;
+                opt.ClientSecret = githubOptions.ClientSecret;
+                opt.SignInScheme = ExternalCookieScheme;
+                opt.CallbackPath = "/signin-github";
+                opt.Scope.Add("user:email");
+
+                if (githubOptions.EnterpriseDomain is not null)
+                    opt.EnterpriseDomain = githubOptions.EnterpriseDomain;
+
+                // Map avatar_url from GitHub's user API response
+                opt.ClaimActions.MapJsonKey("urn:github:avatar", "avatar_url");
+
+                foreach (var scope in githubOptions.Scopes)
+                    opt.Scope.Add(scope);
+            });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Adds Apple Sign In authentication using the aspnet-contrib Apple handler.
+    /// Registers <see cref="IExternalAuthProvider"/> and configures JWT client secret generation.
+    /// </summary>
+    /// <remarks>
+    /// Requires an Apple Developer account with Sign In with Apple configured.
+    /// The private key (.p8 file) must be provided via <see cref="AppleAuthOptions.PrivateKeyPath"/>
+    /// or <see cref="AppleAuthOptions.PrivateKeyContent"/>.
+    /// Apple only returns name/email on the user's FIRST sign-in.
+    /// </remarks>
+    public static IServiceCollection AddAppleAuth(
+        this IServiceCollection services,
+        Action<AppleAuthOptions> configureOptions)
+    {
+        ArgumentNullException.ThrowIfNull(configureOptions);
+
+        var appleOptions = new AppleAuthOptions();
+        configureOptions(appleOptions);
+
+        services.AddSingleton(appleOptions);
+        services.AddSingleton<IExternalAuthProvider>(new SimpleAuthProvider("Apple"));
+
+        EnsureExternalCookieScheme(services);
+
+        services.AddAuthentication()
+            .AddApple(AppleAuthenticationDefaults.AuthenticationScheme, opt =>
+            {
+                opt.ClientId = appleOptions.ServiceId ?? appleOptions.ClientId;
+                opt.SignInScheme = ExternalCookieScheme;
+                opt.CallbackPath = "/signin-apple";
+                opt.KeyId = appleOptions.KeyId;
+                opt.TeamId = appleOptions.TeamId;
+                opt.GenerateClientSecret = true;
+
+                // Configure private key source
+                if (appleOptions.PrivateKeyContent is not null)
+                {
+                    var keyContent = appleOptions.PrivateKeyContent;
+                    opt.PrivateKey = (_, _) => Task.FromResult<ReadOnlyMemory<char>>(keyContent.AsMemory());
+                }
+                else if (appleOptions.PrivateKeyPath is not null)
+                {
+                    var keyPath = appleOptions.PrivateKeyPath;
+                    opt.PrivateKey = async (_, ct) =>
+                    {
+                        var content = await File.ReadAllTextAsync(keyPath, ct);
+                        return content.AsMemory();
+                    };
+                }
+
+                foreach (var scope in appleOptions.Scopes)
+                    opt.Scope.Add(scope);
+            });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Maps OAuth start and callback endpoints for all registered OAuth providers (Google, Microsoft, GitHub, Apple).
     /// Logout is shared with Plex's existing logout endpoint — no duplicate needed.
     /// </summary>
     public static IEndpointRouteBuilder MapOAuthEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        var googleOptions = endpoints.ServiceProvider.GetService<GoogleAuthOptions>();
-        var microsoftOptions = endpoints.ServiceProvider.GetService<MicrosoftAuthOptions>();
+        MapProviderEndpoints(endpoints,
+            endpoints.ServiceProvider.GetService<GoogleAuthOptions>(),
+            GoogleDefaults.AuthenticationScheme);
 
-        if (googleOptions is not null)
-        {
-            endpoints.MapGet(googleOptions.StartPath, (HttpContext httpContext) =>
-            {
-                var properties = new AuthenticationProperties { RedirectUri = googleOptions.CallbackPath };
-                return Results.Challenge(properties, [GoogleDefaults.AuthenticationScheme]);
-            }).AllowAnonymous();
+        MapProviderEndpoints(endpoints,
+            endpoints.ServiceProvider.GetService<MicrosoftAuthOptions>(),
+            MicrosoftAccountDefaults.AuthenticationScheme);
 
-            endpoints.MapGet(googleOptions.CallbackPath, (HttpContext httpContext) =>
-                HandleOAuthCallbackAsync(httpContext, googleOptions))
-                .AllowAnonymous();
-        }
+        MapProviderEndpoints(endpoints,
+            endpoints.ServiceProvider.GetService<GitHubAuthOptions>(),
+            GitHubAuthenticationDefaults.AuthenticationScheme);
 
-        if (microsoftOptions is not null)
-        {
-            endpoints.MapGet(microsoftOptions.StartPath, (HttpContext httpContext) =>
-            {
-                var properties = new AuthenticationProperties { RedirectUri = microsoftOptions.CallbackPath };
-                return Results.Challenge(properties, [MicrosoftAccountDefaults.AuthenticationScheme]);
-            }).AllowAnonymous();
-
-            endpoints.MapGet(microsoftOptions.CallbackPath, (HttpContext httpContext) =>
-                HandleOAuthCallbackAsync(httpContext, microsoftOptions))
-                .AllowAnonymous();
-        }
+        MapProviderEndpoints(endpoints,
+            endpoints.ServiceProvider.GetService<AppleAuthOptions>(),
+            AppleAuthenticationDefaults.AuthenticationScheme);
 
         return endpoints;
+    }
+
+    private static void MapProviderEndpoints(
+        IEndpointRouteBuilder endpoints,
+        OAuthProviderOptions? providerOptions,
+        string authenticationScheme)
+    {
+        if (providerOptions is null)
+            return;
+
+        endpoints.MapGet(providerOptions.StartPath, (HttpContext httpContext) =>
+        {
+            var properties = new AuthenticationProperties { RedirectUri = providerOptions.CallbackPath };
+            return Results.Challenge(properties, [authenticationScheme]);
+        }).AllowAnonymous();
+
+        endpoints.MapGet(providerOptions.CallbackPath, (HttpContext httpContext) =>
+            HandleOAuthCallbackAsync(httpContext, providerOptions))
+            .AllowAnonymous();
     }
 
     private static async Task<IResult> HandleOAuthCallbackAsync(
@@ -161,7 +266,8 @@ public static class OAuthBlazorExtensions
         var displayName = externalPrincipal.FindFirstValue(ClaimTypes.Name);
         var email = externalPrincipal.FindFirstValue(ClaimTypes.Email);
         var avatarUrl = externalPrincipal.FindFirstValue("picture") // Google
-            ?? externalPrincipal.FindFirstValue("urn:google:picture"); // Fallback
+            ?? externalPrincipal.FindFirstValue("urn:google:picture") // Google fallback
+            ?? externalPrincipal.FindFirstValue("urn:github:avatar"); // GitHub
 
         if (string.IsNullOrEmpty(externalId))
         {

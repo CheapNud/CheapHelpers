@@ -2,6 +2,7 @@ using CheapHelpers.Blazor.Hybrid.Abstractions;
 using CheapHelpers.Blazor.Hybrid.Notifications.Backends;
 using CheapHelpers.Blazor.Hybrid.Notifications.Core;
 using CheapHelpers.Blazor.Hybrid.Services;
+using CheapHelpers.Blazor.Hybrid.WebView;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -50,7 +51,15 @@ public static class BlazorHybridServiceExtensions
         var options = new WebViewBridgeOptions();
         configure?.Invoke(options);
 
-        // TODO: Implement WebViewStorageBridge<TData> registration when ready
+        var bridgeConfig = new WebViewStorageBridgeConfig
+        {
+            MonitoredKeys = options.StorageKeys,
+            PollingInterval = options.PollingInterval,
+            DefaultStorageType = options.EnableCookies ? StorageType.Cookies : StorageType.LocalStorage
+        };
+
+        services.AddSingleton(bridgeConfig);
+        services.AddScoped<IWebViewBridge<TData>, WebViewStorageBridge<TData>>();
 
         return services;
     }

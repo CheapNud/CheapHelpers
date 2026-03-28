@@ -32,6 +32,9 @@
 _Nothing blocking._
 
 ## Planned
+- [ ] (2026-03-28) Add API key distribution system tied to user identity [user]
+  - Key generation, rotation, revocation, per-user scoping
+  - Rate limiting and usage tracking per key
 - [x] (2026-03-28 → 2026-03-28) Add GitHub and Apple OAuth providers to CheapHelpers auth [user]
   - `GitHubAuthOptions` with `EnterpriseDomain`, `AppleAuthOptions` with `TeamId`, `KeyId`, `PrivateKeyPath`/`PrivateKeyContent`
   - Extended `OAuthBlazorExtensions` with `AddGitHubAuth()`, `AddAppleAuth()`, refactored `MapOAuthEndpoints` to shared `MapProviderEndpoints`
@@ -50,11 +53,10 @@ _Nothing blocking._
   - Added `ArgumentNullException` guards, not-found checks, multi-match detection for predicate overload
 - [x] (2026-03-17 → 2026-03-28) Add `SanitizeFileName()` to `StringExtensions` (CheapHelpers) [audit]
   - Added `Path.GetInvalidFileNameChars()`-based method with configurable replacement char
-- [ ] (2026-03-17) Add shared Plex SSO auth provider [user]
-  - New folder: `CheapHelpers/Auth/Plex/` — PlexAuthProvider, PlexUser, PlexPin
-  - Design `IExternalAuthProvider` interface for future Google/Discord/etc.
-  - Endpoint mapper helper for `/auth/plex-start`, `/auth/plex-callback`, `/auth/logout`
-  - Consumers: CheapManga, CheapNights (both currently have their own copies)
+- [x] (2026-03-17 → 2026-03-28) Add shared Plex SSO auth provider [user]
+  - `CheapHelpers.Services/Auth/Plex/` — IPlexAuthService, PlexAuthService, PlexUser, PlexPin, PlexAuthOptions
+  - `IExternalAuthProvider` marker interface, `IExternalUserProvisioner` bridge with opt-in `AddExternalUserProvisioning<TUser>()`
+  - `PlexAuthBlazorExtensions.MapPlexAuthEndpoints()` for `/auth/plex-start`, `/auth/plex-callback`, `/auth/logout`
 - [x] (2026-03-17 → 2026-03-28) Refactor `AsyncLazy<T>` for HardwareDetectionService caching [code-todo]
   - Created `CheapHelpers/Threading/AsyncLazy.cs` — generic async lazy with `GetAwaiter` support
   - Replaced volatile + SemaphoreSlim double-check pattern in both Windows and Linux services
@@ -62,8 +64,10 @@ _Nothing blocking._
   - `CheapHelpers.Services/Notifications/Extensions/NotificationServiceExtensions.cs:98`
 - [ ] (2026-03-17) Implement RabbitMQ real-time notification support [code-todo]
   - `CheapHelpers.Services/Notifications/Extensions/NotificationServiceExtensions.cs:113`
-- [ ] (2026-03-17) Implement WebViewStorageBridge registration [code-todo]
-  - `CheapHelpers.Blazor/Hybrid/Extensions/BlazorHybridServiceExtensions.cs:51`
+- [x] (2026-03-17 → 2026-03-28) Implement WebViewStorageBridge registration [code-todo]
+  - Created `WebViewStorageBridge<TData>` with JS interop for localStorage/sessionStorage/cookies
+  - Polling-based change monitoring with `DataChanged` event, uses `WebViewJsonParser` for deserialization
+  - Wired DI in `AddWebViewBridge<TData>()` with `WebViewStorageBridgeConfig`
 - [x] (2026-03-17 → 2026-03-28) Implement Azure Notification Hub backend [code-todo]
   - `CheapHelpers.Blazor/Hybrid/Notifications/Backends/AzureNotificationHubBackend.cs` — implements `IPushNotificationBackend`
   - Wired `UseAzureNotificationHubs(connectionString, hubName)` in `PushNotificationOptions` (was `NotImplementedException`)
@@ -87,10 +91,6 @@ _Nothing blocking._
   - Tightened generic constraint from `IdentityUser` to `CheapUser` on provider + DI extension
 
 ## Future
-
-- [ ] (2026-03-28) Add API key distribution system tied to user identity [user]
-  - Key generation, rotation, revocation, per-user scoping
-  - Rate limiting and usage tracking per key
 - [ ] (2026-03-28) Add billing service attached to API key usage [user]
   - Metered billing based on API call volume
   - Ties into API key distribution system

@@ -32,9 +32,11 @@
 _Nothing blocking._
 
 ## Planned
-- [ ] (2026-03-28) Add API key distribution system tied to user identity [user]
-  - Key generation, rotation, revocation, per-user scoping
-  - Rate limiting and usage tracking per key
+- [x] (2026-03-28 → 2026-03-28) Add API key distribution system tied to user identity [user]
+  - `CheapHelpers.Models/Entities/ApiKey.cs` — EF entity with SHA-256 hashed keys, prefix display, scopes JSON, rate limits
+  - `CheapHelpers.Services/ApiKeys/` — `IApiKeyService`, `ApiKeyService<TUser>` with generate/validate/revoke/rotate, ConcurrentDictionary cache
+  - `CheapHelpers.Blazor/Middleware/ApiKeyMiddleware.cs` — header extraction, validation, sliding window rate limiting (minute + day), claims principal
+  - `CheapContext.OnModelCreating` — unique index on KeyHash, composite on (UserId, IsActive)
 - [x] (2026-03-28 → 2026-03-28) Add GitHub and Apple OAuth providers to CheapHelpers auth [user]
   - `GitHubAuthOptions` with `EnterpriseDomain`, `AppleAuthOptions` with `TeamId`, `KeyId`, `PrivateKeyPath`/`PrivateKeyContent`
   - Extended `OAuthBlazorExtensions` with `AddGitHubAuth()`, `AddAppleAuth()`, refactored `MapOAuthEndpoints` to shared `MapProviderEndpoints`
@@ -62,8 +64,11 @@ _Nothing blocking._
   - Replaced volatile + SemaphoreSlim double-check pattern in both Windows and Linux services
 - [ ] (2026-03-17) Implement Redis caching support for notifications [code-todo]
   - `CheapHelpers.Services/Notifications/Extensions/NotificationServiceExtensions.cs:98`
-- [ ] (2026-03-17) Implement RabbitMQ real-time notification support [code-todo]
-  - `CheapHelpers.Services/Notifications/Extensions/NotificationServiceExtensions.cs:113`
+- [x] (2026-03-17 → 2026-03-28) Implement RabbitMQ real-time notification support [code-todo]
+  - `RabbitMQNotificationRealTimeService` publishes to topic exchange, routing by `notification.user.{id}` and `notification.broadcast`
+  - `RabbitMQNotificationConsumer` (BackgroundService) subscribes and forwards to local SignalR hub
+  - SignalR remains default and client-facing transport; RabbitMQ enables cross-server delivery
+  - Opt-in via `RealTimeProvider = "RabbitMQ"` + `AddCheapNotificationsRabbitMQConsumer(connectionString)`
 - [x] (2026-03-17 → 2026-03-28) Implement WebViewStorageBridge registration [code-todo]
   - Created `WebViewStorageBridge<TData>` with JS interop for localStorage/sessionStorage/cookies
   - Polling-based change monitoring with `DataChanged` event, uses `WebViewJsonParser` for deserialization

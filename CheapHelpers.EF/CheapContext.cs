@@ -222,6 +222,38 @@ namespace CheapHelpers.EF
                       .HasDatabaseName(Constants.Database.NotificationPreferencesUserIdTypeIndex);
             });
 
+            // Configure ApiKey entities
+            modelBuilder.Entity<ApiKey>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.KeyHash).IsRequired().HasMaxLength(64);
+                entity.Property(e => e.KeyPrefix).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.UserId).IsRequired().HasMaxLength(450);
+                entity.Property(e => e.ScopesJson).HasMaxLength(2000);
+
+                entity.HasIndex(e => e.KeyHash)
+                      .IsUnique()
+                      .HasDatabaseName(Constants.Database.ApiKeysKeyHashIndex);
+
+                entity.HasIndex(e => e.KeyPrefix)
+                      .HasDatabaseName(Constants.Database.ApiKeysKeyPrefixIndex);
+
+                entity.HasIndex(e => e.UserId)
+                      .HasDatabaseName(Constants.Database.ApiKeysUserIdIndex);
+
+                entity.HasIndex(e => new { e.UserId, e.IsActive })
+                      .HasDatabaseName(Constants.Database.ApiKeysUserIdIsActiveIndex);
+
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+
+                var utcNowSql = GetUtcNowFunction();
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql(utcNowSql);
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql(utcNowSql);
+            });
+
         }
 
         /// <summary>
@@ -250,6 +282,8 @@ namespace CheapHelpers.EF
         public DbSet<UserNotificationPreference> UserNotificationPreferences { get; set; }
 
         public DbSet<FileAttachment> FileAttachments { get; set; }
+
+        public DbSet<ApiKey> ApiKeys { get; set; }
     }
 
     // Usage Examples:

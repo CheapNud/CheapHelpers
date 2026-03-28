@@ -275,6 +275,12 @@ namespace CheapHelpers
             /// Index name for UserNotificationPreferences UserId and NotificationType unique composite
             /// </summary>
             public const string NotificationPreferencesUserIdTypeIndex = "IX_UserNotificationPreferences_UserId_NotificationType";
+
+            // API Key indexes
+            public const string ApiKeysKeyHashIndex = "IX_ApiKeys_KeyHash";
+            public const string ApiKeysKeyPrefixIndex = "IX_ApiKeys_KeyPrefix";
+            public const string ApiKeysUserIdIndex = "IX_ApiKeys_UserId";
+            public const string ApiKeysUserIdIsActiveIndex = "IX_ApiKeys_UserId_IsActive";
         }
 
         /// <summary>

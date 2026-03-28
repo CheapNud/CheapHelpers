@@ -3,7 +3,9 @@ using CheapHelpers.Blazor.Services;
 using CheapHelpers.Services.Notifications;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace CheapHelpers.Blazor.Extensions;
 
@@ -28,13 +30,39 @@ public static class NotificationBlazorExtensions
     /// route builder to map the SignalR hub endpoint.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// Adds Blazor notification services with SignalR as the default real-time transport.
+    /// </summary>
     public static IServiceCollection AddCheapNotificationsBlazor(this IServiceCollection services)
     {
         // Register SignalR
         services.AddSignalR();
 
-        // Register SignalR-based real-time notification service
+        // Register SignalR-based real-time notification service (default)
         services.AddScoped<INotificationRealTimeService, SignalRNotificationRealTimeService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Adds the RabbitMQ notification consumer that subscribes to the notification exchange
+    /// and forwards messages to locally connected SignalR clients.
+    /// Use this alongside <see cref="AddCheapNotificationsBlazor"/> when <c>RealTimeProvider</c> is "RabbitMQ".
+    /// SignalR remains the client-facing transport — RabbitMQ handles cross-server delivery.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="rabbitMqConnectionString">RabbitMQ connection string (amqp://...).</param>
+    public static IServiceCollection AddCheapNotificationsRabbitMQConsumer(
+        this IServiceCollection services,
+        string rabbitMqConnectionString)
+    {
+        // SignalR is still needed for client delivery
+        services.AddSignalR();
+
+        services.AddHostedService(sp => new RabbitMQNotificationConsumer(
+            rabbitMqConnectionString,
+            sp.GetRequiredService<IHubContext<NotificationHub>>(),
+            sp.GetRequiredService<ILogger<RabbitMQNotificationConsumer>>()));
 
         return services;
     }

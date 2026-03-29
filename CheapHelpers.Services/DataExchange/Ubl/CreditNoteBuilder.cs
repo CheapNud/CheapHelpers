@@ -128,18 +128,8 @@ public class CreditNoteBuilder
         };
     }
 
-    /// <inheritdoc cref="InvoiceBuilder.DeriveEndpointFromVat"/>
-    private static string? DeriveEndpointFromVat(string? vatNumber)
-    {
-        if (string.IsNullOrWhiteSpace(vatNumber))
-            return null;
-
-        var trimmed = vatNumber.Trim();
-        if (trimmed.Length > 2 && char.IsLetter(trimmed[0]) && char.IsLetter(trimmed[1]))
-            return trimmed[2..];
-
-        return trimmed;
-    }
+    private static string? DeriveEndpointFromVat(string? vatNumber) =>
+        VatHelper.DeriveEndpointFromVat(vatNumber);
 
     private record LineItem(string Description, decimal Quantity, decimal UnitPrice, decimal VatPercent);
 }

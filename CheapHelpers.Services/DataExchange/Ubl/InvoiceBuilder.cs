@@ -292,23 +292,8 @@ public class InvoiceBuilder
         };
     }
 
-    /// <summary>
-    /// Strips the country prefix from a VAT number to derive the PEPPOL endpoint ID.
-    /// Handles any 2-letter country prefix (BE, NL, DE, FR, etc.).
-    /// </summary>
-    private static string? DeriveEndpointFromVat(string? vatNumber)
-    {
-        if (string.IsNullOrWhiteSpace(vatNumber))
-            return null;
-
-        var trimmed = vatNumber.Trim();
-
-        // Strip leading 2-letter country code if present
-        if (trimmed.Length > 2 && char.IsLetter(trimmed[0]) && char.IsLetter(trimmed[1]))
-            return trimmed[2..];
-
-        return trimmed;
-    }
+    private static string? DeriveEndpointFromVat(string? vatNumber) =>
+        VatHelper.DeriveEndpointFromVat(vatNumber);
 
     private record LineItem(string Description, decimal Quantity, decimal UnitPrice, decimal VatPercent);
 }

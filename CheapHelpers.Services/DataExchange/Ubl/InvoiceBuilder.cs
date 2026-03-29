@@ -13,8 +13,9 @@ namespace CheapHelpers.Services.DataExchange.Ubl;
 public class InvoiceBuilder
 {
     private string _id = string.Empty;
-    private DateTime _issueDate = DateTime.Now;
-    private DateTime? _dueDate;
+    private DateTime _issueDate;
+    private DateTime? _absoluteDueDate;
+    private int? _relativeDueDays;
     private string _currency = "EUR";
     private string? _note;
     private string? _billingReference;
@@ -29,11 +30,11 @@ public class InvoiceBuilder
     public static InvoiceBuilder Create(string invoiceNumber)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(invoiceNumber);
-        return new InvoiceBuilder { _id = invoiceNumber, _issueDate = DateTime.Now };
+        return new InvoiceBuilder { _id = invoiceNumber, _issueDate = DateTime.UtcNow };
     }
 
     /// <summary>
-    /// Sets the invoice date (defaults to today).
+    /// Sets the invoice date (defaults to <see cref="DateTime.UtcNow"/>).
     /// </summary>
     public InvoiceBuilder IssuedOn(DateTime date)
     {
@@ -42,20 +43,23 @@ public class InvoiceBuilder
     }
 
     /// <summary>
-    /// Sets the payment due date.
+    /// Sets an absolute payment due date.
     /// </summary>
     public InvoiceBuilder DueOn(DateTime date)
     {
-        _dueDate = date;
+        _absoluteDueDate = date;
+        _relativeDueDays = null;
         return this;
     }
 
     /// <summary>
-    /// Sets the due date relative to the issue date.
+    /// Sets the due date relative to the issue date. Computed at <see cref="Build"/> time,
+    /// so call order with <see cref="IssuedOn"/> does not matter.
     /// </summary>
     public InvoiceBuilder DueIn(int days)
     {
-        _dueDate = _issueDate.AddDays(days);
+        _relativeDueDays = days;
+        _absoluteDueDate = null;
         return this;
     }
 
@@ -87,15 +91,18 @@ public class InvoiceBuilder
     }
 
     /// <summary>
-    /// Sets the seller (your company). Minimal: name + VAT number.
+    /// Sets the seller (your company). The electronic address for e-invoicing
+    /// is derived automatically from the VAT number.
     /// </summary>
-    public InvoiceBuilder From(string companyName, string? vatNumber = null, string? endpointId = null)
+    /// <param name="companyName">Company or trade name.</param>
+    /// <param name="vatNumber">VAT number including country prefix (e.g., "BE0123456789").</param>
+    public InvoiceBuilder From(string companyName, string? vatNumber = null)
     {
         _seller = new UblParty
         {
             Name = companyName,
             TaxId = vatNumber,
-            EndpointId = endpointId ?? vatNumber?.Replace("BE", ""),
+            EndpointId = DeriveEndpointFromVat(vatNumber),
         };
         return this;
     }
@@ -109,7 +116,7 @@ public class InvoiceBuilder
         {
             Name = companyName,
             TaxId = vatNumber,
-            EndpointId = vatNumber.Replace("BE", ""),
+            EndpointId = DeriveEndpointFromVat(vatNumber),
             Address = new UblAddress
             {
                 StreetName = street,
@@ -122,7 +129,9 @@ public class InvoiceBuilder
     }
 
     /// <summary>
-    /// Sets the seller from a pre-built UblParty (for advanced scenarios).
+    /// Sets the seller from a pre-built <see cref="UblParty"/>.
+    /// Use this for advanced PEPPOL scenarios where you need full control over
+    /// the electronic address (endpoint ID), tax schemes, or legal entity fields.
     /// </summary>
     public InvoiceBuilder From(UblParty seller)
     {
@@ -131,15 +140,18 @@ public class InvoiceBuilder
     }
 
     /// <summary>
-    /// Sets the buyer (customer). Minimal: name.
+    /// Sets the buyer (customer). The electronic address for e-invoicing
+    /// is derived automatically from the VAT number.
     /// </summary>
-    public InvoiceBuilder To(string customerName, string? vatNumber = null, string? endpointId = null)
+    /// <param name="customerName">Customer or trade name.</param>
+    /// <param name="vatNumber">VAT number including country prefix (e.g., "BE9876543210").</param>
+    public InvoiceBuilder To(string customerName, string? vatNumber = null)
     {
         _buyer = new UblParty
         {
             Name = customerName,
             TaxId = vatNumber,
-            EndpointId = endpointId ?? vatNumber?.Replace("BE", ""),
+            EndpointId = DeriveEndpointFromVat(vatNumber),
         };
         return this;
     }
@@ -153,7 +165,7 @@ public class InvoiceBuilder
         {
             Name = customerName,
             TaxId = vatNumber,
-            EndpointId = vatNumber.Replace("BE", ""),
+            EndpointId = DeriveEndpointFromVat(vatNumber),
             Address = new UblAddress
             {
                 StreetName = street,
@@ -251,11 +263,14 @@ public class InvoiceBuilder
         var totalTax = taxSubtotals.Sum(t => t.TaxAmount);
         var payableAmount = lineExtensionAmount + totalTax;
 
+        // Resolve due date — relative days computed against final issue date
+        var resolvedDueDate = _absoluteDueDate ?? (_relativeDueDays.HasValue ? _issueDate.AddDays(_relativeDueDays.Value) : (DateTime?)null);
+
         return new UblInvoice
         {
             Id = _id,
             IssueDate = _issueDate,
-            DueDate = _dueDate,
+            DueDate = resolvedDueDate,
             Currency = _currency,
             Note = _note,
             BillingReference = _billingReference,
@@ -275,6 +290,24 @@ public class InvoiceBuilder
                 PayableAmount = payableAmount
             }
         };
+    }
+
+    /// <summary>
+    /// Strips the country prefix from a VAT number to derive the PEPPOL endpoint ID.
+    /// Handles any 2-letter country prefix (BE, NL, DE, FR, etc.).
+    /// </summary>
+    private static string? DeriveEndpointFromVat(string? vatNumber)
+    {
+        if (string.IsNullOrWhiteSpace(vatNumber))
+            return null;
+
+        var trimmed = vatNumber.Trim();
+
+        // Strip leading 2-letter country code if present
+        if (trimmed.Length > 2 && char.IsLetter(trimmed[0]) && char.IsLetter(trimmed[1]))
+            return trimmed[2..];
+
+        return trimmed;
     }
 
     private record LineItem(string Description, decimal Quantity, decimal UnitPrice, decimal VatPercent);

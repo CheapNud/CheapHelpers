@@ -9,7 +9,7 @@ namespace CheapHelpers.Services.DataExchange.Ubl;
 public class CreditNoteBuilder
 {
     private string _id = string.Empty;
-    private DateTime _issueDate = DateTime.Now;
+    private DateTime _issueDate;
     private string _currency = "EUR";
     private string? _note;
     private string? _creditReason;
@@ -22,7 +22,7 @@ public class CreditNoteBuilder
     public static CreditNoteBuilder Create(string creditNoteNumber)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(creditNoteNumber);
-        return new CreditNoteBuilder { _id = creditNoteNumber };
+        return new CreditNoteBuilder { _id = creditNoteNumber, _issueDate = DateTime.UtcNow };
     }
 
     public CreditNoteBuilder IssuedOn(DateTime date) { _issueDate = date; return this; }
@@ -39,20 +39,24 @@ public class CreditNoteBuilder
         return this;
     }
 
-    public CreditNoteBuilder From(string companyName, string? vatNumber = null, string? endpointId = null)
+    /// <inheritdoc cref="InvoiceBuilder.From(string, string?)"/>
+    public CreditNoteBuilder From(string companyName, string? vatNumber = null)
     {
-        _seller = new UblParty { Name = companyName, TaxId = vatNumber, EndpointId = endpointId ?? vatNumber?.Replace("BE", "") };
+        _seller = new UblParty { Name = companyName, TaxId = vatNumber, EndpointId = DeriveEndpointFromVat(vatNumber) };
         return this;
     }
 
+    /// <inheritdoc cref="InvoiceBuilder.From(UblParty)"/>
     public CreditNoteBuilder From(UblParty seller) { _seller = seller; return this; }
 
-    public CreditNoteBuilder To(string customerName, string? vatNumber = null, string? endpointId = null)
+    /// <inheritdoc cref="InvoiceBuilder.To(string, string?)"/>
+    public CreditNoteBuilder To(string customerName, string? vatNumber = null)
     {
-        _buyer = new UblParty { Name = customerName, TaxId = vatNumber, EndpointId = endpointId ?? vatNumber?.Replace("BE", "") };
+        _buyer = new UblParty { Name = customerName, TaxId = vatNumber, EndpointId = DeriveEndpointFromVat(vatNumber) };
         return this;
     }
 
+    /// <inheritdoc cref="InvoiceBuilder.To(UblParty)"/>
     public CreditNoteBuilder To(UblParty buyer) { _buyer = buyer; return this; }
 
     public CreditNoteBuilder AddLine(string description, decimal quantity, decimal unitPrice, decimal vatPercent = 21)
@@ -122,6 +126,19 @@ public class CreditNoteBuilder
                 PayableAmount = lineExtensionAmount + totalTax
             }
         };
+    }
+
+    /// <inheritdoc cref="InvoiceBuilder.DeriveEndpointFromVat"/>
+    private static string? DeriveEndpointFromVat(string? vatNumber)
+    {
+        if (string.IsNullOrWhiteSpace(vatNumber))
+            return null;
+
+        var trimmed = vatNumber.Trim();
+        if (trimmed.Length > 2 && char.IsLetter(trimmed[0]) && char.IsLetter(trimmed[1]))
+            return trimmed[2..];
+
+        return trimmed;
     }
 
     private record LineItem(string Description, decimal Quantity, decimal UnitPrice, decimal VatPercent);

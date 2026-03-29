@@ -11,7 +11,8 @@ namespace CheapHelpers.EF.Repositories
     /// Enhanced repository for user operations, replacing basic UserManager/RoleManager functionality
     /// Optimized for Blazor Server scenarios where HttpContext is not available
     /// </summary>
-    public class UserRepo(IDbContextFactory<CheapContext<CheapUser>> factory) : BaseRepo(factory)
+    public class UserRepo<TUser>(IDbContextFactory<CheapContext<TUser>> factory) : BaseRepo<CheapContext<TUser>>(factory)
+        where TUser : CheapUser
     {
         private const int DEFAULT_USER_PAGE_SIZE = 20;
 
@@ -31,7 +32,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Removes a user from a specified role
         /// </summary>
-        public async Task<bool> RemoveFromRoleAsync(CheapUser user, string roleName, CancellationToken token = default)
+        public async Task<bool> RemoveFromRoleAsync(TUser user, string roleName, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(user);
             ArgumentException.ThrowIfNullOrWhiteSpace(roleName);
@@ -72,7 +73,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Adds a user to a specified role
         /// </summary>
-        public async Task<bool> AddToRoleAsync(CheapUser user, string roleName, CancellationToken token = default)
+        public async Task<bool> AddToRoleAsync(TUser user, string roleName, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(user);
             ArgumentException.ThrowIfNullOrWhiteSpace(roleName);
@@ -119,7 +120,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Adds multiple users to a role efficiently
         /// </summary>
-        public async Task<int> AddUsersToRoleAsync(IEnumerable<CheapUser> users, string roleName, CancellationToken token = default)
+        public async Task<int> AddUsersToRoleAsync(IEnumerable<TUser> users, string roleName, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(users);
             ArgumentException.ThrowIfNullOrWhiteSpace(roleName);
@@ -174,7 +175,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Gets all users in a specified role with optimized query
         /// </summary>
-        public async Task<List<CheapUser>> GetUsersInRoleAsync(string roleName, CancellationToken token = default)
+        public async Task<List<TUser>> GetUsersInRoleAsync(string roleName, CancellationToken token = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(roleName);
 
@@ -199,7 +200,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Gets paginated users in a specified role
         /// </summary>
-        public async Task<PaginatedList<CheapUser>> GetUsersInRolePaginatedAsync(string roleName, int? pageIndex = null, int pageSize = DEFAULT_USER_PAGE_SIZE, CancellationToken token = default)
+        public async Task<PaginatedList<TUser>> GetUsersInRolePaginatedAsync(string roleName, int? pageIndex = null, int pageSize = DEFAULT_USER_PAGE_SIZE, CancellationToken token = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(roleName);
 
@@ -213,7 +214,7 @@ namespace CheapHelpers.EF.Repositories
                     .Where(x => x.Name == roleName)
                     .Select(x => x.User);
 
-                return await PaginatedList<CheapUser>.CreateAsync(query, pageIndex.Value, pageSize, token);
+                return await PaginatedList<TUser>.CreateAsync(query, pageIndex ?? 1, pageSize, token);
             }
             catch (Exception ex)
             {
@@ -225,7 +226,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Gets user roles with optimized single query
         /// </summary>
-        public async Task<List<IdentityUserRole<string>>> GetUserRolesAsync(CheapUser user, CancellationToken token = default)
+        public async Task<List<IdentityUserRole<string>>> GetUserRolesAsync(TUser user, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(user);
 
@@ -246,7 +247,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Gets user role names with optimized single join query
         /// </summary>
-        public async Task<List<string>> GetUserRoleNamesAsync(CheapUser user, CancellationToken token = default)
+        public async Task<List<string>> GetUserRoleNamesAsync(TUser user, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(user);
 
@@ -269,7 +270,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Checks if a user is in a specified role
         /// </summary>
-        public async Task<bool> IsInRoleAsync(CheapUser user, string roleName, CancellationToken token = default)
+        public async Task<bool> IsInRoleAsync(TUser user, string roleName, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(user);
             ArgumentException.ThrowIfNullOrWhiteSpace(roleName);
@@ -303,7 +304,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Replaces all user roles with a new set of roles
         /// </summary>
-        public async Task<bool> SetUserRolesAsync(CheapUser user, IEnumerable<string> roleNames, CancellationToken token = default)
+        public async Task<bool> SetUserRolesAsync(TUser user, IEnumerable<string> roleNames, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(user);
             ArgumentNullException.ThrowIfNull(roleNames);
@@ -359,7 +360,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Updates user information with proper change tracking
         /// </summary>
-        public async Task<bool> UpdateUserAsync(CheapUser user, CancellationToken token = default)
+        public async Task<bool> UpdateUserAsync(TUser user, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(user);
 
@@ -395,7 +396,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Updates specific user properties using a selector
         /// </summary>
-        public async Task<bool> UpdateUserPropertiesAsync<TProperty>(CheapUser user, Expression<Func<CheapUser, TProperty>> propertySelector, TProperty newValue, CancellationToken token = default)
+        public async Task<bool> UpdateUserPropertiesAsync<TProperty>(TUser user, Expression<Func<TUser, TProperty>> propertySelector, TProperty newValue, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(user);
             ArgumentNullException.ThrowIfNull(propertySelector);
@@ -413,7 +414,7 @@ namespace CheapHelpers.EF.Repositories
 
                 if (propertySelector.Body is MemberExpression memberExpression)
                 {
-                    var property = typeof(CheapUser).GetProperty(memberExpression.Member.Name);
+                    var property = typeof(TUser).GetProperty(memberExpression.Member.Name);
                     property?.SetValue(trackedUser, newValue);
 
                     await context.SaveChangesAsync(token);
@@ -432,7 +433,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Sets user email and normalizes it properly
         /// </summary>
-        public async Task<bool> SetEmailAsync(CheapUser user, string email, CancellationToken token = default)
+        public async Task<bool> SetEmailAsync(TUser user, string email, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(user);
             ArgumentException.ThrowIfNullOrWhiteSpace(email);
@@ -465,7 +466,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Confirms user email
         /// </summary>
-        public async Task<bool> ConfirmEmailAsync(CheapUser user, CancellationToken token = default)
+        public async Task<bool> ConfirmEmailAsync(TUser user, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(user);
 
@@ -494,7 +495,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Gets user by email address
         /// </summary>
-        public async Task<CheapUser?> GetUserByEmailAsync(string email, CancellationToken token = default)
+        public async Task<TUser?> GetUserByEmailAsync(string email, CancellationToken token = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(email);
 
@@ -514,7 +515,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Gets user by username
         /// </summary>
-        public async Task<CheapUser?> GetUserByUsernameAsync(string username, CancellationToken token = default)
+        public async Task<TUser?> GetUserByUsernameAsync(string username, CancellationToken token = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(username);
 
@@ -534,7 +535,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Searches users by name, email, or username
         /// </summary>
-        public async Task<List<CheapUser>> SearchUsersAsync(string searchTerm, CancellationToken token = default)
+        public async Task<List<TUser>> SearchUsersAsync(string searchTerm, CancellationToken token = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(searchTerm);
 
@@ -561,7 +562,7 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Gets paginated search results for users
         /// </summary>
-        public async Task<PaginatedList<CheapUser>> SearchUsersPaginatedAsync(string searchTerm, int? pageIndex = null, int pageSize = DEFAULT_USER_PAGE_SIZE, CancellationToken token = default)
+        public async Task<PaginatedList<TUser>> SearchUsersPaginatedAsync(string searchTerm, int? pageIndex = null, int pageSize = DEFAULT_USER_PAGE_SIZE, CancellationToken token = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(searchTerm);
 
@@ -577,7 +578,7 @@ namespace CheapHelpers.EF.Repositories
                         u.Email.ToLower().Contains(lowerSearchTerm) ||
                         u.UserName.ToLower().Contains(lowerSearchTerm));
 
-                return await PaginatedList<CheapUser>.CreateAsync(query, pageIndex.Value, pageSize, token);
+                return await PaginatedList<TUser>.CreateAsync(query, pageIndex ?? 1, pageSize, token);
             }
             catch (Exception ex)
             {
@@ -589,18 +590,18 @@ namespace CheapHelpers.EF.Repositories
         /// <summary>
         /// Gets all users with pagination
         /// </summary>
-        public async Task<PaginatedList<CheapUser>> GetAllUsersPaginatedAsync(int? pageIndex = null, int pageSize = DEFAULT_USER_PAGE_SIZE, CancellationToken token = default)
+        public async Task<PaginatedList<TUser>> GetAllUsersPaginatedAsync(int? pageIndex = null, int pageSize = DEFAULT_USER_PAGE_SIZE, CancellationToken token = default)
         {
             using var context = _factory.CreateDbContext();
-            var query = _factory.CreateDbContext().Users.AsNoTracking();
+            var query = context.Users.AsNoTracking();
 
-            return await PaginatedList<CheapUser>.CreateAsync(query, pageIndex.Value, pageSize, token);
+            return await PaginatedList<TUser>.CreateAsync(query, pageIndex ?? 1, pageSize, token);
         }
 
         /// <summary>
         /// Deletes a user and all associated data
         /// </summary>
-        public async Task<bool> DeleteUserAsync(CheapUser user, CancellationToken token = default)
+        public async Task<bool> DeleteUserAsync(TUser user, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(user);
 
@@ -672,4 +673,10 @@ namespace CheapHelpers.EF.Repositories
 
         #endregion
     }
+
+    /// <summary>
+    /// Backward-compatible UserRepo hardcoded to CheapUser.
+    /// New consumers should use <see cref="UserRepo{TUser}"/> with their concrete user type.
+    /// </summary>
+    public class UserRepo(IDbContextFactory<CheapContext<CheapUser>> factory) : UserRepo<CheapUser>(factory);
 }

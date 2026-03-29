@@ -29,6 +29,11 @@
 
 ## Blocking
 
+- [x] (2026-03-29 → 2026-03-29) Make AccountController generic — `CheapAccountController<TUser> where TUser : CheapUser` [voltiq-dep]
+  - Renamed `AccountController` → `CheapAccountController<TUser>` with generic `SignInManager<TUser>`, `UserManager<TUser>`, `UserService<TUser>`
+  - Made `UserRepo<TUser>` generic (was hardcoded to CheapUser), backward-compat `UserRepo` shim preserved
+  - Made `UserService<TUser>` generic, backward-compat `UserService` shim preserved
+  - Updated DI registration in `AddCheapHelpersBlazor<TUser>` to use `UserService<TUser>`
 - [x] (2026-03-28 → 2026-03-28) API key system — configurable prefix support (`GenerateKey("VTQ")` → `VTQ-a7f3bc91...`) [voltiq-dep]
   - Added `prefixOverride` parameter to `GenerateAsync` (null defaults to `ApiKeyOptions.KeyPrefix`)
 - [x] (2026-03-28 → 2026-03-28) API key system — hash storage, NEVER store plaintext in DB, `GenerateKey()` returns plaintext once [voltiq-dep]

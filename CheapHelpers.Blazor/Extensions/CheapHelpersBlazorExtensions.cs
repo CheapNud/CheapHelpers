@@ -66,7 +66,7 @@ namespace CheapHelpers.Blazor.Extensions
             }
 
             // Register core services
-            services.AddScoped<UserService>();
+            services.AddScoped<UserService<TUser>>();
 
             // Register email service if configured
             if (options.EmailServiceType != null)

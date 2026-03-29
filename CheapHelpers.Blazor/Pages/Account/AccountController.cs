@@ -17,13 +17,13 @@ namespace CheapHelpers.Blazor.Pages.Account
 {
     [Route("[controller]/[action]")]
     [Authorize]
-    public class AccountController(
-        SignInManager<CheapUser> signInManager,
+    public class CheapAccountController<TUser>(
+        SignInManager<TUser> signInManager,
         IEmailService mailer,
-        UserManager<CheapUser> userManager,
-        UserService userService,
+        UserManager<TUser> userManager,
+        UserService<TUser> userService,
         UrlEncoder urlEncoder
-        ) : Controller
+        ) : Controller where TUser : CheapUser
     {
         private const string AppName = "CheapHelpers.Blazor";
         private const int RecoveryCodesCount = 10;
@@ -245,7 +245,7 @@ namespace CheapHelpers.Blazor.Pages.Account
         /// </summary>
         /// <param name="user">The user to generate the key for</param>
         /// <returns>Tuple containing (shared key, authenticator URI) or null if failed</returns>
-        private async Task<(string SharedKey, string AuthenticatorUri)?> LoadSharedKeyAndQrCodeUriAsync(CheapUser user)
+        private async Task<(string SharedKey, string AuthenticatorUri)?> LoadSharedKeyAndQrCodeUriAsync(TUser user)
         {
             try
             {
@@ -269,12 +269,12 @@ namespace CheapHelpers.Blazor.Pages.Account
             }
         }
 
-        private async Task<Dictionary<string, string>> BuildPersonalDataDictionary(CheapUser user)
+        private async Task<Dictionary<string, string>> BuildPersonalDataDictionary(TUser user)
         {
             var personalData = new Dictionary<string, string>();
 
             // Add properties marked with PersonalDataAttribute
-            var personalDataProps = typeof(CheapUser)
+            var personalDataProps = typeof(TUser)
                 .GetProperties()
                 .Where(prop => Attribute.IsDefined(prop, typeof(PersonalDataAttribute)));
 

@@ -1,4 +1,4 @@
-﻿using CheapHelpers;
+using CheapHelpers;
 using CheapHelpers.EF;
 using CheapHelpers.EF.Repositories;
 using CheapHelpers.Models.Entities;
@@ -11,35 +11,21 @@ using System.Security.Claims;
 namespace CheapHelpers.Blazor.Services
 {
     /// <summary>
-    /// Blazor Replacement for UsermManager and RoleManager
-    /// All Task<AuthenticationState>, AuthenticationState and Claimsprincipal tasks check for authentication!
+    /// Generic Blazor user service replacing UserManager/RoleManager.
+    /// All auth-state methods validate authentication before proceeding.
     /// </summary>
-    public class UserService(IDbContextFactory<CheapContext<CheapUser>> factory) : UserRepo(factory)
+    /// <typeparam name="TUser">Concrete user type extending CheapUser</typeparam>
+    public class UserService<TUser>(IDbContextFactory<CheapContext<TUser>> factory) : UserRepo<TUser>(factory)
+        where TUser : CheapUser
     {
         #region Navigation State Management
 
-        /// <summary>
-        /// Updates navigation state for the current user based on authentication state
-        /// </summary>
-        /// <param name="authState">Authentication state</param>
-        /// <param name="navigationKey">Key for the navigation section (e.g., "Service", "Production")</param>
-        /// <param name="expanded">Whether the section should be expanded</param>
-        /// <param name="token">Cancellation token</param>
-        /// <returns>True if update was successful</returns>
         public async Task<bool> UpdateNavigationStateAsync(Task<AuthenticationState> authState, string navigationKey, bool expanded, CancellationToken token = default)
         {
             var userId = await GetUserIdAsync(authState);
             return await UpdateNavigationStateAsync(userId, navigationKey, expanded, token);
         }
 
-        /// <summary>
-        /// Updates navigation state for a specific user
-        /// </summary>
-        /// <param name="userId">User ID</param>
-        /// <param name="navigationKey">Key for the navigation section</param>
-        /// <param name="expanded">Whether the section should be expanded</param>
-        /// <param name="token">Cancellation token</param>
-        /// <returns>True if update was successful</returns>
         public async Task<bool> UpdateNavigationStateAsync(string userId, string navigationKey, bool expanded, CancellationToken token = default)
         {
             try
@@ -55,7 +41,6 @@ namespace CheapHelpers.Blazor.Services
                     return false;
                 }
 
-                // Update the navigation state using the enhanced method
                 user.SetExpandState(navigationKey, expanded);
 
                 await context.SaveChangesAsync(token);
@@ -70,13 +55,6 @@ namespace CheapHelpers.Blazor.Services
             }
         }
 
-        /// <summary>
-        /// Batch update multiple navigation states for better performance
-        /// </summary>
-        /// <param name="userId">User ID</param>
-        /// <param name="navigationStates">Dictionary of navigation keys and their expanded states</param>
-        /// <param name="token">Cancellation token</param>
-        /// <returns>True if update was successful</returns>
         public async Task<bool> UpdateNavigationStatesAsync(string userId, Dictionary<string, bool> navigationStates, CancellationToken token = default)
         {
             try
@@ -92,7 +70,6 @@ namespace CheapHelpers.Blazor.Services
                     return false;
                 }
 
-                // Update all navigation states
                 foreach (var kvp in navigationStates)
                 {
                     user.SetExpandState(kvp.Key, kvp.Value);
@@ -110,13 +87,6 @@ namespace CheapHelpers.Blazor.Services
             }
         }
 
-        /// <summary>
-        /// Gets navigation state for a specific section
-        /// </summary>
-        /// <param name="userId">User ID</param>
-        /// <param name="navigationKey">Navigation section key</param>
-        /// <param name="token">Cancellation token</param>
-        /// <returns>True if expanded, false if collapsed or user not found</returns>
         public async Task<bool> GetNavigationStateAsync(string userId, string navigationKey, CancellationToken token = default)
         {
             try
@@ -135,12 +105,6 @@ namespace CheapHelpers.Blazor.Services
             }
         }
 
-        /// <summary>
-        /// Gets all navigation states for a user
-        /// </summary>
-        /// <param name="userId">User ID</param>
-        /// <param name="token">Cancellation token</param>
-        /// <returns>Dictionary of all navigation states</returns>
         public async Task<Dictionary<string, bool>> GetAllNavigationStatesAsync(string userId, CancellationToken token = default)
         {
             try
@@ -161,19 +125,19 @@ namespace CheapHelpers.Blazor.Services
 
         #endregion
 
-        public async Task<CheapUser> GetUserAsync(ClaimsPrincipal principal, CheapContext<CheapUser> context = null)
+        public async Task<TUser> GetUserAsync(ClaimsPrincipal principal, CheapContext<TUser>? context = null)
         {
             string id = GetUserId(principal);
             return await GetUserAsync(id, context);
         }
 
-        public async Task<CheapUser> GetUserAsync(Task<AuthenticationState> authstate, CheapContext<CheapUser> context = null)
+        public async Task<TUser> GetUserAsync(Task<AuthenticationState> authstate, CheapContext<TUser>? context = null)
         {
             var r = await authstate;
             return await GetUserAsync(r, context);
         }
 
-        public async Task<CheapUser> GetUserAsync(string userId, CheapContext<CheapUser> context = null)
+        public async Task<TUser> GetUserAsync(string userId, CheapContext<TUser>? context = null)
         {
             if (context == null)
             {
@@ -186,7 +150,7 @@ namespace CheapHelpers.Blazor.Services
             }
         }
 
-        public async Task<CheapUser> GetUserAsync(AuthenticationState authstate, CheapContext<CheapUser> context = null)
+        public async Task<TUser> GetUserAsync(AuthenticationState authstate, CheapContext<TUser>? context = null)
         {
             return await GetUserAsync(authstate.User, context);
         }
@@ -207,12 +171,6 @@ namespace CheapHelpers.Blazor.Services
             return principal.IsInRole(role);
         }
 
-        /// <summary>
-        /// throws when user not authenticated, otherwise returns id
-        /// </summary>
-        /// <param name="principal"></param>
-        /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
         public static string GetUserId(ClaimsPrincipal principal)
         {
             if (!IsAuthenticated(principal))
@@ -223,12 +181,6 @@ namespace CheapHelpers.Blazor.Services
             return principal.FindFirstValue(ClaimTypes.NameIdentifier);
         }
 
-        /// <summary>
-        /// throws when user not authenticated, otherwise returns username (default: mail)
-        /// </summary>
-        /// <param name="principal"></param>
-        /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
         public static string GetUserName(ClaimsPrincipal principal)
         {
             if (!IsAuthenticated(principal))
@@ -239,17 +191,9 @@ namespace CheapHelpers.Blazor.Services
             return principal.FindFirstValue(ClaimTypes.Name);
         }
 
-        /// <summary>
-        /// Checks the claimsprincipal for authentication
-        /// </summary>
-        /// <param name="principal"></param>
-        /// <returns></returns>
         public static bool IsAuthenticated(ClaimsPrincipal principal)
         {
-            if (principal == null)
-            {
-                throw new ArgumentNullException(nameof(principal));
-            }
+            ArgumentNullException.ThrowIfNull(principal);
 
             return
                     principal.Identities != null
@@ -259,26 +203,21 @@ namespace CheapHelpers.Blazor.Services
                  || principal.Identity != null && principal.Identity.IsAuthenticated;
         }
 
-        /// <summary>
-        /// Checks the claimsprincipal for authentication
-        /// </summary>
-        /// <param name="principal"></param>
-        /// <returns></returns>
         public static async Task<bool> IsAuthenticated(Task<AuthenticationState> authtask)
         {
             var r = await authtask;
             return IsAuthenticated(r.User);
         }
 
-        /// <summary>
-        /// Checks the claimsprincipal for authentication
-        /// </summary>
-        /// <param name="principal"></param>
-        /// <returns></returns>
         public static bool IsAuthenticated(AuthenticationState auth)
         {
             return IsAuthenticated(auth.User);
         }
-
     }
+
+    /// <summary>
+    /// Backward-compatible UserService hardcoded to CheapUser.
+    /// New consumers should use <see cref="UserService{TUser}"/> with their concrete user type.
+    /// </summary>
+    public class UserService(IDbContextFactory<CheapContext<CheapUser>> factory) : UserService<CheapUser>(factory);
 }

@@ -1,5 +1,6 @@
 using CheapHelpers.EF;
 using CheapHelpers.Models.Entities;
+using CheapHelpers.Models.Enums;
 using CheapHelpers.Services.Billing.Configuration;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -54,16 +55,14 @@ public class BillingService<TUser>(
             InvoiceNumber = invoiceNumber,
             PeriodStart = periodStart,
             PeriodEnd = periodEnd,
-            TotalRequests = totalRequests,
+            TotalUnits = totalRequests,
             IncludedUnits = billingPlan.IncludedUnits,
             OverageUnits = overageUnits,
-            RatePerUnit = billingPlan.RatePerUnit,
             SubTotal = subTotal,
-            TaxRate = billingOptions.DefaultTaxRate,
             TaxAmount = taxAmount,
             TotalAmount = subTotal + taxAmount,
             Currency = billingOptions.DefaultCurrency,
-            Status = InvoiceStatus.Pending,
+            Status = InvoiceStatus.Draft,
             CreatedAt = DateTime.UtcNow
         };
 

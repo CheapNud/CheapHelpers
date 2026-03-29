@@ -33,7 +33,9 @@ public class ReportService<TUser>(
             Format = reportRequest.Format,
             Status = ReportStatus.Generating,
             GeneratedById = reportRequest.GeneratedById,
-            RetentionDays = reportRequest.RetentionDays
+            ExpiresAt = reportRequest.RetentionDays.HasValue
+                ? DateTime.UtcNow.AddDays(reportRequest.RetentionDays.Value)
+                : null
         };
 
         dbContext.Set<Report>().Add(report);
@@ -201,9 +203,8 @@ public class ReportService<TUser>(
     {
         var expiredReports = await dbContext.Set<Report>()
             .Where(r => r.Status == ReportStatus.Completed
-                        && r.RetentionDays.HasValue
-                        && r.GeneratedAt.HasValue
-                        && r.GeneratedAt.Value.AddDays(r.RetentionDays.Value) < DateTime.UtcNow)
+                        && r.ExpiresAt.HasValue
+                        && r.ExpiresAt.Value < DateTime.UtcNow)
             .ToListAsync(ct);
 
         foreach (var report in expiredReports)

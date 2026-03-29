@@ -87,9 +87,9 @@ public class UsageMeterService<TUser>(
             PeriodStart = from,
             PeriodEnd = to,
             TotalRequests = rawRecords.Count,
-            SuccessCount = rawRecords.Count(r => r.ResponseCode >= 200 && r.ResponseCode < 300),
-            ErrorCount = rawRecords.Count(r => r.ResponseCode >= 400),
-            AverageDurationMs = rawRecords.Where(r => r.DurationMs.HasValue).Select(r => r.DurationMs!.Value).DefaultIfEmpty(0).Average(),
+            SuccessfulRequests = rawRecords.Count(r => r.ResponseCode >= 200 && r.ResponseCode < 300),
+            FailedRequests = rawRecords.Count(r => r.ResponseCode >= 400),
+            AvgDurationMs = rawRecords.Where(r => r.DurationMs.HasValue).Select(r => r.DurationMs!.Value).DefaultIfEmpty(0).Average(),
             CreatedAt = DateTime.UtcNow
         };
     }
@@ -131,9 +131,9 @@ public class UsageMeterService<TUser>(
                 PeriodStart = periodStart,
                 PeriodEnd = periodEnd,
                 TotalRequests = group.TotalRequests,
-                SuccessCount = group.SuccessCount,
-                ErrorCount = group.ErrorCount,
-                AverageDurationMs = group.AverageDurationMs,
+                SuccessfulRequests = group.SuccessCount,
+                FailedRequests = group.ErrorCount,
+                AvgDurationMs = group.AverageDurationMs,
                 CreatedAt = DateTime.UtcNow
             });
 

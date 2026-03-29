@@ -28,10 +28,10 @@ public static partial class PeppolInvoiceValidator
         List<string> validationErrors = [];
 
         ValidateDocumentHeader(invoice.Id, invoice.IssueDate, validationErrors);
-        ValidateParty(invoice.Seller, "Seller", invoice.SellerEndpointScheme, validationErrors);
-        ValidateParty(invoice.Buyer, "Buyer", invoice.BuyerEndpointScheme, validationErrors);
+        ValidateParty(invoice.Seller, "Seller", validationErrors);
+        ValidateParty(invoice.Buyer, "Buyer", validationErrors);
         ValidateInvoiceLines(invoice.Lines, validationErrors);
-        ValidateTaxConsistency(invoice.Lines, invoice.TaxSubtotals, invoice.TaxAmount, validationErrors);
+        ValidateTaxConsistency(invoice.Lines, invoice.TaxTotal?.TaxSubtotals ?? [], invoice.TaxTotal?.TaxAmount ?? 0, validationErrors);
 
         if (validationErrors.Count > 0)
         {
@@ -53,10 +53,10 @@ public static partial class PeppolInvoiceValidator
         List<string> validationErrors = [];
 
         ValidateDocumentHeader(creditNote.Id, creditNote.IssueDate, validationErrors);
-        ValidateParty(creditNote.Seller, "Seller", creditNote.SellerEndpointScheme, validationErrors);
-        ValidateParty(creditNote.Buyer, "Buyer", creditNote.BuyerEndpointScheme, validationErrors);
+        ValidateParty(creditNote.Seller, "Seller", validationErrors);
+        ValidateParty(creditNote.Buyer, "Buyer", validationErrors);
         ValidateInvoiceLines(creditNote.Lines, validationErrors);
-        ValidateTaxConsistency(creditNote.Lines, creditNote.TaxSubtotals, creditNote.TaxAmount, validationErrors);
+        ValidateTaxConsistency(creditNote.Lines, creditNote.TaxTotal?.TaxSubtotals ?? [], creditNote.TaxTotal?.TaxAmount ?? 0, validationErrors);
 
         if (validationErrors.Count > 0)
         {
@@ -77,21 +77,13 @@ public static partial class PeppolInvoiceValidator
             validationErrors.Add("Issue date is required");
     }
 
-    private static void ValidateParty(UblParty party, string partyRole, string? endpointScheme, List<string> validationErrors)
+    private static void ValidateParty(UblParty party, string partyRole, List<string> validationErrors)
     {
         if (string.IsNullOrWhiteSpace(party.Name))
             validationErrors.Add($"{partyRole} name is required");
 
         if (string.IsNullOrWhiteSpace(party.EndpointId))
             validationErrors.Add($"{partyRole} endpoint ID is required");
-
-        // Belgian enterprise number format validation (10 digits when scheme is 0208)
-        if (endpointScheme == PeppolConstants.BelgianEnterpriseScheme
-            && !string.IsNullOrWhiteSpace(party.EndpointId)
-            && !BelgianEnterpriseNumberPattern().IsMatch(party.EndpointId))
-        {
-            validationErrors.Add($"{partyRole} Belgian enterprise number must be exactly 10 digits (scheme {PeppolConstants.BelgianEnterpriseScheme})");
-        }
 
         // Belgian VAT format validation (BE + 10 digits)
         if (!string.IsNullOrWhiteSpace(party.TaxId)

@@ -209,31 +209,25 @@ public class UblInvoiceService
             doc.Note = [new TextType { Value = invoice.Note }];
         }
 
-        // Buyer reference
-        if (!string.IsNullOrWhiteSpace(invoice.BuyerReference))
-        {
-            doc.BuyerReference = invoice.BuyerReference;
-        }
-
         // Invoice period
-        if (invoice.PeriodStartDate.HasValue || invoice.PeriodEndDate.HasValue)
+        if (invoice.InvoicePeriodStart.HasValue || invoice.InvoicePeriodEnd.HasValue)
         {
             var invoicePeriod = new PeriodType();
-            if (invoice.PeriodStartDate.HasValue)
-                invoicePeriod.StartDate = invoice.PeriodStartDate.Value.ToString("yyyy-MM-dd");
-            if (invoice.PeriodEndDate.HasValue)
-                invoicePeriod.EndDate = invoice.PeriodEndDate.Value.ToString("yyyy-MM-dd");
+            if (invoice.InvoicePeriodStart.HasValue)
+                invoicePeriod.StartDate = invoice.InvoicePeriodStart.Value.ToString("yyyy-MM-dd");
+            if (invoice.InvoicePeriodEnd.HasValue)
+                invoicePeriod.EndDate = invoice.InvoicePeriodEnd.Value.ToString("yyyy-MM-dd");
             doc.InvoicePeriod = [invoicePeriod];
         }
 
         // Billing reference (preceding document)
-        if (!string.IsNullOrWhiteSpace(invoice.BillingReferenceId))
+        if (!string.IsNullOrWhiteSpace(invoice.BillingReference))
         {
             doc.BillingReference = [new BillingReferenceType
             {
                 InvoiceDocumentReference = new DocumentReferenceType
                 {
-                    ID = invoice.BillingReferenceId
+                    ID = invoice.BillingReference
                 }
             }];
         }
@@ -241,11 +235,11 @@ public class UblInvoiceService
         // Parties
         doc.AccountingSupplierParty = new SupplierPartyType
         {
-            Party = UblPartyMapper.ConvertToPartyWithEndpointScheme(invoice.Seller, invoice.SellerEndpointScheme)
+            Party = UblPartyMapper.ConvertToPartyWithEndpointScheme(invoice.Seller, PeppolConstants.BelgianEnterpriseScheme)
         };
         doc.AccountingCustomerParty = new CustomerPartyType
         {
-            Party = UblPartyMapper.ConvertToPartyWithEndpointScheme(invoice.Buyer, invoice.BuyerEndpointScheme)
+            Party = UblPartyMapper.ConvertToPartyWithEndpointScheme(invoice.Buyer, PeppolConstants.BelgianEnterpriseScheme)
         };
 
         // Payment means
@@ -266,7 +260,7 @@ public class UblInvoiceService
         }
 
         // Tax total
-        doc.TaxTotal = [BuildTaxTotal(invoice.TaxAmount, invoice.TaxSubtotals, invoice.Currency)];
+        doc.TaxTotal = [BuildTaxTotal(invoice.TaxTotal?.TaxAmount ?? 0, invoice.TaxTotal?.TaxSubtotals ?? [], invoice.Currency)];
 
         // Legal monetary total
         doc.LegalMonetaryTotal = BuildLegalMonetaryTotal(invoice.Totals, invoice.Currency);
@@ -305,43 +299,26 @@ public class UblInvoiceService
             doc.Note = [new TextType { Value = creditNote.Note }];
         }
 
-        // Buyer reference
-        if (!string.IsNullOrWhiteSpace(creditNote.BuyerReference))
+        // Billing references (the original invoices being credited)
+        if (creditNote.BillingReferences.Count > 0)
         {
-            doc.BuyerReference = creditNote.BuyerReference;
-        }
-
-        // Credit note period
-        if (creditNote.PeriodStartDate.HasValue || creditNote.PeriodEndDate.HasValue)
-        {
-            var creditNotePeriod = new PeriodType();
-            if (creditNote.PeriodStartDate.HasValue)
-                creditNotePeriod.StartDate = creditNote.PeriodStartDate.Value.ToString("yyyy-MM-dd");
-            if (creditNote.PeriodEndDate.HasValue)
-                creditNotePeriod.EndDate = creditNote.PeriodEndDate.Value.ToString("yyyy-MM-dd");
-            doc.InvoicePeriod = [creditNotePeriod];
-        }
-
-        // Billing reference (the original invoice being credited)
-        if (!string.IsNullOrWhiteSpace(creditNote.BillingReferenceId))
-        {
-            doc.BillingReference = [new BillingReferenceType
+            doc.BillingReference = creditNote.BillingReferences.Select(refId => new BillingReferenceType
             {
                 InvoiceDocumentReference = new DocumentReferenceType
                 {
-                    ID = creditNote.BillingReferenceId
+                    ID = refId
                 }
-            }];
+            }).ToList();
         }
 
         // Parties
         doc.AccountingSupplierParty = new SupplierPartyType
         {
-            Party = UblPartyMapper.ConvertToPartyWithEndpointScheme(creditNote.Seller, creditNote.SellerEndpointScheme)
+            Party = UblPartyMapper.ConvertToPartyWithEndpointScheme(creditNote.Seller, PeppolConstants.BelgianEnterpriseScheme)
         };
         doc.AccountingCustomerParty = new CustomerPartyType
         {
-            Party = UblPartyMapper.ConvertToPartyWithEndpointScheme(creditNote.Buyer, creditNote.BuyerEndpointScheme)
+            Party = UblPartyMapper.ConvertToPartyWithEndpointScheme(creditNote.Buyer, PeppolConstants.BelgianEnterpriseScheme)
         };
 
         // Payment means
@@ -362,7 +339,7 @@ public class UblInvoiceService
         }
 
         // Tax total
-        doc.TaxTotal = [BuildTaxTotal(creditNote.TaxAmount, creditNote.TaxSubtotals, creditNote.Currency)];
+        doc.TaxTotal = [BuildTaxTotal(creditNote.TaxTotal?.TaxAmount ?? 0, creditNote.TaxTotal?.TaxSubtotals ?? [], creditNote.Currency)];
 
         // Legal monetary total
         doc.LegalMonetaryTotal = BuildLegalMonetaryTotal(creditNote.Totals, creditNote.Currency);
@@ -394,23 +371,23 @@ public class UblInvoiceService
             paymentMeansType.PaymentID = [paymentMeans.PaymentId];
         }
 
-        if (!string.IsNullOrWhiteSpace(paymentMeans.Iban))
+        if (paymentMeans.PayeeFinancialAccount is not null)
         {
             var financialAccount = new FinancialAccountType
             {
-                ID = paymentMeans.Iban
+                ID = paymentMeans.PayeeFinancialAccount.Id
             };
 
-            if (!string.IsNullOrWhiteSpace(paymentMeans.AccountName))
+            if (!string.IsNullOrWhiteSpace(paymentMeans.PayeeFinancialAccount.Name))
             {
-                financialAccount.Name = paymentMeans.AccountName;
+                financialAccount.Name = paymentMeans.PayeeFinancialAccount.Name;
             }
 
-            if (!string.IsNullOrWhiteSpace(paymentMeans.Bic))
+            if (!string.IsNullOrWhiteSpace(paymentMeans.PayeeFinancialAccount.FinancialInstitutionBranch))
             {
                 financialAccount.FinancialInstitutionBranch = new BranchType
                 {
-                    ID = paymentMeans.Bic
+                    ID = paymentMeans.PayeeFinancialAccount.FinancialInstitutionBranch
                 };
             }
 
@@ -435,10 +412,10 @@ public class UblInvoiceService
                 TaxAmount = new AmountType { currencyID = currency, Value = ts.TaxAmount },
                 TaxCategory = new TaxCategoryType
                 {
-                    ID = ts.TaxCategory.CategoryCode,
+                    ID = ts.TaxCategory.Id,
                     Percent = ts.TaxCategory.Percent,
-                    TaxExemptionReason = !string.IsNullOrWhiteSpace(ts.TaxCategory.ExemptionReason)
-                        ? [new TextType { Value = ts.TaxCategory.ExemptionReason }]
+                    TaxExemptionReason = !string.IsNullOrWhiteSpace(ts.TaxCategory.TaxExemptionReason)
+                        ? [new TextType { Value = ts.TaxCategory.TaxExemptionReason }]
                         : null,
                     TaxScheme = new TaxSchemeType { ID = ts.TaxCategory.TaxSchemeId }
                 }
@@ -495,16 +472,6 @@ public class UblInvoiceService
             invoiceLine.Note = [new TextType { Value = line.Note }];
         }
 
-        if (line.AllowancesCharges.Count > 0)
-        {
-            invoiceLine.AllowanceCharge = line.AllowancesCharges.Select(ac => new AllowanceChargeType
-            {
-                ChargeIndicator = ac.IsCharge,
-                AllowanceChargeReason = [new TextType { Value = ac.Reason }],
-                Amount = new AmountType { currencyID = currency, Value = ac.Amount }
-            }).ToList();
-        }
-
         return invoiceLine;
     }
 
@@ -528,16 +495,6 @@ public class UblInvoiceService
             creditNoteLine.Note = [new TextType { Value = line.Note }];
         }
 
-        if (line.AllowancesCharges.Count > 0)
-        {
-            creditNoteLine.AllowanceCharge = line.AllowancesCharges.Select(ac => new AllowanceChargeType
-            {
-                ChargeIndicator = ac.IsCharge,
-                AllowanceChargeReason = [new TextType { Value = ac.Reason }],
-                Amount = new AmountType { currencyID = currency, Value = ac.Amount }
-            }).ToList();
-        }
-
         return creditNoteLine;
     }
 
@@ -548,7 +505,7 @@ public class UblInvoiceService
             Name = item.Name,
             ClassifiedTaxCategory = [new TaxCategoryType
             {
-                ID = taxCategory.CategoryCode,
+                ID = taxCategory.Id,
                 Percent = taxCategory.Percent,
                 TaxScheme = new TaxSchemeType { ID = taxCategory.TaxSchemeId }
             }]

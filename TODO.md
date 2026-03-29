@@ -29,6 +29,12 @@
 
 ## Blocking
 
+- [ ] (2026-03-29) Add protected constructor to `CheapContext<TUser>` for derived context support [voltiq-dep]
+  - Currently only has `CheapContext(DbContextOptions<CheapContext<TUser>> options)` — derived contexts can't pass their own options type
+  - Add: `protected CheapContext(DbContextOptions options, CheapContextOptions? contextOptions = null) : base(options)`
+  - Standard EF Core inheritance pattern — `IdentityDbContext` itself does this
+  - Enables: `class VoltiqDbContext(DbContextOptions<VoltiqDbContext> opts) : CheapContext<VoltiqUser>(opts)`
+  - Without this, consumers cannot extend `CheapContext` and must duplicate all entity configs (ApiKey, Billing, Reporting, etc.)
 - [x] (2026-03-29 → 2026-03-29) Make AccountController generic — `CheapAccountController<TUser> where TUser : CheapUser` [voltiq-dep]
   - Renamed `AccountController` → `CheapAccountController<TUser>` with generic `SignInManager<TUser>`, `UserManager<TUser>`, `UserService<TUser>`
   - Made `UserRepo<TUser>` generic (was hardcoded to CheapUser), backward-compat `UserRepo` shim preserved

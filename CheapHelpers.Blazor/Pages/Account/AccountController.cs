@@ -32,13 +32,13 @@ namespace CheapHelpers.Blazor.Pages.Account
         UserManager<TUser> userManager,
         UserService<TUser> userService,
         UrlEncoder urlEncoder,
-        AccountRouteOptions? routeOptions = null
+        AccountRouteOptions routeOptions
         ) : Controller where TUser : CheapUser
     {
         private const string AppName = "CheapHelpers.Blazor";
         private const int RecoveryCodesCount = 10;
 
-        protected AccountRouteOptions Routes { get; } = routeOptions ?? new AccountRouteOptions();
+        protected AccountRouteOptions Routes { get; } = routeOptions;
 
         // Error messages
         private const string InvalidTokenMessage = "invalid token";

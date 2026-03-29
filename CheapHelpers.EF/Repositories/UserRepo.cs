@@ -214,7 +214,7 @@ namespace CheapHelpers.EF.Repositories
                     .Where(x => x.Name == roleName)
                     .Select(x => x.User);
 
-                return await PaginatedList<TUser>.CreateAsync(query, pageIndex.Value, pageSize, token);
+                return await PaginatedList<TUser>.CreateAsync(query, pageIndex ?? 1, pageSize, token);
             }
             catch (Exception ex)
             {
@@ -578,7 +578,7 @@ namespace CheapHelpers.EF.Repositories
                         u.Email.ToLower().Contains(lowerSearchTerm) ||
                         u.UserName.ToLower().Contains(lowerSearchTerm));
 
-                return await PaginatedList<TUser>.CreateAsync(query, pageIndex.Value, pageSize, token);
+                return await PaginatedList<TUser>.CreateAsync(query, pageIndex ?? 1, pageSize, token);
             }
             catch (Exception ex)
             {
@@ -595,7 +595,7 @@ namespace CheapHelpers.EF.Repositories
             using var context = _factory.CreateDbContext();
             var query = context.Users.AsNoTracking();
 
-            return await PaginatedList<TUser>.CreateAsync(query, pageIndex.Value, pageSize, token);
+            return await PaginatedList<TUser>.CreateAsync(query, pageIndex ?? 1, pageSize, token);
         }
 
         /// <summary>

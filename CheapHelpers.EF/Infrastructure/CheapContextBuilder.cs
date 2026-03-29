@@ -4,7 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 namespace CheapHelpers.EF.Infrastructure
 {
     /// <summary>
-    /// Builder for fluent CheapContext configuration
+    /// Builder for fluent CheapContext configuration.
+    /// Works with all context levels: CheapContext, CheapCommunicationContext, CheapBusinessContext.
+    /// Identity stores are registered against CheapContext (the base), which EF resolves correctly
+    /// regardless of which derived context is actually registered in DI.
     /// </summary>
     public class CheapContextBuilder<TUser> where TUser : IdentityUser
     {
@@ -19,6 +22,8 @@ namespace CheapHelpers.EF.Infrastructure
 
         /// <summary>
         /// Adds Identity services with CheapContext defaults. Follows standard .AddIdentity() pattern.
+        /// Identity stores are registered against the base CheapContext, which works for all context levels
+        /// because CheapCommunicationContext and CheapBusinessContext both derive from CheapContext.
         /// </summary>
         public IdentityBuilder AddIdentity<TRole>(Action<IdentityOptions>? configureOptions = null)
             where TRole : IdentityRole
@@ -58,46 +63,16 @@ namespace CheapHelpers.EF.Infrastructure
     }
 
     // Usage Examples:
-    // 
-    // Context only (no Identity):
-    // services.AddCheapContext<MyUser>(options => options.UseSqlServer(connectionString));
-    // 
-    // Context + Identity with defaults (most common):
-    // services.AddCheapContext<ApplicationUser>(options => options.UseSqlServer(connectionString))
+    //
+    // Identity-only context:
+    // services.AddCheapContext<MyUser>(options => options.UseSqlServer(connectionString))
     //     .AddIdentity<IdentityRole>();
-    // 
-    // Context + Identity with custom configuration:
-    // services.AddCheapContext<ApplicationUser>(options => options.UseSqlServer(connectionString))
-    //     .AddIdentity<IdentityRole>(options => 
-    //     {
-    //         options.Password.RequiredLength = 12;
-    //         options.Lockout.MaxFailedAccessAttempts = 3;
-    //     });
-    // 
-    // Full fluent chain (like Microsoft's pattern):
-    // services.AddCheapContext<ApplicationUser>(options => options.UseSqlServer(connectionString))
-    //     .AddIdentity<IdentityRole>(options => 
-    //     {
-    //         options.Password.RequiredLength = 12;
-    //     })
-    //     .AddDefaultUI()
-    //     .AddDefaultTokenProviders()
-    //     .Services  // Access underlying IServiceCollection
-    //     .AddScoped<IMyService, MyService>();
-    // 
-    // Simple case with IdentityUser/IdentityRole:
-    // services.AddCheapContext(options => options.UseSqlServer(connectionString))
-    //     .AddIdentity();
-    // 
-    // With custom CheapContextOptions:
-    // var contextOptions = new CheapContextOptions 
-    // {
-    //     DevCommandTimeoutMs = 300000,
-    //     Identity = new IdentityOptions 
-    //     {
-    //         Password = new PasswordOptions { RequiredLength = 12 }
-    //     }
-    // };
-    // services.AddCheapContext<ApplicationUser>(options => options.UseSqlServer(connectionString), contextOptions)
+    //
+    // Communication context (Identity + notifications, preferences, file attachments):
+    // services.AddCheapCommunicationContext<MyUser>(options => options.UseSqlServer(connectionString))
+    //     .AddIdentity<IdentityRole>();
+    //
+    // Business context (Communication + API keys, billing, reporting):
+    // services.AddCheapBusinessContext<MyUser>(options => options.UseSqlServer(connectionString))
     //     .AddIdentity<IdentityRole>();
 }

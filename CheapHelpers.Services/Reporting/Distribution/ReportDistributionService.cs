@@ -12,7 +12,7 @@ namespace CheapHelpers.Services.Reporting.Distribution;
 /// Distributes generated reports to recipients via email with file attachments
 /// </summary>
 public class ReportDistributionService<TUser>(
-    CheapContext<TUser> dbContext,
+    CheapBusinessContext<TUser> dbContext,
     IReportStorageProvider storageProvider,
     IEmailService emailService,
     ILogger<ReportDistributionService<TUser>> logger) : IReportDistributionService

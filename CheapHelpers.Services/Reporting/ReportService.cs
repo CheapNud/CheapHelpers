@@ -16,7 +16,7 @@ namespace CheapHelpers.Services.Reporting;
 /// Orchestrates report generation, storage, retrieval, and lifecycle management
 /// </summary>
 public class ReportService<TUser>(
-    CheapContext<TUser> dbContext,
+    CheapBusinessContext<TUser> dbContext,
     IPdfExportService pdfExport,
     IXlsxService xlsxService,
     IReportStorageProvider storageProvider,

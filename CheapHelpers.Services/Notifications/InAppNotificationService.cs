@@ -13,7 +13,7 @@ namespace CheapHelpers.Services.Notifications;
 /// </summary>
 /// <typeparam name="TUser">The type of user entity, must inherit from IdentityUser.</typeparam>
 public class InAppNotificationService<TUser>(
-    CheapContext<TUser> context,
+    CheapCommunicationContext<TUser> context,
     ILogger<InAppNotificationService<TUser>> logger) : IInAppNotificationService
     where TUser : IdentityUser
 {

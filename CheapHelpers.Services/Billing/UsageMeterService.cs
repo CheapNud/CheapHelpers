@@ -11,7 +11,7 @@ namespace CheapHelpers.Services.Billing;
 /// Uses <c>dbContext.Set&lt;T&gt;()</c> so it compiles before DbSet properties are added to CheapContext.
 /// </summary>
 public class UsageMeterService<TUser>(
-    CheapContext<TUser> dbContext,
+    CheapBusinessContext<TUser> dbContext,
     ILogger<UsageMeterService<TUser>> logger) : IUsageMeterService
     where TUser : IdentityUser
 {

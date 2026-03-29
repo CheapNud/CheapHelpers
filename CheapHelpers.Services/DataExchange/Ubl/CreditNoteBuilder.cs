@@ -104,7 +104,7 @@ public class CreditNoteBuilder
                 TaxCategory = new UblTaxCategory { Id = g.Key == 0 ? "Z" : "S", Percent = g.Key }
             }).ToList();
 
-        var totalTax = taxSubtotals.Sum(t => t.TaxAmount);
+        var totalTax = Math.Round(taxSubtotals.Sum(t => t.TaxAmount), 2);
 
         return new UblCreditNote
         {
@@ -123,7 +123,7 @@ public class CreditNoteBuilder
             {
                 LineExtensionAmount = lineExtensionAmount,
                 TaxAmount = totalTax,
-                PayableAmount = lineExtensionAmount + totalTax
+                PayableAmount = Math.Round(lineExtensionAmount + totalTax, 2)
             }
         };
     }

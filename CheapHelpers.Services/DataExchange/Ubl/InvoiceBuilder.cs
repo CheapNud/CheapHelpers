@@ -260,8 +260,8 @@ public class InvoiceBuilder
                 }
             }).ToList();
 
-        var totalTax = taxSubtotals.Sum(t => t.TaxAmount);
-        var payableAmount = lineExtensionAmount + totalTax;
+        var totalTax = Math.Round(taxSubtotals.Sum(t => t.TaxAmount), 2);
+        var payableAmount = Math.Round(lineExtensionAmount + totalTax, 2);
 
         // Resolve due date — relative days computed against final issue date
         var resolvedDueDate = _absoluteDueDate ?? (_relativeDueDays.HasValue ? _issueDate.AddDays(_relativeDueDays.Value) : (DateTime?)null);

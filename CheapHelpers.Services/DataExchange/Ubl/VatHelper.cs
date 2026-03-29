@@ -51,8 +51,8 @@ internal static class VatHelper
             // Germany: "DE123456789" → "123456789" (scheme 9930)
             "DE" when localPart.Length == 9 && AllDigits(localPart) => localPart,
 
-            // France: "FRXX345678901" → SIREN = last 9 digits (scheme 0009)
-            "FR" when localPart.Length == 11 => localPart[2..],
+            // France: "FRXX345678901" → SIREN = last 9 chars, must be all digits (scheme 0009)
+            "FR" when localPart.Length == 11 && AllDigits(localPart[2..]) => localPart[2..],
 
             // Italy: "IT12345678901" → "12345678901" (scheme 0211)
             "IT" when localPart.Length == 11 && AllDigits(localPart) => localPart,
@@ -118,5 +118,5 @@ internal static class VatHelper
         return digits.Length == 9 && AllDigits(digits) ? digits : null;
     }
 
-    private static bool AllDigits(string value) => value.All(char.IsDigit);
+    private static bool AllDigits(string value) => value.Length > 0 && value.All(char.IsDigit);
 }

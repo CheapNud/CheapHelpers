@@ -1,4 +1,5 @@
-﻿using CheapHelpers.Blazor.Services;
+﻿using CheapHelpers.Blazor.Helpers;
+using CheapHelpers.Blazor.Services;
 using CheapHelpers.Extensions;
 using CheapHelpers.Models.Entities;
 using CheapHelpers.Services.Email;
@@ -24,10 +25,8 @@ namespace CheapHelpers.Blazor.Pages.Account
         UrlEncoder urlEncoder
         ) : Controller
     {
-        private const string AuthenticatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
         private const string AppName = "CheapHelpers.Blazor";
         private const int RecoveryCodesCount = 10;
-        private const int AuthenticatorKeyGroupSize = 4;
         private const string HomeRoute = "/";
         private const string LoginRoute = "/Account/Login/";
         private const string LockoutRoute = "/Account/Lockout/";
@@ -235,32 +234,11 @@ namespace CheapHelpers.Blazor.Pages.Account
         private static string CleanVerificationCode(string code) =>
             code.Replace(" ", string.Empty).Replace("-", string.Empty);
 
-        private static string FormatKey(string unformattedKey)
-        {
-            var result = new StringBuilder();
-            int currentPosition = 0;
-
-            while (currentPosition + AuthenticatorKeyGroupSize < unformattedKey.Length)
-            {
-                result.Append(unformattedKey.Substring(currentPosition, AuthenticatorKeyGroupSize)).Append(" ");
-                currentPosition += AuthenticatorKeyGroupSize;
-            }
-
-            if (currentPosition < unformattedKey.Length)
-            {
-                result.Append(unformattedKey.Substring(currentPosition));
-            }
-
-            return result.ToString().ToLowerInvariant();
-        }
+        private static string FormatKey(string unformattedKey) =>
+            AuthenticatorHelper.FormatKey(unformattedKey);
 
         private string GenerateQrCodeUri(string email, string unformattedKey) =>
-            string.Format(
-                AuthenticatorUriFormat,
-                urlEncoder.Encode(AppName),
-                urlEncoder.Encode(email),
-                unformattedKey
-            );
+            AuthenticatorHelper.GenerateQrCodeUri(AppName, email, unformattedKey);
 
         /// <summary>
         /// Loads the shared key and QR code URI for authenticator registration

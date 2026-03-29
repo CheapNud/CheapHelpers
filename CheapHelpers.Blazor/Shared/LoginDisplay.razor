@@ -1,12 +1,13 @@
-﻿@using CheapHelpers.Blazor.Services
+@using CheapHelpers.Blazor.Services
+@using CheapHelpers.Services.Notifications
 @using Microsoft.AspNetCore.Components.Authorization
+
 <AuthorizeView>
     <Authorized>
         @if (User != null)
         {
-            <MudGrid Justify=Justify.FlexEnd>
+            <MudGrid Justify="Justify.FlexEnd">
                 <MudItem>
-                    @*  Class="pa-1 sticky object-bottom" *@
                     <MudPaper>
                         <CultureSelector />
                     </MudPaper>
@@ -14,28 +15,34 @@
                 <MudItem>
                     <MudMenu Class="mr-1">
                         <ActivatorContent Context="activatorcontext">
-                            @if (UnreadServiceChats > 0)
+                            @if (UnreadCount > 0)
                             {
-                                <MudBadge Content=@UnreadServiceChats Color="Color.Success" Overlap="true" Bordered="true">
-                                    <MudAvatar Size="Size.Medium" Color="Color.Info">@(@$"{(!string.IsNullOrWhiteSpace(User.FirstName) ? char.ToUpper(User.FirstName.First()) : char.ToUpper(User.UserName.First()))}{(!string.IsNullOrWhiteSpace(User.LastName) ? char.ToUpper(User.LastName.First()) : string.Empty)}")</MudAvatar>
+                                <MudBadge Content="@UnreadCount" Color="Color.Success" Overlap="true" Bordered="true">
+                                    <MudAvatar Size="Size.Medium" Color="Color.Info">@User.Initials</MudAvatar>
                                 </MudBadge>
                             }
                             else
                             {
-                                <MudAvatar Size="Size.Medium" Color="Color.Info">@(@$"{(!string.IsNullOrWhiteSpace(User.FirstName) ? char.ToUpper(User.FirstName.First()) : char.ToUpper(User.UserName.First()))}{(!string.IsNullOrWhiteSpace(User.LastName) ? char.ToUpper(User.LastName.First()) : string.Empty)}")</MudAvatar>
+                                <MudAvatar Size="Size.Medium" Color="Color.Info">@User.Initials</MudAvatar>
                             }
                         </ActivatorContent>
                         <ChildContent>
-                            <MudMenuItem Href="Account/1">
-                                @(UnreadServiceChats > 99 ? "99+" : UnreadServiceChats.ToString()) Berichten
-                            </MudMenuItem>
+                            @if (UnreadCount > 0)
+                            {
+                                <MudMenuItem Href="Account/Notifications">
+                                    @(UnreadCount > 99 ? "99+" : UnreadCount.ToString()) @Loc["Messages"]
+                                </MudMenuItem>
+                            }
                             <MudMenuItem Href="Account">
                                 @Loc["Profile"]
                             </MudMenuItem>
                             <MudDivider />
                             <MudMenuItem>
                                 <MudForm method="post" action="/Account/SignOut">
-                                    <MudButton ButtonType="ButtonType.Submit" IconSize=Size.Small Color="Color.Secondary" Size=Size.Medium Variant="Variant.Filled">Log out</MudButton>
+                                    <MudButton ButtonType="ButtonType.Submit" IconSize="Size.Small"
+                                               Color="Color.Secondary" Size="Size.Medium" Variant="Variant.Filled">
+                                        @Loc["LogOut"]
+                                    </MudButton>
                                 </MudForm>
                             </MudMenuItem>
                         </ChildContent>
@@ -45,55 +52,32 @@
         }
     </Authorized>
     <NotAuthorized>
-        <MudLink Color="Color.Tertiary" Href="/Account/Login">Log in</MudLink>
+        <MudLink Color="Color.Tertiary" Href="/Account/Login">@Loc["LogIn"]</MudLink>
     </NotAuthorized>
 </AuthorizeView>
 
-
 @code {
-    public CheapUser User { get; set; }
-    public int UnreadServiceChats { get; set; }
+    private CheapUser? User;
+    private int UnreadCount;
 
     [CascadingParameter]
-    private Task<AuthenticationState> AuthenticationState { get; set; }
+    private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
 
-    [Inject]
-    private IAuthorizationService AuthorizationService { get; set; }
-
-    [Inject]
-    private UserService UserService { get; set; }
-
+    [Inject] protected UserService UserService { get; set; } = default!;
+    [Inject] protected IInAppNotificationService? NotificationService { get; set; }
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;
-
-    // [Inject]
-    // private ReceiverRepo Receiverservice { get; set; }
-
 
     protected override async Task OnInitializedAsync()
     {
         var auth = await AuthenticationState;
-        if (auth.User.Identity.IsAuthenticated)
+        if (auth.User.Identity?.IsAuthenticated == true)
         {
             User = await UserService.GetUserAsync(auth.User);
-            await RefreshNotifiations();
-            UserService.RefreshNotifications += (async () => await RefreshNotifiations());
+
+            if (NotificationService is not null)
+            {
+                UnreadCount = await NotificationService.GetUnreadCountAsync(User.Id);
+            }
         }
-    }
-
-    private async Task RefreshNotifiations()
-    {
-        // var customers = User.Customers.Select(x => x.Customer.Id).ToArray();
-        // UnreadServiceChats = 0;
-        // var auth = await AuthenticationState;
-
-        // if ((await AuthorizationService.AuthorizeAsync(auth.User, Policies.ServiceExternal)).Succeeded)
-        // {
-        //     UnreadServiceChats += await Receiverservice.GetNotificationCount(User.Id, customers);
-        // }
-
-        // if ((await AuthorizationService.AuthorizeAsync(auth.User, Policies.ServiceSupplier)).Succeeded)
-        // {
-        //     UnreadServiceChats += await Recevierservice.GetSupplierNotificationCount(User.Id, customers);
-        // }
     }
 }

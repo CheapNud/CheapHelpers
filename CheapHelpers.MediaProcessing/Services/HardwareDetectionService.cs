@@ -4,6 +4,7 @@ using System.Management;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using CheapHelpers.MediaProcessing.Models;
+using CheapHelpers.Threading;
 
 namespace CheapHelpers.MediaProcessing.Services;
 
@@ -35,59 +36,43 @@ public class HardwareDetectionService(SvpDetectionService svpDetection)
     private const string CPU_HIGH_QUALITY_PRESET = "slow";
     private const string CPU_FAST_PRESET = "fast";
 
-    // TODO: Consider refactoring to AsyncLazy<T> for cleaner caching pattern
-    private volatile HardwareCapabilities? _cachedCapabilities;
-    private readonly SemaphoreSlim _cacheSemaphore = new(1, 1);
+    private AsyncLazy<HardwareCapabilities>? _capabilities;
 
     /// <summary>
     /// Detect hardware capabilities (cached after first call)
     /// </summary>
     /// <exception cref="PlatformNotSupportedException">Thrown when running on non-Windows platform</exception>
-    public virtual async Task<HardwareCapabilities> DetectHardwareAsync()
+    public virtual Task<HardwareCapabilities> DetectHardwareAsync()
     {
         ThrowIfNotWindows();
+        _capabilities ??= new AsyncLazy<HardwareCapabilities>(DetectHardwareCoreAsync);
+        return _capabilities.Value;
+    }
 
-        // Fast path - return cached value without lock contention (volatile ensures visibility)
-        if (_cachedCapabilities != null)
-            return _cachedCapabilities;
-
-        await _cacheSemaphore.WaitAsync();
-        try
+    private async Task<HardwareCapabilities> DetectHardwareCoreAsync()
+    {
+        var capabilities = new HardwareCapabilities
         {
-            // Double-check inside lock prevents multiple detections when concurrent calls
-            // arrive before cache is populated - this is the standard double-check locking pattern
-            if (_cachedCapabilities != null)
-                return _cachedCapabilities;
+            CpuCoreCount = Environment.ProcessorCount,
+            CpuName = GetCpuName(),
+            HasNvidiaGpu = await DetectNvidiaGpuAsync(),
+            GpuName = GetGpuName(),
+            NvencAvailable = await IsNvencAvailableAsync(),
+            AvailableGpus = GetAllGpuNames(),
+            IsIntelCpu = IsIntelCpu()
+        };
 
-            var capabilities = new HardwareCapabilities
-            {
-                CpuCoreCount = Environment.ProcessorCount,
-                CpuName = GetCpuName(),
-                HasNvidiaGpu = await DetectNvidiaGpuAsync(),
-                GpuName = GetGpuName(),
-                NvencAvailable = await IsNvencAvailableAsync(),
-                AvailableGpus = GetAllGpuNames(),
-                IsIntelCpu = IsIntelCpu()
-            };
+        await DetectHardwareEncodersAsync(capabilities);
 
-            // Detect individual hardware encoders
-            await DetectHardwareEncodersAsync(capabilities);
+        Debug.WriteLine("=== Hardware Detection ===");
+        Debug.WriteLine($"CPU: {capabilities.CpuName} ({capabilities.CpuCoreCount} cores)");
+        Debug.WriteLine($"GPU: {capabilities.GpuName}");
+        Debug.WriteLine($"NVIDIA GPU: {capabilities.HasNvidiaGpu}");
+        Debug.WriteLine($"NVENC Available: {capabilities.NvencAvailable}");
+        Debug.WriteLine($"Hardware Encoders Detected: {capabilities.SupportedEncoders.Count(e => e.Value.IsAvailable)}");
+        Debug.WriteLine("========================");
 
-            Debug.WriteLine("=== Hardware Detection ===");
-            Debug.WriteLine($"CPU: {capabilities.CpuName} ({capabilities.CpuCoreCount} cores)");
-            Debug.WriteLine($"GPU: {capabilities.GpuName}");
-            Debug.WriteLine($"NVIDIA GPU: {capabilities.HasNvidiaGpu}");
-            Debug.WriteLine($"NVENC Available: {capabilities.NvencAvailable}");
-            Debug.WriteLine($"Hardware Encoders Detected: {capabilities.SupportedEncoders.Count(e => e.Value.IsAvailable)}");
-            Debug.WriteLine("========================");
-
-            _cachedCapabilities = capabilities;
-            return capabilities;
-        }
-        finally
-        {
-            _cacheSemaphore.Release();
-        }
+        return capabilities;
     }
 
     /// <summary>

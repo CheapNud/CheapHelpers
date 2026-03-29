@@ -42,6 +42,9 @@
     <None Remove="Email\Templates\Header.liquid" />
     <None Remove="Email\Templates\Master.liquid" />
     <None Remove="Email\Templates\WelcomeEmailTemplateBody.liquid" />
+    <None Remove="Email\Templates\EmailConfirmationTemplateBody.liquid" />
+    <None Remove="Email\Templates\PasswordResetTemplateBody.liquid" />
+    <None Remove="Email\Templates\ExceptionReportTemplateBody.liquid" />
   </ItemGroup>
 
   <ItemGroup>
@@ -57,6 +60,15 @@
     <EmbeddedResource Include="Email\Templates\WelcomeEmailTemplateBody.liquid">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </EmbeddedResource>
+    <EmbeddedResource Include="Email\Templates\EmailConfirmationTemplateBody.liquid">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Email\Templates\PasswordResetTemplateBody.liquid">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Email\Templates\ExceptionReportTemplateBody.liquid">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
@@ -69,6 +81,7 @@
     <PackageReference Include="Duende.IdentityModel" Version="8.1.0" />
     <PackageReference Include="Fluid.Core" Version="2.31.0" />
     <PackageReference Include="GoogleApi" Version="5.8.12" />
+    <PackageReference Include="HtmlSanitizer" Version="9.0.892" />
     <PackageReference Include="ILove_PDF" Version="1.6.2" />
     <PackageReference Include="itext" Version="9.5.0" />
     <PackageReference Include="itext.pdfoptimizer" Version="4.1.2" />
@@ -78,6 +91,8 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.5" />
     <PackageReference Include="Microsoft.Graph" Version="5.103.0" />
+    <PackageReference Include="RabbitMQ.Client" Version="7.2.1" />
+    <PackageReference Include="SendGrid" Version="9.29.3" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
     <PackageReference Include="Twilio" Version="7.14.3" />
     <PackageReference Include="UblSharp" Version="1.1.1" />

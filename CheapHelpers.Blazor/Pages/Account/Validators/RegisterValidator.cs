@@ -1,41 +1,28 @@
-﻿using CheapHelpers.Blazor.Helpers;
-using CheapHelpers.EF;
-using CheapHelpers.Models.Entities;
+using CheapHelpers.Blazor.Helpers;
 using FluentValidation;
-using Microsoft.EntityFrameworkCore;
 
-namespace CheapHelpers.Blazor.Pages.Account
+namespace CheapHelpers.Blazor.Pages.Account;
+
+public class RegisterValidator : BaseValidator<Register.RegisterViewModel>
 {
-    public class RegisterValidator : BaseValidator<Register.RegisterViewModel>
+    public RegisterValidator()
     {
-        public RegisterValidator(IDbContextFactory<CheapContext<CheapUser>> f)
-        {
-            RuleFor(x => x.FirstName).NotEmpty().WithMessage("Firstname is empty!");
-            RuleFor(x => x.LastName).NotEmpty().WithMessage("Lastname is empty!");
-            RuleFor(x => x.Email).NotEmpty().WithMessage("Email is empty!").EmailAddress();
-            RuleFor(x => x.Password)
-                .NotEmpty()
-                .WithMessage("Password is empty!")
-                .MinimumLength(6)
-                .WithMessage("Password needs to be more than 5");
-            RuleFor(x => x.ConfirmPassword)
-                .NotEmpty()
-                .WithMessage("Password is empty!")
-                .Must((a, b) => CheckEqual(a, b, f))
-                .WithMessage("The password and confirmation password do not match");
-        }
+        RuleFor(x => x.FirstName)
+            .NotEmpty().WithMessage("First name is required.");
 
-        public bool CheckEqual(
-            Register.RegisterViewModel a,
-            string pw,
-            IDbContextFactory<CheapContext<CheapUser>> f
-        )
-        {
-            if (a.Password == pw)
-            {
-                return true;
-            }
-            return false;
-        }
+        RuleFor(x => x.LastName)
+            .NotEmpty().WithMessage("Last name is required.");
+
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email is required.")
+            .EmailAddress().WithMessage("Invalid email address.");
+
+        RuleFor(x => x.Password)
+            .NotEmpty().WithMessage("Password is required.")
+            .MinimumLength(8).WithMessage("Password must be at least 8 characters.");
+
+        RuleFor(x => x.ConfirmPassword)
+            .NotEmpty().WithMessage("Password confirmation is required.")
+            .Equal(x => x.Password).WithMessage("Passwords do not match.");
     }
 }

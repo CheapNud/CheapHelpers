@@ -1,63 +1,75 @@
-﻿@page "/Account/Register"
+@page "/Account/Register"
 @using CheapHelpers.Blazor.Shared
-@using CheapHelpers.Services;
 @using CheapHelpers.Services.Email
 @using Microsoft.AspNetCore.Identity
-@using Microsoft.AspNetCore.WebUtilities;
+@using Microsoft.AspNetCore.WebUtilities
 @using System.Text
-@using MoreLinq;
-@using MudBlazor
 
-<MudForm @ref="form" Model="@model">
-    <MudTextField Class="mt-3" Label="First name" Variant="Variant.Outlined" @bind-Value=model.FirstName For="(() => model.FirstName)"></MudTextField>
-    <MudTextField Class="mt-3" Label="Last name" Variant="Variant.Outlined" @bind-Value=model.LastName For="(() => model.LastName)"></MudTextField>
-    <MudTextField Class="mt-3" Label="Email" Required=true InputMode="InputMode.email" InputType="InputType.Email" Variant="Variant.Outlined" @bind-Value=model.Email For="(() => model.Email)"></MudTextField>
-    <PasswordTextField For="(() => model.Password)" Class="mt-3" @bind-Value=model.Password></PasswordTextField>
-    <PasswordTextField For="(() => model.ConfirmPassword)" Class="mt-3" @bind-Value=model.ConfirmPassword></PasswordTextField>
+<MudForm @ref="_form" Model="@_model" Validation="@(_validator?.ValidateValue)">
+    <MudTextField Class="mt-3" Label="@Loc["FirstName"]" Variant="Variant.Outlined"
+                  @bind-Value="_model.FirstName" For="@(() => _model.FirstName)" />
+    <MudTextField Class="mt-3" Label="@Loc["LastName"]" Variant="Variant.Outlined"
+                  @bind-Value="_model.LastName" For="@(() => _model.LastName)" />
+    <MudTextField Class="mt-3" Label="@Loc["Email"]" Required="true" InputMode="InputMode.email"
+                  InputType="InputType.Email" Variant="Variant.Outlined"
+                  @bind-Value="_model.Email" For="@(() => _model.Email)" />
+    <PasswordTextField For="@(() => _model.Password)" Class="mt-3" @bind-Value="_model.Password" />
+    <PasswordTextField For="@(() => _model.ConfirmPassword)" Class="mt-3" @bind-Value="_model.ConfirmPassword" />
 </MudForm>
-<MudCheckBox @bind-Value=sendMail Label="Registratie mail versturen" Class="mt-3" Color="Color.Primary"></MudCheckBox>
-<MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" OnClick="RegisterAccount">Create</MudButton>
+<MudCheckBox @bind-Value="_sendMail" Label="@Loc["SendConfirmationEmail"]" Class="mt-3" Color="Color.Primary" />
+<MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" OnClick="RegisterAccount">
+    @Loc["Create"]
+</MudButton>
 
 @code {
     public class RegisterViewModel
     {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string Email { get; set; }
-        public string Password { get; set; }
-        public string ConfirmPassword { get; set; }
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+        public string ConfirmPassword { get; set; } = "";
     }
 
-    public bool sendMail = false;
+    /// <summary>
+    /// Factory to create a concrete CheapUser instance.
+    /// Required because CheapUser is abstract — consumers must provide their concrete type.
+    /// </summary>
+    [Parameter, EditorRequired]
+    public Func<CheapUser> UserFactory { get; set; } = default!;
 
-    [Inject]
-    public UserManager<IdentityUser> UserManager { get; set; }
+    /// <summary>
+    /// Optional callback after successful registration.
+    /// </summary>
+    [Parameter]
+    public EventCallback<CheapUser> OnUserRegistered { get; set; }
 
-    [Inject]
-    public IEmailService Mailer { get; set; }
+    [Inject] protected UserManager<CheapUser> UserManager { get; set; } = default!;
+    [Inject] protected IEmailService? Mailer { get; set; }
+    [Inject] protected ISnackbar ToastService { get; set; } = default!;
+    [Inject] protected NavigationManager Nav { get; set; } = default!;
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] protected IDbContextFactory<CheapContext<CheapUser>> Factory { get; set; } = default!;
 
-    [Inject]
-    public ISnackbar ToastService { get; set; }
+    private RegisterViewModel _model = new();
+    private MudForm _form = default!;
+    private RegisterValidator? _validator;
+    private bool _sendMail;
 
-    [Inject]
-    public NavigationManager Nav { get; set; }
-
-    public RegisterViewModel model = new();
-    public MudForm form;
-    //public RegisterValidator validator;
-
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        //validator = new RegisterValidator(Factory);
+        _validator = new RegisterValidator();
     }
 
-    private async Task SendConfirmationMail(IdentityUser user)
+    private async Task SendConfirmationMail(CheapUser user)
     {
+        if (Mailer is null || string.IsNullOrEmpty(user.Email)) return;
+
         try
         {
             var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-            var link = $@"{Nav.BaseUri}Account/ConfirmEmail?userid={user.Id}&code={code}";
+            var link = $"{Nav.BaseUri}Account/ConfirmEmail?userid={user.Id}&code={code}";
             await Mailer.SendEmailConfirmationAsync(user.Email, link);
         }
         catch (Exception ex)
@@ -66,43 +78,45 @@
         }
     }
 
-    public async Task RegisterAccount()
+    private async Task RegisterAccount()
     {
         try
         {
-            await form.Validate();
-            if (!form.IsValid)
+            await _form.Validate();
+            if (!_form.IsValid)
             {
-                ToastService.Add(form.Errors.ToDelimitedString("<br>"), MudBlazor.Severity.Warning);
+                ToastService.Add(string.Join("<br>", _form.Errors), Severity.Warning);
                 return;
             }
 
-            IdentityUser user = new IdentityUser
-                {
-                    // FirstName = model.FirstName,
-                    // LastName = model.LastName,
-                    Email = model.Email,
-                    UserName = model.Email,
-                };
+            var user = UserFactory();
+            user.FirstName = _model.FirstName;
+            user.LastName = _model.LastName;
+            user.Email = _model.Email;
+            user.UserName = _model.Email;
 
-            var result = await UserManager.CreateAsync(user, model.Password);
-            if (result.Succeeded)
+            var identityResult = await UserManager.CreateAsync(user, _model.Password);
+            if (identityResult.Succeeded)
             {
-                if (sendMail)
+                if (_sendMail)
                 {
                     await SendConfirmationMail(user);
-                    ToastService.Add("Confirmation email sent!", Severity.Success);
+                    ToastService.Add(Loc["ConfirmationEmailSent"], Severity.Success);
                 }
-                model = new();
-            }
 
-            if (!result.Succeeded)
-            {
-                foreach(var item in result.Errors)
+                if (OnUserRegistered.HasDelegate)
                 {
-                    ToastService.Add($"{item.Description}", Severity.Warning);
+                    await OnUserRegistered.InvokeAsync(user);
                 }
-                return;
+
+                _model = new();
+            }
+            else
+            {
+                foreach (var error in identityResult.Errors)
+                {
+                    ToastService.Add(error.Description, Severity.Warning);
+                }
             }
         }
         catch (Exception ex)

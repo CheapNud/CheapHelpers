@@ -1,5 +1,73 @@
-﻿<h3>ConfirmEmailChange</h3>
+@page "/Account/ConfirmEmailChange"
+@using System.Text
+@using Microsoft.AspNetCore.WebUtilities
+
+@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <MudText>@Message</MudText>
+}
 
 @code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "userid")]
+    public string UserId { get; set; } = "";
 
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "email")]
+    public string Email { get; set; } = "";
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "code")]
+    public string Code { get; set; } = "";
+
+    private string Message = "";
+
+    [Inject] protected UserManager<CheapUser> UserManager { get; set; } = default!;
+    [Inject] protected ISnackbar ToastService { get; set; } = default!;
+    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] protected NavigationManager Nav { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(UserId) || string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Code))
+            {
+                ToastService.Add(Loc["ConfirmError"], Severity.Error);
+                return;
+            }
+
+            var user = await UserManager.FindByIdAsync(UserId);
+            if (user is null)
+            {
+                Debug.WriteLine($"Unable to load user with ID '{UserId}'.");
+                ToastService.Add(Loc["ConfirmError"], Severity.Error);
+                Nav.NavigateTo("/");
+                return;
+            }
+
+            var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
+            var changeResult = await UserManager.ChangeEmailAsync(user, Email, code);
+
+            if (!changeResult.Succeeded)
+            {
+                Message = Loc["ConfirmError"];
+                return;
+            }
+
+            // If the username was the old email, update it to the new email
+            var currentUsername = await UserManager.GetUserNameAsync(user);
+            if (string.Equals(currentUsername, user.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                await UserManager.SetUserNameAsync(user, Email);
+            }
+
+            Message = Loc["EmailChangeConfirmed"];
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+            ToastService.Add(Loc["ConfirmError"], Severity.Error);
+        }
+    }
 }

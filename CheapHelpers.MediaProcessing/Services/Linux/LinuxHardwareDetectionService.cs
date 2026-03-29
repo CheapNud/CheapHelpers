@@ -4,6 +4,7 @@ using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 using CheapHelpers.MediaProcessing.Models;
 using CheapHelpers.MediaProcessing.Utilities;
+using CheapHelpers.Threading;
 
 namespace CheapHelpers.MediaProcessing.Services.Linux;
 
@@ -31,57 +32,42 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
     private const string CPU_HIGH_QUALITY_PRESET = "slow";
     private const string CPU_FAST_PRESET = "fast";
 
-    // TODO: Consider refactoring to AsyncLazy<T> for cleaner caching pattern
-    private volatile HardwareCapabilities? _cachedCapabilities;
-    private readonly SemaphoreSlim _cacheSemaphore = new(1, 1);
+    private AsyncLazy<HardwareCapabilities>? _capabilities;
 
     /// <summary>
     /// Detect hardware capabilities (cached after first call)
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
-    public virtual async Task<HardwareCapabilities> DetectHardwareAsync(CancellationToken cancellationToken = default)
+    public virtual Task<HardwareCapabilities> DetectHardwareAsync(CancellationToken cancellationToken = default)
     {
-        // Fast path - return cached value without lock contention (volatile ensures visibility)
-        if (_cachedCapabilities != null)
-            return _cachedCapabilities;
+        _capabilities ??= new AsyncLazy<HardwareCapabilities>(() => DetectHardwareCoreAsync(cancellationToken));
+        return _capabilities.Value;
+    }
 
-        await _cacheSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
+    private async Task<HardwareCapabilities> DetectHardwareCoreAsync(CancellationToken cancellationToken)
+    {
+        var capabilities = new HardwareCapabilities
         {
-            // Double-check inside lock prevents multiple detections when concurrent calls
-            // arrive before cache is populated - this is the standard double-check locking pattern
-            if (_cachedCapabilities != null)
-                return _cachedCapabilities;
+            CpuCoreCount = Environment.ProcessorCount,
+            CpuName = GetCpuName(),
+            HasNvidiaGpu = await DetectNvidiaGpuAsync(cancellationToken).ConfigureAwait(false),
+            GpuName = await GetGpuNameAsync(cancellationToken).ConfigureAwait(false),
+            NvencAvailable = await IsNvencAvailableAsync(cancellationToken).ConfigureAwait(false),
+            AvailableGpus = await GetAllGpuNamesAsync(cancellationToken).ConfigureAwait(false),
+            IsIntelCpu = IsIntelCpu()
+        };
 
-            var capabilities = new HardwareCapabilities
-            {
-                CpuCoreCount = Environment.ProcessorCount,
-                CpuName = GetCpuName(),
-                HasNvidiaGpu = await DetectNvidiaGpuAsync(cancellationToken).ConfigureAwait(false),
-                GpuName = await GetGpuNameAsync(cancellationToken).ConfigureAwait(false),
-                NvencAvailable = await IsNvencAvailableAsync(cancellationToken).ConfigureAwait(false),
-                AvailableGpus = await GetAllGpuNamesAsync(cancellationToken).ConfigureAwait(false),
-                IsIntelCpu = IsIntelCpu()
-            };
+        await DetectHardwareEncodersAsync(capabilities, cancellationToken).ConfigureAwait(false);
 
-            // Detect hardware encoders
-            await DetectHardwareEncodersAsync(capabilities, cancellationToken).ConfigureAwait(false);
+        Debug.WriteLine("=== Linux Hardware Detection ===");
+        Debug.WriteLine($"CPU: {capabilities.CpuName} ({capabilities.CpuCoreCount} cores)");
+        Debug.WriteLine($"GPU: {capabilities.GpuName}");
+        Debug.WriteLine($"NVIDIA GPU: {capabilities.HasNvidiaGpu}");
+        Debug.WriteLine($"NVENC Available: {capabilities.NvencAvailable}");
+        Debug.WriteLine($"Hardware Encoders Detected: {capabilities.SupportedEncoders.Count(e => e.Value.IsAvailable)}");
+        Debug.WriteLine("================================");
 
-            Debug.WriteLine("=== Linux Hardware Detection ===");
-            Debug.WriteLine($"CPU: {capabilities.CpuName} ({capabilities.CpuCoreCount} cores)");
-            Debug.WriteLine($"GPU: {capabilities.GpuName}");
-            Debug.WriteLine($"NVIDIA GPU: {capabilities.HasNvidiaGpu}");
-            Debug.WriteLine($"NVENC Available: {capabilities.NvencAvailable}");
-            Debug.WriteLine($"Hardware Encoders Detected: {capabilities.SupportedEncoders.Count(e => e.Value.IsAvailable)}");
-            Debug.WriteLine("================================");
-
-            _cachedCapabilities = capabilities;
-            return capabilities;
-        }
-        finally
-        {
-            _cacheSemaphore.Release();
-        }
+        return capabilities;
     }
 
     /// <summary>
@@ -432,12 +418,6 @@ public partial class LinuxHardwareDetectionService(LinuxExecutableDetectionServi
     protected virtual void Dispose(bool disposing)
     {
         if (_disposed) return;
-
-        if (disposing)
-        {
-            _cacheSemaphore.Dispose();
-        }
-
         _disposed = true;
     }
 }

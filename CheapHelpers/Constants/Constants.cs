@@ -275,6 +275,12 @@ namespace CheapHelpers
             /// Index name for UserNotificationPreferences UserId and NotificationType unique composite
             /// </summary>
             public const string NotificationPreferencesUserIdTypeIndex = "IX_UserNotificationPreferences_UserId_NotificationType";
+
+            // API Key indexes
+            public const string ApiKeysKeyHashIndex = "IX_ApiKeys_KeyHash";
+            public const string ApiKeysKeyPrefixIndex = "IX_ApiKeys_KeyPrefix";
+            public const string ApiKeysUserIdIndex = "IX_ApiKeys_UserId";
+            public const string ApiKeysUserIdIsActiveIndex = "IX_ApiKeys_UserId_IsActive";
         }
 
         /// <summary>
@@ -449,89 +455,39 @@ namespace CheapHelpers
         }
 
         /// <summary>
-        /// //TODO: Maybe move this to a resources file for localization support?
-        /// Validation message and error constants
+        /// Validation message constants for exceptions and logging.
+        /// User-facing localized equivalents are in CheapHelpers.Blazor/Properties/Language.resx
+        /// using the corresponding resource keys (e.g., "FileTooLarge", "NoUploadPath").
         /// </summary>
         public static class Validation
         {
-            /// <summary>
-            /// Error message for file size exceeding maximum
-            /// </summary>
+            // Resource keys for IStringLocalizer (user-facing)
+            public const string FileTooLargeKey = "FileTooLarge";
+            public const string NoUploadPathKey = "NoUploadPath";
+            public const string NoExtensionKey = "NoExtension";
+            public const string DangerousExtensionKey = "DangerousExtension";
+            public const string UnrecognizableFileTypeKey = "UnrecognizableFileType";
+            public const string DisallowedFileTypeKey = "DisallowedFileType";
+            public const string PathTraversalKey = "PathTraversal";
+            public const string SymbolicLinkNotAllowedKey = "SymbolicLinkNotAllowed";
+            public const string FilenameNullOrEmptyKey = "FilenameNullOrEmpty";
+
+            // Exception/log message strings (internal)
             public const string FileTooLargeMessage = "File too large";
-
-            /// <summary>
-            /// Error message for missing upload path
-            /// </summary>
             public const string NoUploadPathMessage = "no uploadpath set";
-
-            /// <summary>
-            /// Error message for files without extensions
-            /// </summary>
             public const string NoExtensionMessage = "Files without extensions are not allowed";
-
-            /// <summary>
-            /// Error message template for dangerous file extensions
-            /// </summary>
             public const string DangerousExtensionMessageTemplate = "File extension '{0}' is not allowed for security reasons";
-
-            /// <summary>
-            /// Error message for unrecognizable file types
-            /// </summary>
             public const string UnrecognizableFileTypeMessageTemplate = "Unable to determine file type for '{0}'. The file may be corrupted, empty, or of an unsupported format.";
-
-            /// <summary>
-            /// Error message for file type detection failure
-            /// </summary>
             public const string FileTypeDetectionFailedMessageTemplate = "File type detection returned null for '{0}'. This should not happen after IsTypeRecognizable check.";
-
-            /// <summary>
-            /// Error message template for disallowed file types
-            /// </summary>
             public const string DisallowedFileTypeMessageTemplate = "File type '{0}' (MIME: {1}, Extension: .{2}) is not allowed. Detected from file content analysis. Only the following types are permitted: {3}";
-
-            /// <summary>
-            /// Error message template for path traversal attempts
-            /// </summary>
             public const string PathTraversalMessageTemplate = "Path traversal detected: attempting to write outside upload directory. Base: {0}, Resolved: {1}";
-
-            /// <summary>
-            /// Error message for symbolic links in upload paths
-            /// </summary>
             public const string SymbolicLinkMessage = "Symbolic links are not allowed in upload paths";
-
-            /// <summary>
-            /// Error message template for file validation failures
-            /// </summary>
             public const string FileValidationFailedMessageTemplate = "File type validation failed for '{0}': {1}";
-
-            /// <summary>
-            /// Warning message template for extension mismatch
-            /// </summary>
             public const string ExtensionMismatchWarningTemplate = "WARNING: Extension mismatch for '{0}': claimed='{1}', detected='.{2}' (Type: {3})";
-
-            /// <summary>
-            /// Success message template for file validation
-            /// </summary>
             public const string FileValidationSuccessTemplate = "File validation passed for '{0}': Type={1}, MIME={2}, Extension=.{3}";
-
-            /// <summary>
-            /// Parameter name for filename validation
-            /// </summary>
             public const string FilenameParameter = "fileName";
-
-            /// <summary>
-            /// Parameter name for file size validation
-            /// </summary>
             public const string MaxFileSizeParameter = "MaxFileSizeInMB";
-
-            /// <summary>
-            /// Parameter name for upload path validation
-            /// </summary>
             public const string UploadPathParameter = "UploadPath";
-
-            /// <summary>
-            /// Error message for null or empty filename
-            /// </summary>
             public const string FilenameNullOrEmptyMessage = "Filename cannot be null or empty";
         }
     }

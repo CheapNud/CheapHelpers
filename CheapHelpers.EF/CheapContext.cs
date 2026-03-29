@@ -222,6 +222,126 @@ namespace CheapHelpers.EF
                       .HasDatabaseName(Constants.Database.NotificationPreferencesUserIdTypeIndex);
             });
 
+            // Configure ApiKey entities
+            modelBuilder.Entity<ApiKey>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.KeyHash).IsRequired().HasMaxLength(64);
+                entity.Property(e => e.KeyPrefix).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.UserId).IsRequired().HasMaxLength(450);
+                entity.Property(e => e.ScopesJson).HasMaxLength(2000);
+
+                entity.HasIndex(e => e.KeyHash)
+                      .IsUnique()
+                      .HasDatabaseName(Constants.Database.ApiKeysKeyHashIndex);
+
+                entity.HasIndex(e => e.KeyPrefix)
+                      .HasDatabaseName(Constants.Database.ApiKeysKeyPrefixIndex);
+
+                entity.HasIndex(e => e.UserId)
+                      .HasDatabaseName(Constants.Database.ApiKeysUserIdIndex);
+
+                entity.HasIndex(e => new { e.UserId, e.IsActive })
+                      .HasDatabaseName(Constants.Database.ApiKeysUserIdIsActiveIndex);
+
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+
+                var utcNowSql = GetUtcNowFunction();
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql(utcNowSql);
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql(utcNowSql);
+            });
+
+            // Configure UsageRecord entities (high-volume write path, lean)
+            modelBuilder.Entity<UsageRecord>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Endpoint).HasMaxLength(500);
+                entity.Property(e => e.HttpMethod).HasMaxLength(10);
+                entity.HasIndex(e => new { e.ApiKeyId, e.Timestamp })
+                      .HasDatabaseName("IX_UsageRecords_ApiKeyId_Timestamp");
+                entity.HasIndex(e => e.Timestamp)
+                      .HasDatabaseName("IX_UsageRecords_Timestamp");
+            });
+
+            // Configure UsageAggregate entities
+            modelBuilder.Entity<UsageAggregate>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.ApiKeyId, e.PeriodStart })
+                      .IsUnique()
+                      .HasDatabaseName("IX_UsageAggregates_ApiKeyId_PeriodStart");
+
+                var utcNow2 = GetUtcNowFunction();
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql(utcNow2);
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql(utcNow2);
+            });
+
+            // Configure BillingPlan entities
+            modelBuilder.Entity<BillingPlan>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.Currency).HasMaxLength(3);
+                entity.Property(e => e.RatePerUnit).HasPrecision(18, 6);
+                entity.Property(e => e.OverageRate).HasPrecision(18, 6);
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.HasIndex(e => e.Name).HasDatabaseName("IX_BillingPlans_Name");
+
+                var utcNow3 = GetUtcNowFunction();
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql(utcNow3);
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql(utcNow3);
+            });
+
+            // Configure BillingInvoice entities
+            modelBuilder.Entity<BillingInvoice>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.InvoiceNumber).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Currency).HasMaxLength(3);
+                entity.Property(e => e.SubTotal).HasPrecision(18, 2);
+                entity.Property(e => e.TaxAmount).HasPrecision(18, 2);
+                entity.Property(e => e.TotalAmount).HasPrecision(18, 2);
+                entity.Property(e => e.UblXml).HasColumnType(Constants.Database.TextColumnType);
+                entity.Property(e => e.PdfStoragePath).HasMaxLength(500);
+
+                entity.HasIndex(e => e.InvoiceNumber)
+                      .IsUnique()
+                      .HasDatabaseName("IX_BillingInvoices_InvoiceNumber");
+                entity.HasIndex(e => e.ApiKeyId)
+                      .HasDatabaseName("IX_BillingInvoices_ApiKeyId");
+                entity.HasIndex(e => e.Status)
+                      .HasDatabaseName("IX_BillingInvoices_Status");
+
+                var utcNow4 = GetUtcNowFunction();
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql(utcNow4);
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql(utcNow4);
+            });
+
+            // Configure Report entities
+            modelBuilder.Entity<Report>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.StoragePath).HasMaxLength(500);
+                entity.Property(e => e.MimeType).HasMaxLength(100);
+                entity.Property(e => e.GeneratedById).HasMaxLength(450);
+                entity.Property(e => e.ErrorMessage).HasMaxLength(2000);
+
+                entity.HasIndex(e => e.GeneratedById)
+                      .HasDatabaseName("IX_Reports_GeneratedById");
+                entity.HasIndex(e => e.ExpiresAt)
+                      .HasDatabaseName("IX_Reports_ExpiresAt");
+
+                var utcNow5 = GetUtcNowFunction();
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql(utcNow5);
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql(utcNow5);
+            });
+
         }
 
         /// <summary>
@@ -250,6 +370,18 @@ namespace CheapHelpers.EF
         public DbSet<UserNotificationPreference> UserNotificationPreferences { get; set; }
 
         public DbSet<FileAttachment> FileAttachments { get; set; }
+
+        public DbSet<ApiKey> ApiKeys { get; set; }
+
+        public DbSet<UsageRecord> UsageRecords { get; set; }
+
+        public DbSet<UsageAggregate> UsageAggregates { get; set; }
+
+        public DbSet<BillingPlan> BillingPlans { get; set; }
+
+        public DbSet<BillingInvoice> BillingInvoices { get; set; }
+
+        public DbSet<Report> Reports { get; set; }
     }
 
     // Usage Examples:

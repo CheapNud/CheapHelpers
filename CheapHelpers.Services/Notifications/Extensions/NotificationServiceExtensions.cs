@@ -1,9 +1,11 @@
+using CheapHelpers.Models.Entities;
 using CheapHelpers.Models.Enums;
 using CheapHelpers.Services.Notifications.Channels;
 using CheapHelpers.Services.Notifications.Configuration;
+using CheapHelpers.Services.Notifications.RealTime;
 using CheapHelpers.Services.Notifications.Subscriptions;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace CheapHelpers.Services.Notifications.Extensions;
 
@@ -41,7 +43,7 @@ public static class NotificationServiceExtensions
     public static IServiceCollection AddCheapNotifications<TUser>(
         this IServiceCollection services,
         Action<NotificationOptions>? configureOptions = null)
-        where TUser : IdentityUser
+        where TUser : CheapUser
     {
         // Create and configure options
         NotificationOptions options = new();
@@ -110,8 +112,14 @@ public static class NotificationServiceExtensions
         }
         else if (string.Equals(options.RealTimeProvider, "RabbitMQ", StringComparison.OrdinalIgnoreCase))
         {
-            // TODO: Implement RabbitMQ real-time notification support
-            // services.AddScoped<INotificationRealTimeService, RabbitMQNotificationRealTimeService>();
+            if (string.IsNullOrEmpty(options.RabbitMQConnectionString))
+                throw new InvalidOperationException("RabbitMQConnectionString is required when RealTimeProvider is 'RabbitMQ'");
+
+            var rabbitConnectionString = options.RabbitMQConnectionString;
+            services.AddSingleton<INotificationRealTimeService>(sp =>
+                RabbitMQNotificationRealTimeService.CreateAsync(
+                    rabbitConnectionString,
+                    sp.GetRequiredService<ILogger<RabbitMQNotificationRealTimeService>>()).GetAwaiter().GetResult());
         }
 
         return services;

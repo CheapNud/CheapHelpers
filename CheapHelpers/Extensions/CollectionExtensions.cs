@@ -19,7 +19,12 @@ namespace CheapHelpers.Extensions
         /// <returns>the index replaced</returns>
         public static T Replace<T>(this IList<T> list, T oldItem, T newItem)
         {
+            ArgumentNullException.ThrowIfNull(list);
+
             var oldItemIndex = list.IndexOf(oldItem);
+            if (oldItemIndex < 0)
+                throw new ArgumentException("Item not found in list.", nameof(oldItem));
+
             return list[oldItemIndex] = newItem;
         }
 
@@ -32,10 +37,17 @@ namespace CheapHelpers.Extensions
         /// <param name="newItem"></param>
         public static void Replace<T>(this List<T> list, Predicate<T> oldItemSelector, T newItem)
         {
-            //check for different situations here and throw exception
-            //if list contains multiple items that match the predicate
-            //or check for nullability of list and etc ...
+            ArgumentNullException.ThrowIfNull(list);
+            ArgumentNullException.ThrowIfNull(oldItemSelector);
+
+            var matchCount = list.Count(item => oldItemSelector(item));
+            if (matchCount > 1)
+                throw new InvalidOperationException($"Predicate matched {matchCount} items; expected exactly one.");
+
             var oldItemIndex = list.FindIndex(oldItemSelector);
+            if (oldItemIndex < 0)
+                throw new ArgumentException("No item matching the predicate was found in the list.", nameof(oldItemSelector));
+
             list[oldItemIndex] = newItem;
         }
 

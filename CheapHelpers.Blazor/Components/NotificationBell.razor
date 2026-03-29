@@ -4,8 +4,11 @@
 @using CheapHelpers.Services.Notifications.Models
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.SignalR.Client
+@using Humanizer
+@using Microsoft.Extensions.Logging
 @inject IInAppNotificationService NotificationService
 @inject NavigationManager Navigation
+@inject ILogger<NotificationBell> Logger
 @implements IAsyncDisposable
 
 <MudBadge Content="@_unreadCount" Visible="@(_unreadCount > 0)" Color="Color.Error" Overlap="true" Class="mx-2">
@@ -200,10 +203,9 @@
 
             await _hubConnection.StartAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // TODO: Add logging or error handling
-            // Connection failed - component will still work without real-time updates
+            Logger.LogWarning(ex, "Failed to connect to notification hub — real-time updates unavailable");
         }
     }
 
@@ -220,9 +222,9 @@
             _unreadCount = await NotificationService.GetUnreadCountAsync(UserId);
             StateHasChanged();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // TODO: Add logging or error handling
+            Logger.LogWarning(ex, "Failed to load unread notification count");
         }
     }
 
@@ -267,9 +269,9 @@
             _currentSkip = PageSize;
             _notificationsLoaded = true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // TODO: Add logging or error handling
+            Logger.LogError(ex, "Failed to load notifications");
         }
         finally
         {
@@ -303,9 +305,9 @@
             _hasMore = notifications.Count == PageSize;
             _currentSkip += PageSize;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // TODO: Add logging or error handling
+            Logger.LogError(ex, "Failed to load more notifications");
         }
         finally
         {
@@ -365,9 +367,9 @@
                 StateHasChanged();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // TODO: Add logging or error handling
+            Logger.LogError(ex, "Failed to mark all notifications as read");
         }
     }
 
@@ -401,28 +403,8 @@
         };
     }
 
-    /// <summary>
-    /// Converts a timestamp to a human-readable relative time string.
-    /// TODO: Consider using Humanizer library for more sophisticated formatting.
-    /// </summary>
-    private string HumanizeTimestamp(DateTime timestamp)
-    {
-        var timeSpan = DateTime.UtcNow - timestamp;
-
-        if (timeSpan.TotalMinutes < 1)
-            return "Just now";
-
-        if (timeSpan.TotalMinutes < 60)
-            return $"{(int)timeSpan.TotalMinutes} minutes ago";
-
-        if (timeSpan.TotalHours < 24)
-            return $"{(int)timeSpan.TotalHours} hours ago";
-
-        if (timeSpan.TotalDays < 7)
-            return $"{(int)timeSpan.TotalDays} days ago";
-
-        return timestamp.ToString("MMM dd, yyyy");
-    }
+    private static string HumanizeTimestamp(DateTime timestamp) =>
+        timestamp.Humanize(utcDate: true);
 
     /// <summary>
     /// Disposes the SignalR hub connection.

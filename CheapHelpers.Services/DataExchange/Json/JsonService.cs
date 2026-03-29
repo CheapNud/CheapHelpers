@@ -1,47 +1,21 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 
-//TODO: fix and cleanup
-namespace CheapHelpers.Services.DataExchange.Json
+namespace CheapHelpers.Services.DataExchange.Json;
+
+internal class JsonService : IJsonService
 {
-    internal class JsonService : IJsonService
+    public C ReadJson<C>(string path) where C : class
     {
-        //private dynamic ReadJson(string path)
-        //{
-        //    var serializer = new JsonSerializer();
-        //    using (Stream s = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-        //    {
-        //        using (var sr = new StreamReader(s))
-        //        using (var jsonTextReader = new JsonTextReader(sr))
-        //        {
-        //            dynamic? jsObj = serializer.Deserialize<ExpandoObject>(jsonTextReader);
-        //            if (jsObj == null)
-        //            {
-        //                throw new Exception("jsobj was null");
-        //            }
-        //            return jsObj;
-        //        }
-        //    }
-        //}
+        var serializer = new JsonSerializer();
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var reader = new StreamReader(stream);
+        using var jsonReader = new JsonTextReader(reader);
 
-        public C ReadJson<C>(string path) where C : class
-        {
-            var serializer = new JsonSerializer();
-            using (Stream s = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            {
-                using (var sr = new StreamReader(s))
-                using (var jsonTextReader = new JsonTextReader(sr))
-                {
-                    return serializer.Deserialize<C>(jsonTextReader);
-                }
-            }
-        }
+        return serializer.Deserialize<C>(jsonReader);
+    }
 
-        public Task<C> ReadJsonAsync<C>(string path) where C : class
-        {
-            return Task.Run(() =>
-            {
-                return ReadJson<C>(path);
-            });
-        }
+    public Task<C> ReadJsonAsync<C>(string path) where C : class
+    {
+        return Task.Run(() => ReadJson<C>(path));
     }
 }

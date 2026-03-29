@@ -223,6 +223,10 @@ public class InvoiceBuilder
     /// <summary>
     /// Builds the <see cref="UblInvoice"/> with all tax and monetary totals calculated automatically.
     /// </summary>
+    /// <summary>
+    /// Builds the <see cref="UblInvoice"/> with all tax and monetary totals calculated automatically.
+    /// The builder is reusable — you can modify properties and call Build() again for variants.
+    /// </summary>
     public UblInvoice Build()
     {
         if (_lines.Count == 0)

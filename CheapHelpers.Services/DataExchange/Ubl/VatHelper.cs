@@ -98,7 +98,7 @@ internal static class VatHelper
     private static string? StripNlSuffix(string localPart)
     {
         var bIndex = localPart.IndexOf('B');
-        if (bIndex < 9)
+        if (bIndex != 9)
             return null;
 
         var digits = localPart[..bIndex];

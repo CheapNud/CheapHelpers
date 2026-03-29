@@ -68,6 +68,12 @@ namespace CheapHelpers.Blazor.Extensions
             // Register core services
             services.AddScoped<UserService<TUser>>();
 
+            // Register account route options (configurable via CheapHelpersBlazorOptions)
+            if (options.AccountRouteOptions is not null)
+                services.AddSingleton(options.AccountRouteOptions);
+            else
+                services.AddSingleton(new Pages.Account.AccountRouteOptions());
+
             // Register email service if configured
             if (options.EmailServiceType != null)
             {

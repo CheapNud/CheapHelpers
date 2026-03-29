@@ -1,10 +1,15 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using CheapHelpers.Blazor.Pages.Account;
+using Microsoft.Extensions.DependencyInjection;
 using MudBlazor;
 
 namespace CheapHelpers.Blazor.Configuration
 {
     public class CheapHelpersBlazorOptions
     {
+        /// <summary>
+        /// Configure account controller route paths. Null uses defaults (/Account/...).
+        /// </summary>
+        public AccountRouteOptions? AccountRouteOptions { get; set; }
         /// <summary>
         /// Enable localization support
         /// </summary>

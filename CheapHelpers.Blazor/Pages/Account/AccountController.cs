@@ -15,22 +15,30 @@ using System.Text.Encodings.Web;
 
 namespace CheapHelpers.Blazor.Pages.Account
 {
-    [Route("Account/[action]")]
+    /// <summary>
+    /// Generic account controller for CheapHelpers Identity operations.
+    /// <para>
+    /// This base class has no [Route] attribute — consumers must define routing on their subclass:
+    /// <code>[Route("Account/[action]")] public class AccountController : CheapAccountController&lt;MyUser&gt;;</code>
+    /// </para>
+    /// <para>
+    /// Redirect paths are configurable via <see cref="AccountRouteOptions"/> (injected or defaults).
+    /// </para>
+    /// </summary>
     [Authorize]
     public class CheapAccountController<TUser>(
         SignInManager<TUser> signInManager,
         IEmailService mailer,
         UserManager<TUser> userManager,
         UserService<TUser> userService,
-        UrlEncoder urlEncoder
+        UrlEncoder urlEncoder,
+        AccountRouteOptions? routeOptions = null
         ) : Controller where TUser : CheapUser
     {
         private const string AppName = "CheapHelpers.Blazor";
         private const int RecoveryCodesCount = 10;
-        private const string HomeRoute = "/";
-        private const string LoginRoute = "/Account/Login/";
-        private const string LockoutRoute = "/Account/Lockout/";
-        private const string EnableAuthenticatorRoute = "Account/EnableAuthenticator";
+
+        protected AccountRouteOptions Routes { get; } = routeOptions ?? new AccountRouteOptions();
 
         // Error messages
         private const string InvalidTokenMessage = "invalid token";
@@ -65,9 +73,9 @@ namespace CheapHelpers.Blazor.Pages.Account
 
             return result.Succeeded switch
             {
-                true => Redirect(HomeRoute),
-                false when result.IsLockedOut => Redirect(LockoutRoute),
-                _ => Redirect(LoginRoute)
+                true => Redirect(Routes.HomeRoute),
+                false when result.IsLockedOut => Redirect(Routes.LockoutRoute),
+                _ => Redirect(Routes.LoginRoute)
             };
         }
 
@@ -87,7 +95,7 @@ namespace CheapHelpers.Blazor.Pages.Account
 
             LogSignInAttempt(username, signInResult.Succeeded, GetSignInDescription(signInResult));
 
-            return signInResult.Succeeded ? Redirect(HomeRoute) : Redirect(LoginRoute);
+            return signInResult.Succeeded ? Redirect(Routes.HomeRoute) : Redirect(Routes.LoginRoute);
         }
 
         public new async Task<IActionResult> SignOut()
@@ -98,7 +106,7 @@ namespace CheapHelpers.Blazor.Pages.Account
                 LogSignOut();
             }
 
-            return Redirect(HomeRoute);
+            return Redirect(Routes.HomeRoute);
         }
 
         public async Task<IActionResult> Refresh()
@@ -109,7 +117,7 @@ namespace CheapHelpers.Blazor.Pages.Account
                 await signInManager.RefreshSignInAsync(user);
             }
 
-            return Redirect(HomeRoute);
+            return Redirect(Routes.HomeRoute);
         }
 
         [HttpPost]
@@ -209,7 +217,7 @@ namespace CheapHelpers.Blazor.Pages.Account
             await userManager.ResetAuthenticatorKeyAsync(user);
             await signInManager.RefreshSignInAsync(user);
 
-            return Redirect(EnableAuthenticatorRoute);
+            return Redirect(Routes.EnableAuthenticatorRoute);
         }
 
         [HttpGet]

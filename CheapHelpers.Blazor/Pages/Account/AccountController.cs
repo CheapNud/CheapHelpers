@@ -15,7 +15,7 @@ using System.Text.Encodings.Web;
 
 namespace CheapHelpers.Blazor.Pages.Account
 {
-    [Route("[controller]/[action]")]
+    [Route("Account/[action]")]
     [Authorize]
     public class CheapAccountController<TUser>(
         SignInManager<TUser> signInManager,

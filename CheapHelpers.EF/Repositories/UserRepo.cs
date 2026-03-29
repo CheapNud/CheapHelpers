@@ -593,7 +593,7 @@ namespace CheapHelpers.EF.Repositories
         public async Task<PaginatedList<TUser>> GetAllUsersPaginatedAsync(int? pageIndex = null, int pageSize = DEFAULT_USER_PAGE_SIZE, CancellationToken token = default)
         {
             using var context = _factory.CreateDbContext();
-            var query = _factory.CreateDbContext().Users.AsNoTracking();
+            var query = context.Users.AsNoTracking();
 
             return await PaginatedList<TUser>.CreateAsync(query, pageIndex.Value, pageSize, token);
         }

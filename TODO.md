@@ -122,6 +122,7 @@
 - [x] (2026-03-28 → 2026-03-29) Add billing service with PEPPOL BIS 3.0 invoicing [user]
   - UBL Invoice/CreditNote DTOs + PEPPOL constants (BIS 3.0 CustomizationId, ProfileId, Belgian endpoint schemes)
   - `UblInvoiceService` with `CreateInvoiceAsync`/`CreateCreditNoteAsync` using UblSharp InvoiceType/CreditNoteType
+  - `InvoiceBuilder` / `CreditNoteBuilder` fluent API — hides UBL complexity, auto-calculates taxes and totals
   - `UblPartyMapper` extracted from UblService (shared party/address/contact conversion)
   - `PeppolInvoiceValidator` with Belgian VAT/enterprise number validation
   - `IUsageMeterService` + `IBillingService` with metered billing, usage aggregation, invoice generation

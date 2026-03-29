@@ -144,27 +144,31 @@ var invoice = await billingService.GenerateInvoiceAsync(
 ```csharp
 using CheapHelpers.Services.DataExchange.Ubl;
 
+// Simple API — fluent builder, no UBL knowledge needed
+var invoice = InvoiceBuilder.Create("INV-2026-000001")
+    .From("My Company", vatNumber: "BE0123456789")
+    .To("Acme Corp", vatNumber: "BE9876543210")
+    .DueIn(days: 30)
+    .AddLine("API calls - March 2026", quantity: 50000, unitPrice: 0.001m, vatPercent: 21)
+    .AddLine("Premium support", quantity: 1, unitPrice: 150.00m, vatPercent: 21)
+    .WithPayment(iban: "BE68539007547034", bic: "BBRUBEBB")
+    .Build();
+// Tax totals, line totals, and monetary totals are calculated automatically
+
 var invoiceService = new UblInvoiceService();
-var xml = await invoiceService.CreateInvoiceXmlAsync(new UblInvoice
-{
-    Id = "INV-2026-000001",
-    IssueDate = DateTime.Now,
-    DueDate = DateTime.Now.AddDays(30),
-    Seller = new UblParty { Name = "My Company", EndpointId = "0123456789", TaxId = "BE0123456789" },
-    Buyer = new UblParty { Name = "Customer", EndpointId = "9876543210" },
-    Lines = [new UblInvoiceLine
-    {
-        Id = "1",
-        Item = new UblItem { Name = "API calls - March 2026" },
-        Quantity = 50000,
-        UnitPrice = 0.001m,
-        LineTotal = 50.00m,
-        TaxCategory = new UblTaxCategory { Id = "S", Percent = 21.00m }
-    }],
-    TaxTotal = new UblTaxTotal { TaxAmount = 10.50m },
-    Totals = new UblMonetaryTotals { PayableAmount = 60.50m }
-});
-// Generates PEPPOL BIS 3.0 compliant UBL 2.1 XML
+var xml = await invoiceService.CreateInvoiceXmlAsync(invoice);
+
+// Credit notes work the same way
+var creditNote = CreditNoteBuilder.Create("CN-2026-000001")
+    .CreditsInvoice("INV-2026-000001")
+    .WithReason("Overcharged API calls")
+    .From("My Company", vatNumber: "BE0123456789")
+    .To("Acme Corp", vatNumber: "BE9876543210")
+    .AddLine("API call correction", quantity: 10000, unitPrice: 0.001m, vatPercent: 21)
+    .Build();
+
+// Advanced: use UblInvoice DTOs directly for full PEPPOL control
+var advancedInvoice = new UblInvoice { /* full UBL model access */ };
 ```
 
 ### Reporting Service

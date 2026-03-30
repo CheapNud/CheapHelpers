@@ -8,6 +8,7 @@ using CheapHelpers.Services.Email;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using MudBlazor;
 using MudBlazor.Services;
 using System.Diagnostics;
@@ -146,9 +147,10 @@ namespace CheapHelpers.Blazor.Extensions
             where TUser : CheapUser
             where TContext : CheapContext<TUser>
         {
-            services.AddDbContextFactory<TContext>(configureContext);
+            var options = contextOptions ?? new CheapContextOptions();
+            services.TryAddSingleton(options);
 
-            // Register as base types so services requiring CheapContext<TUser> still resolve
+            services.AddDbContextFactory<TContext>(configureContext);
             services.AddScoped(sp => (CheapContext<TUser>)sp.GetRequiredService<TContext>());
 
             services.AddCheapHelpersBlazor<TUser, TContext>(configureBlazor);
@@ -169,12 +171,18 @@ namespace CheapHelpers.Blazor.Extensions
             where TContext : CheapContext<TUser>
             where TRole : IdentityRole
         {
+            var options = contextOptions ?? new CheapContextOptions();
+            services.TryAddSingleton(options);
+
             services.AddDbContextFactory<TContext>(configureContext);
             services.AddScoped(sp => (CheapContext<TUser>)sp.GetRequiredService<TContext>());
 
-            // Add Identity against the concrete context
             services.AddIdentity<TUser, TRole>(identityOptions =>
             {
+                identityOptions.Password = options.Identity.Password;
+                identityOptions.SignIn = options.Identity.SignIn;
+                identityOptions.Lockout = options.Identity.Lockout;
+                identityOptions.User = options.Identity.User;
                 configureIdentity?.Invoke(identityOptions);
             }).AddEntityFrameworkStores<TContext>()
               .AddDefaultTokenProviders();
@@ -182,6 +190,20 @@ namespace CheapHelpers.Blazor.Extensions
             services.AddCheapHelpersBlazor<TUser, TContext>(configureBlazor);
 
             return services;
+        }
+
+        /// <summary>
+        /// Simple complete setup with CheapUser, CheapContext, and IdentityRole defaults.
+        /// </summary>
+        public static IServiceCollection AddCheapHelpersCompleteWithIdentity(
+            this IServiceCollection services,
+            Action<DbContextOptionsBuilder> configureContext,
+            CheapContextOptions? contextOptions = null,
+            Action<IdentityOptions>? configureIdentity = null,
+            Action<CheapHelpersBlazorOptions>? configureBlazor = null)
+        {
+            return services.AddCheapHelpersCompleteWithIdentity<CheapUser, CheapContext<CheapUser>, IdentityRole>(
+                configureContext, contextOptions, configureIdentity, configureBlazor);
         }
     }
 

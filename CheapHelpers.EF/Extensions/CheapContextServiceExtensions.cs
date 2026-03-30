@@ -42,7 +42,7 @@ namespace CheapHelpers.EF.Extensions
         /// Adds CheapCommunicationContext (Identity + notifications, preferences, file attachments).
         /// Chain .AddIdentity() for Identity services.
         /// </summary>
-        public static CheapContextBuilder<TUser> AddCheapCommunicationContext<TUser>(
+        public static CheapContextBuilder<TUser, CheapCommunicationContext<TUser>> AddCheapCommunicationContext<TUser>(
             this IServiceCollection services,
             Action<DbContextOptionsBuilder> configureContext,
             CheapContextOptions? contextOptions = null)
@@ -59,14 +59,14 @@ namespace CheapHelpers.EF.Extensions
                 new DbContextFactoryAdapter<CheapContext<TUser>, CheapCommunicationContext<TUser>>(
                     sp.GetRequiredService<IDbContextFactory<CheapCommunicationContext<TUser>>>()));
 
-            return new CheapContextBuilder<TUser>(services, options);
+            return new CheapContextBuilder<TUser, CheapCommunicationContext<TUser>>(services, options);
         }
 
         /// <summary>
         /// Adds CheapBusinessContext (Identity + communications + API keys, billing, reporting).
         /// Chain .AddIdentity() for Identity services.
         /// </summary>
-        public static CheapContextBuilder<TUser> AddCheapBusinessContext<TUser>(
+        public static CheapContextBuilder<TUser, CheapBusinessContext<TUser>> AddCheapBusinessContext<TUser>(
             this IServiceCollection services,
             Action<DbContextOptionsBuilder> configureContext,
             CheapContextOptions? contextOptions = null)
@@ -87,7 +87,7 @@ namespace CheapHelpers.EF.Extensions
                 new DbContextFactoryAdapter<CheapContext<TUser>, CheapBusinessContext<TUser>>(
                     sp.GetRequiredService<IDbContextFactory<CheapBusinessContext<TUser>>>()));
 
-            return new CheapContextBuilder<TUser>(services, options);
+            return new CheapContextBuilder<TUser, CheapBusinessContext<TUser>>(services, options);
         }
     }
 

@@ -1,15 +1,16 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CheapHelpers.EF.Infrastructure
 {
     /// <summary>
     /// Builder for fluent CheapContext configuration.
-    /// Works with all context levels: CheapContext, CheapCommunicationContext, CheapBusinessContext.
-    /// Identity stores are registered against CheapContext (the base), which EF resolves correctly
-    /// regardless of which derived context is actually registered in DI.
+    /// Tracks the concrete context type so Identity stores are registered against the correct level.
     /// </summary>
-    public class CheapContextBuilder<TUser> where TUser : IdentityUser
+    public class CheapContextBuilder<TUser, TContext>
+        where TUser : IdentityUser
+        where TContext : DbContext
     {
         private readonly IServiceCollection _services;
         private readonly CheapContextOptions _contextOptions;
@@ -21,16 +22,15 @@ namespace CheapHelpers.EF.Infrastructure
         }
 
         /// <summary>
-        /// Adds Identity services with CheapContext defaults. Follows standard .AddIdentity() pattern.
-        /// Identity stores are registered against the base CheapContext, which works for all context levels
-        /// because CheapCommunicationContext and CheapBusinessContext both derive from CheapContext.
+        /// Adds Identity services with CheapContext defaults.
+        /// Identity stores are registered against the actual context type (<typeparamref name="TContext"/>),
+        /// not the base <c>CheapContext</c>, ensuring correct DI resolution at all context levels.
         /// </summary>
         public IdentityBuilder AddIdentity<TRole>(Action<IdentityOptions>? configureOptions = null)
             where TRole : IdentityRole
         {
             var identityBuilder = _services.AddIdentity<TUser, TRole>(identityOptions =>
             {
-                // Apply CheapContext defaults first
                 identityOptions.Password = _contextOptions.Identity.Password;
                 identityOptions.SignIn = _contextOptions.Identity.SignIn;
                 identityOptions.Lockout = _contextOptions.Identity.Lockout;
@@ -39,10 +39,9 @@ namespace CheapHelpers.EF.Infrastructure
                 identityOptions.Tokens = _contextOptions.Identity.Tokens;
                 identityOptions.ClaimsIdentity = _contextOptions.Identity.ClaimsIdentity;
 
-                // Allow user overrides
                 configureOptions?.Invoke(identityOptions);
             })
-            .AddEntityFrameworkStores<CheapContext<TUser>>()
+            .AddEntityFrameworkStores<TContext>()
             .AddDefaultTokenProviders();
 
             return identityBuilder;
@@ -62,17 +61,10 @@ namespace CheapHelpers.EF.Infrastructure
         public IServiceCollection Services => _services;
     }
 
-    // Usage Examples:
-    //
-    // Identity-only context:
-    // services.AddCheapContext<MyUser>(options => options.UseSqlServer(connectionString))
-    //     .AddIdentity<IdentityRole>();
-    //
-    // Communication context (Identity + notifications, preferences, file attachments):
-    // services.AddCheapCommunicationContext<MyUser>(options => options.UseSqlServer(connectionString))
-    //     .AddIdentity<IdentityRole>();
-    //
-    // Business context (Communication + API keys, billing, reporting):
-    // services.AddCheapBusinessContext<MyUser>(options => options.UseSqlServer(connectionString))
-    //     .AddIdentity<IdentityRole>();
+    /// <summary>
+    /// Backward-compatible builder defaulting to <c>CheapContext&lt;TUser&gt;</c>.
+    /// </summary>
+    public class CheapContextBuilder<TUser>(IServiceCollection services, CheapContextOptions contextOptions)
+        : CheapContextBuilder<TUser, CheapContext<TUser>>(services, contextOptions)
+        where TUser : IdentityUser;
 }

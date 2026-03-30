@@ -6,7 +6,7 @@ namespace CheapHelpers.EF.Infrastructure;
 /// Adapts an <see cref="IDbContextFactory{TDerived}"/> to <see cref="IDbContextFactory{TBase}"/>
 /// to work around the lack of covariance on the interface.
 /// </summary>
-internal class DbContextFactoryAdapter<TBase, TDerived>(IDbContextFactory<TDerived> inner) : IDbContextFactory<TBase>
+public class DbContextFactoryAdapter<TBase, TDerived>(IDbContextFactory<TDerived> inner) : IDbContextFactory<TBase>
     where TBase : DbContext
     where TDerived : TBase
 {

@@ -151,7 +151,28 @@ namespace CheapHelpers.Blazor.Extensions
             services.TryAddSingleton(options);
 
             services.AddDbContextFactory<TContext>(configureContext);
+
+            // AddDbContextFactory does NOT register TContext as scoped — add it so
+            // scoped consumers (controllers, services) can resolve TContext directly.
+            services.TryAddScoped(sp => sp.GetRequiredService<IDbContextFactory<TContext>>().CreateDbContext());
+
+            // Forward base-type scoped registrations so services injecting CheapContext<TUser> resolve correctly
             services.AddScoped(sp => (CheapContext<TUser>)sp.GetRequiredService<TContext>());
+
+            // Forward base-type factory registrations via adapter (IDbContextFactory is not covariant)
+            services.TryAddSingleton<IDbContextFactory<CheapContext<TUser>>>(sp =>
+                new DbContextFactoryAdapter<CheapContext<TUser>, TContext>(
+                    sp.GetRequiredService<IDbContextFactory<TContext>>()));
+
+            // If TContext derives from CheapCommunicationContext, forward that level too
+            if (typeof(CheapCommunicationContext<TUser>).IsAssignableFrom(typeof(TContext)))
+            {
+                services.TryAddScoped<CheapCommunicationContext<TUser>>(sp =>
+                    (CheapCommunicationContext<TUser>)(object)sp.GetRequiredService<TContext>());
+                services.TryAddSingleton<IDbContextFactory<CheapCommunicationContext<TUser>>>(sp =>
+                    new CommunicationContextFactoryAdapter<TUser, TContext>(
+                        sp.GetRequiredService<IDbContextFactory<TContext>>()));
+            }
 
             services.AddCheapHelpersBlazor<TUser, TContext>(configureBlazor);
 
@@ -175,7 +196,28 @@ namespace CheapHelpers.Blazor.Extensions
             services.TryAddSingleton(options);
 
             services.AddDbContextFactory<TContext>(configureContext);
+
+            // AddDbContextFactory does NOT register TContext as scoped — add it so
+            // scoped consumers (controllers, services) can resolve TContext directly.
+            services.TryAddScoped(sp => sp.GetRequiredService<IDbContextFactory<TContext>>().CreateDbContext());
+
+            // Forward base-type scoped registrations so services injecting CheapContext<TUser> resolve correctly
             services.AddScoped(sp => (CheapContext<TUser>)sp.GetRequiredService<TContext>());
+
+            // Forward base-type factory registrations via adapter (IDbContextFactory is not covariant)
+            services.TryAddSingleton<IDbContextFactory<CheapContext<TUser>>>(sp =>
+                new DbContextFactoryAdapter<CheapContext<TUser>, TContext>(
+                    sp.GetRequiredService<IDbContextFactory<TContext>>()));
+
+            // If TContext derives from CheapCommunicationContext, forward that level too
+            if (typeof(CheapCommunicationContext<TUser>).IsAssignableFrom(typeof(TContext)))
+            {
+                services.TryAddScoped<CheapCommunicationContext<TUser>>(sp =>
+                    (CheapCommunicationContext<TUser>)(object)sp.GetRequiredService<TContext>());
+                services.TryAddSingleton<IDbContextFactory<CheapCommunicationContext<TUser>>>(sp =>
+                    new CommunicationContextFactoryAdapter<TUser, TContext>(
+                        sp.GetRequiredService<IDbContextFactory<TContext>>()));
+            }
 
             services.AddIdentity<TUser, TRole>(identityOptions =>
             {
@@ -205,6 +247,21 @@ namespace CheapHelpers.Blazor.Extensions
             return services.AddCheapHelpersCompleteWithIdentity<CheapUser, CheapContext<CheapUser>, IdentityRole>(
                 configureContext, contextOptions, configureIdentity, configureBlazor);
         }
+    }
+
+    /// <summary>
+    /// Factory adapter that bridges <c>IDbContextFactory&lt;TContext&gt;</c> to
+    /// <c>IDbContextFactory&lt;CheapCommunicationContext&lt;TUser&gt;&gt;</c> via runtime cast.
+    /// Required because <c>TContext : CheapContext&lt;TUser&gt;</c> does not statically
+    /// prove <c>TContext : CheapCommunicationContext&lt;TUser&gt;</c> — the check is done at registration time.
+    /// </summary>
+    internal class CommunicationContextFactoryAdapter<TUser, TContext>(IDbContextFactory<TContext> inner)
+        : IDbContextFactory<CheapCommunicationContext<TUser>>
+        where TUser : CheapUser
+        where TContext : CheapContext<TUser>
+    {
+        public CheapCommunicationContext<TUser> CreateDbContext() =>
+            (CheapCommunicationContext<TUser>)(object)inner.CreateDbContext();
     }
 
     // Usage Examples:

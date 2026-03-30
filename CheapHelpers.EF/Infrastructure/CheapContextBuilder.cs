@@ -1,12 +1,16 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CheapHelpers.EF.Infrastructure
 {
     /// <summary>
-    /// Builder for fluent CheapContext configuration
+    /// Builder for fluent CheapContext configuration.
+    /// Tracks the concrete context type so Identity stores are registered against the correct level.
     /// </summary>
-    public class CheapContextBuilder<TUser> where TUser : IdentityUser
+    public class CheapContextBuilder<TUser, TContext>
+        where TUser : IdentityUser
+        where TContext : DbContext
     {
         private readonly IServiceCollection _services;
         private readonly CheapContextOptions _contextOptions;
@@ -18,14 +22,15 @@ namespace CheapHelpers.EF.Infrastructure
         }
 
         /// <summary>
-        /// Adds Identity services with CheapContext defaults. Follows standard .AddIdentity() pattern.
+        /// Adds Identity services with CheapContext defaults.
+        /// Identity stores are registered against the actual context type (<typeparamref name="TContext"/>),
+        /// not the base <c>CheapContext</c>, ensuring correct DI resolution at all context levels.
         /// </summary>
         public IdentityBuilder AddIdentity<TRole>(Action<IdentityOptions>? configureOptions = null)
             where TRole : IdentityRole
         {
             var identityBuilder = _services.AddIdentity<TUser, TRole>(identityOptions =>
             {
-                // Apply CheapContext defaults first
                 identityOptions.Password = _contextOptions.Identity.Password;
                 identityOptions.SignIn = _contextOptions.Identity.SignIn;
                 identityOptions.Lockout = _contextOptions.Identity.Lockout;
@@ -34,10 +39,9 @@ namespace CheapHelpers.EF.Infrastructure
                 identityOptions.Tokens = _contextOptions.Identity.Tokens;
                 identityOptions.ClaimsIdentity = _contextOptions.Identity.ClaimsIdentity;
 
-                // Allow user overrides
                 configureOptions?.Invoke(identityOptions);
             })
-            .AddEntityFrameworkStores<CheapContext<TUser>>()
+            .AddEntityFrameworkStores<TContext>()
             .AddDefaultTokenProviders();
 
             return identityBuilder;
@@ -57,47 +61,10 @@ namespace CheapHelpers.EF.Infrastructure
         public IServiceCollection Services => _services;
     }
 
-    // Usage Examples:
-    // 
-    // Context only (no Identity):
-    // services.AddCheapContext<MyUser>(options => options.UseSqlServer(connectionString));
-    // 
-    // Context + Identity with defaults (most common):
-    // services.AddCheapContext<ApplicationUser>(options => options.UseSqlServer(connectionString))
-    //     .AddIdentity<IdentityRole>();
-    // 
-    // Context + Identity with custom configuration:
-    // services.AddCheapContext<ApplicationUser>(options => options.UseSqlServer(connectionString))
-    //     .AddIdentity<IdentityRole>(options => 
-    //     {
-    //         options.Password.RequiredLength = 12;
-    //         options.Lockout.MaxFailedAccessAttempts = 3;
-    //     });
-    // 
-    // Full fluent chain (like Microsoft's pattern):
-    // services.AddCheapContext<ApplicationUser>(options => options.UseSqlServer(connectionString))
-    //     .AddIdentity<IdentityRole>(options => 
-    //     {
-    //         options.Password.RequiredLength = 12;
-    //     })
-    //     .AddDefaultUI()
-    //     .AddDefaultTokenProviders()
-    //     .Services  // Access underlying IServiceCollection
-    //     .AddScoped<IMyService, MyService>();
-    // 
-    // Simple case with IdentityUser/IdentityRole:
-    // services.AddCheapContext(options => options.UseSqlServer(connectionString))
-    //     .AddIdentity();
-    // 
-    // With custom CheapContextOptions:
-    // var contextOptions = new CheapContextOptions 
-    // {
-    //     DevCommandTimeoutMs = 300000,
-    //     Identity = new IdentityOptions 
-    //     {
-    //         Password = new PasswordOptions { RequiredLength = 12 }
-    //     }
-    // };
-    // services.AddCheapContext<ApplicationUser>(options => options.UseSqlServer(connectionString), contextOptions)
-    //     .AddIdentity<IdentityRole>();
+    /// <summary>
+    /// Backward-compatible builder defaulting to <c>CheapContext&lt;TUser&gt;</c>.
+    /// </summary>
+    public class CheapContextBuilder<TUser>(IServiceCollection services, CheapContextOptions contextOptions)
+        : CheapContextBuilder<TUser, CheapContext<TUser>>(services, contextOptions)
+        where TUser : IdentityUser;
 }

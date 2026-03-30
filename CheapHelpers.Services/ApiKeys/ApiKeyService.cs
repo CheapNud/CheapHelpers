@@ -12,7 +12,7 @@ namespace CheapHelpers.Services.ApiKeys;
 /// API key management service with SHA-256 hashing and in-memory validation cache.
 /// </summary>
 public class ApiKeyService<TUser>(
-    CheapContext<TUser> dbContext,
+    CheapBusinessContext<TUser> dbContext,
     ApiKeyOptions apiKeyOptions,
     ILogger<ApiKeyService<TUser>> logger) : IApiKeyService where TUser : IdentityUser
 {

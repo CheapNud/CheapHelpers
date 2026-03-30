@@ -11,8 +11,9 @@ namespace CheapHelpers.EF.Repositories
     /// Enhanced repository for user operations, replacing basic UserManager/RoleManager functionality
     /// Optimized for Blazor Server scenarios where HttpContext is not available
     /// </summary>
-    public class UserRepo<TUser>(IDbContextFactory<CheapContext<TUser>> factory) : BaseRepo<CheapContext<TUser>>(factory)
+    public class UserRepo<TUser, TContext>(IDbContextFactory<TContext> factory) : BaseRepo<TContext>(factory)
         where TUser : CheapUser
+        where TContext : CheapContext<TUser>
     {
         private const int DEFAULT_USER_PAGE_SIZE = 20;
 
@@ -678,5 +679,5 @@ namespace CheapHelpers.EF.Repositories
     /// Backward-compatible UserRepo hardcoded to CheapUser.
     /// New consumers should use <see cref="UserRepo{TUser}"/> with their concrete user type.
     /// </summary>
-    public class UserRepo(IDbContextFactory<CheapContext<CheapUser>> factory) : UserRepo<CheapUser>(factory);
+    public class UserRepo(IDbContextFactory<CheapContext<CheapUser>> factory) : UserRepo<CheapUser, CheapContext<CheapUser>>(factory);
 }

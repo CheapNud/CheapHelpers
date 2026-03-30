@@ -12,7 +12,7 @@ namespace CheapHelpers.Services.Notifications.Subscriptions;
 /// </summary>
 /// <typeparam name="TUser">The user type derived from CheapUser</typeparam>
 public class GlobalUserPreferencesProvider<TUser>(
-    CheapContext<TUser> dbContext,
+    CheapCommunicationContext<TUser> dbContext,
     ILogger<GlobalUserPreferencesProvider<TUser>> logger) : INotificationSubscriptionProvider
     where TUser : CheapUser
 {

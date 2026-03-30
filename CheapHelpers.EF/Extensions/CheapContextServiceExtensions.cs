@@ -1,7 +1,9 @@
 ﻿using CheapHelpers.EF.Infrastructure;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace CheapHelpers.EF.Extensions
 {
@@ -9,7 +11,7 @@ namespace CheapHelpers.EF.Extensions
     public static class CheapContextServiceExtensions
     {
         /// <summary>
-        /// Adds CheapContext with the specified user type. Chain .AddIdentity() for Identity services.
+        /// Adds CheapContext (Identity only) with the specified user type. Chain .AddIdentity() for Identity services.
         /// </summary>
         public static CheapContextBuilder<TUser> AddCheapContext<TUser>(
             this IServiceCollection services,
@@ -18,18 +20,15 @@ namespace CheapHelpers.EF.Extensions
             where TUser : IdentityUser
         {
             var options = contextOptions ?? new CheapContextOptions();
+            services.TryAddSingleton(options);
 
-            // Register context options
-            services.AddSingleton(options);
-
-            // Add DbContext
             services.AddDbContext<CheapContext<TUser>>(configureContext);
 
             return new CheapContextBuilder<TUser>(services, options);
         }
 
         /// <summary>
-        /// Adds CheapContext with IdentityUser. Chain .AddIdentity() for Identity services.
+        /// Adds CheapContext (Identity only) with IdentityUser. Chain .AddIdentity() for Identity services.
         /// </summary>
         public static CheapContextBuilder<IdentityUser> AddCheapContext(
             this IServiceCollection services,
@@ -38,49 +37,78 @@ namespace CheapHelpers.EF.Extensions
         {
             return services.AddCheapContext<IdentityUser>(configureContext, contextOptions);
         }
+
+        /// <summary>
+        /// Adds CheapCommunicationContext (Identity + notifications, preferences, file attachments).
+        /// Chain .AddIdentity() for Identity services.
+        /// </summary>
+        public static CheapContextBuilder<TUser, CheapCommunicationContext<TUser>> AddCheapCommunicationContext<TUser>(
+            this IServiceCollection services,
+            Action<DbContextOptionsBuilder> configureContext,
+            CheapContextOptions? contextOptions = null)
+            where TUser : IdentityUser
+        {
+            var options = contextOptions ?? new CheapContextOptions();
+            services.TryAddSingleton(options);
+
+            services.AddDbContext<CheapCommunicationContext<TUser>>(configureContext);
+
+            // Forward scoped + factory registrations so services requiring base types resolve correctly
+            services.TryAddScoped<CheapContext<TUser>>(sp => sp.GetRequiredService<CheapCommunicationContext<TUser>>());
+            services.TryAddSingleton<IDbContextFactory<CheapContext<TUser>>>(sp =>
+                new DbContextFactoryAdapter<CheapContext<TUser>, CheapCommunicationContext<TUser>>(
+                    sp.GetRequiredService<IDbContextFactory<CheapCommunicationContext<TUser>>>()));
+
+            return new CheapContextBuilder<TUser, CheapCommunicationContext<TUser>>(services, options);
+        }
+
+        /// <summary>
+        /// Adds CheapBusinessContext (Identity + communications + API keys, billing, reporting).
+        /// Chain .AddIdentity() for Identity services.
+        /// </summary>
+        public static CheapContextBuilder<TUser, CheapBusinessContext<TUser>> AddCheapBusinessContext<TUser>(
+            this IServiceCollection services,
+            Action<DbContextOptionsBuilder> configureContext,
+            CheapContextOptions? contextOptions = null)
+            where TUser : IdentityUser
+        {
+            var options = contextOptions ?? new CheapContextOptions();
+            services.TryAddSingleton(options);
+
+            services.AddDbContext<CheapBusinessContext<TUser>>(configureContext);
+
+            // Forward scoped + factory registrations for both base types
+            services.TryAddScoped<CheapCommunicationContext<TUser>>(sp => sp.GetRequiredService<CheapBusinessContext<TUser>>());
+            services.TryAddScoped<CheapContext<TUser>>(sp => sp.GetRequiredService<CheapBusinessContext<TUser>>());
+            services.TryAddSingleton<IDbContextFactory<CheapCommunicationContext<TUser>>>(sp =>
+                new DbContextFactoryAdapter<CheapCommunicationContext<TUser>, CheapBusinessContext<TUser>>(
+                    sp.GetRequiredService<IDbContextFactory<CheapBusinessContext<TUser>>>()));
+            services.TryAddSingleton<IDbContextFactory<CheapContext<TUser>>>(sp =>
+                new DbContextFactoryAdapter<CheapContext<TUser>, CheapBusinessContext<TUser>>(
+                    sp.GetRequiredService<IDbContextFactory<CheapBusinessContext<TUser>>>()));
+
+            return new CheapContextBuilder<TUser, CheapBusinessContext<TUser>>(services, options);
+        }
     }
 
     // Usage Examples:
-    // 
-    // Context only (no Identity):
+    //
+    // Identity-only context (users, roles, navigation state):
     // services.AddCheapContext<MyUser>(options => options.UseSqlServer(connectionString));
-    // 
+    //
+    // Communication context (Identity + notifications, preferences, file attachments):
+    // services.AddCheapCommunicationContext<MyUser>(options => options.UseSqlServer(connectionString))
+    //     .AddIdentity<IdentityRole>();
+    //
+    // Business context (Communication + API keys, billing, reporting):
+    // services.AddCheapBusinessContext<MyUser>(options => options.UseSqlServer(connectionString))
+    //     .AddIdentity<IdentityRole>();
+    //
     // Context + Identity with defaults (most common):
     // services.AddCheapContext<ApplicationUser>(options => options.UseSqlServer(connectionString))
     //     .AddIdentity<IdentityRole>();
-    // 
-    // Context + Identity with custom configuration:
-    // services.AddCheapContext<ApplicationUser>(options => options.UseSqlServer(connectionString))
-    //     .AddIdentity<IdentityRole>(options => 
-    //     {
-    //         options.Password.RequiredLength = 12;
-    //         options.Lockout.MaxFailedAccessAttempts = 3;
-    //     });
-    // 
-    // Full fluent chain (like Microsoft's pattern):
-    // services.AddCheapContext<ApplicationUser>(options => options.UseSqlServer(connectionString))
-    //     .AddIdentity<IdentityRole>(options => 
-    //     {
-    //         options.Password.RequiredLength = 12;
-    //     })
-    //     .AddDefaultUI()
-    //     .AddDefaultTokenProviders()
-    //     .Services  // Access underlying IServiceCollection
-    //     .AddScoped<IMyService, MyService>();
-    // 
+    //
     // Simple case with IdentityUser/IdentityRole:
     // services.AddCheapContext(options => options.UseSqlServer(connectionString))
     //     .AddIdentity();
-    // 
-    // With custom CheapContextOptions:
-    // var contextOptions = new CheapContextOptions 
-    // {
-    //     DevCommandTimeoutMs = 300000,
-    //     Identity = new IdentityOptions 
-    //     {
-    //         Password = new PasswordOptions { RequiredLength = 12 }
-    //     }
-    // };
-    // services.AddCheapContext<ApplicationUser>(options => options.UseSqlServer(connectionString), contextOptions)
-    //     .AddIdentity<IdentityRole>();
 }

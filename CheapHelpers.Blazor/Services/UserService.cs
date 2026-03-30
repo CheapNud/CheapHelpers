@@ -15,8 +15,9 @@ namespace CheapHelpers.Blazor.Services
     /// All auth-state methods validate authentication before proceeding.
     /// </summary>
     /// <typeparam name="TUser">Concrete user type extending CheapUser</typeparam>
-    public class UserService<TUser>(IDbContextFactory<CheapContext<TUser>> factory) : UserRepo<TUser>(factory)
+    public class UserService<TUser, TContext>(IDbContextFactory<TContext> factory) : UserRepo<TUser, TContext>(factory)
         where TUser : CheapUser
+        where TContext : CheapContext<TUser>
     {
         #region Navigation State Management
 
@@ -125,19 +126,19 @@ namespace CheapHelpers.Blazor.Services
 
         #endregion
 
-        public async Task<TUser> GetUserAsync(ClaimsPrincipal principal, CheapContext<TUser>? context = null)
+        public async Task<TUser> GetUserAsync(ClaimsPrincipal principal, TContext? context = null)
         {
             string id = GetUserId(principal);
             return await GetUserAsync(id, context);
         }
 
-        public async Task<TUser> GetUserAsync(Task<AuthenticationState> authstate, CheapContext<TUser>? context = null)
+        public async Task<TUser> GetUserAsync(Task<AuthenticationState> authstate, TContext? context = null)
         {
             var r = await authstate;
             return await GetUserAsync(r, context);
         }
 
-        public async Task<TUser> GetUserAsync(string userId, CheapContext<TUser>? context = null)
+        public async Task<TUser> GetUserAsync(string userId, TContext? context = null)
         {
             if (context == null)
             {
@@ -150,7 +151,7 @@ namespace CheapHelpers.Blazor.Services
             }
         }
 
-        public async Task<TUser> GetUserAsync(AuthenticationState authstate, CheapContext<TUser>? context = null)
+        public async Task<TUser> GetUserAsync(AuthenticationState authstate, TContext? context = null)
         {
             return await GetUserAsync(authstate.User, context);
         }
@@ -219,5 +220,5 @@ namespace CheapHelpers.Blazor.Services
     /// Backward-compatible UserService hardcoded to CheapUser.
     /// New consumers should use <see cref="UserService{TUser}"/> with their concrete user type.
     /// </summary>
-    public class UserService(IDbContextFactory<CheapContext<CheapUser>> factory) : UserService<CheapUser>(factory);
+    public class UserService(IDbContextFactory<CheapContext<CheapUser>> factory) : UserService<CheapUser, CheapContext<CheapUser>>(factory);
 }

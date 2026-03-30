@@ -29,6 +29,20 @@
 
 ## Blocking
 
+- [x] (2026-03-30 → 2026-03-30) `UserService<TUser>` should resolve `IDbContextFactory` for derived context types [voltiq-dep]
+  - Added `TContext` generic parameter to `UserRepo<TUser, TContext>`, `UserService<TUser, TContext>`, `CheapAccountController<TUser, TContext>`
+  - Consumers pass their derived context: `UserService<VoltiqUser, VoltiqDbContext>`
+  - Backward-compat shims preserved for `CheapContext<CheapUser>` default
+- [x] (2026-03-30 → 2026-03-30) Add built-in `NullEmailService` as auto-registered fallback [voltiq-dep]
+  - `NullEmailService : IEmailService` logs warnings via `Debug.WriteLine` instead of sending
+  - Auto-registered in `AddCheapHelpersBlazor` when no email provider configured
+- [x] (2026-03-30 → 2026-03-30) `AddCheapHelpersComplete` should accept derived context type parameter [voltiq-dep]
+  - `AddCheapHelpersComplete<TUser, TContext>()` and `AddCheapHelpersCompleteWithIdentity<TUser, TContext, TRole>()`
+  - Registers derived context + base type bridge so services at all levels resolve correctly
+- [x] (2026-03-29 → 2026-03-29) Add protected constructor to `CheapContext<TUser>` for derived context support [voltiq-dep]
+  - Added `protected CheapContext(DbContextOptions, CheapContextOptions?)` accepting non-generic options base
+  - Converted from primary constructor to regular constructors (primary can't chain to `base` with different options type)
+  - Enables: `class VoltiqDbContext(DbContextOptions<VoltiqDbContext> opts) : CheapContext<VoltiqUser>(opts)`
 - [x] (2026-03-29 → 2026-03-29) Make AccountController generic — `CheapAccountController<TUser> where TUser : CheapUser` [voltiq-dep]
   - Renamed `AccountController` → `CheapAccountController<TUser>` with generic `SignInManager<TUser>`, `UserManager<TUser>`, `UserService<TUser>`
   - Made `UserRepo<TUser>` generic (was hardcoded to CheapUser), backward-compat `UserRepo` shim preserved

@@ -106,7 +106,7 @@ else if (ShowEmptyState)
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;
     [Inject] protected BlobService BlobService { get; set; } = default!;
     [Inject] protected IDialogService DialogService { get; set; } = default!;
-    [Inject] protected IDbContextFactory<CheapContext<TUser>> ContextFactory { get; set; } = default!;
+    [Inject] protected IDbContextFactory<CheapCommunicationContext<TUser>> ContextFactory { get; set; } = default!;
 
     #endregion
 

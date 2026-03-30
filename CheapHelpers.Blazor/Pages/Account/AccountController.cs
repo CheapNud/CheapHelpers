@@ -1,5 +1,6 @@
 ﻿using CheapHelpers.Blazor.Helpers;
 using CheapHelpers.Blazor.Services;
+using CheapHelpers.EF;
 using CheapHelpers.Extensions;
 using CheapHelpers.Models.Entities;
 using CheapHelpers.Services.Email;
@@ -26,14 +27,16 @@ namespace CheapHelpers.Blazor.Pages.Account
     /// </para>
     /// </summary>
     [Authorize]
-    public class CheapAccountController<TUser>(
+    public class CheapAccountController<TUser, TContext>(
         SignInManager<TUser> signInManager,
         IEmailService mailer,
         UserManager<TUser> userManager,
-        UserService<TUser> userService,
+        UserService<TUser, TContext> userService,
         UrlEncoder urlEncoder,
         AccountRouteOptions routeOptions
-        ) : Controller where TUser : CheapUser
+        ) : Controller
+        where TUser : CheapUser
+        where TContext : CheapContext<TUser>
     {
         private const string AppName = "CheapHelpers.Blazor";
         private const int RecoveryCodesCount = 10;

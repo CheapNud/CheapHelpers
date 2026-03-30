@@ -54,8 +54,8 @@ namespace CheapHelpers.EF.Extensions
             services.AddDbContext<CheapCommunicationContext<TUser>>(configureContext);
 
             // Forward scoped + factory registrations so services requiring base types resolve correctly
-            services.AddScoped<CheapContext<TUser>>(sp => sp.GetRequiredService<CheapCommunicationContext<TUser>>());
-            services.AddSingleton<IDbContextFactory<CheapContext<TUser>>>(sp =>
+            services.TryAddScoped<CheapContext<TUser>>(sp => sp.GetRequiredService<CheapCommunicationContext<TUser>>());
+            services.TryAddSingleton<IDbContextFactory<CheapContext<TUser>>>(sp =>
                 new DbContextFactoryAdapter<CheapContext<TUser>, CheapCommunicationContext<TUser>>(
                     sp.GetRequiredService<IDbContextFactory<CheapCommunicationContext<TUser>>>()));
 
@@ -78,12 +78,12 @@ namespace CheapHelpers.EF.Extensions
             services.AddDbContext<CheapBusinessContext<TUser>>(configureContext);
 
             // Forward scoped + factory registrations for both base types
-            services.AddScoped<CheapCommunicationContext<TUser>>(sp => sp.GetRequiredService<CheapBusinessContext<TUser>>());
-            services.AddScoped<CheapContext<TUser>>(sp => sp.GetRequiredService<CheapBusinessContext<TUser>>());
-            services.AddSingleton<IDbContextFactory<CheapCommunicationContext<TUser>>>(sp =>
+            services.TryAddScoped<CheapCommunicationContext<TUser>>(sp => sp.GetRequiredService<CheapBusinessContext<TUser>>());
+            services.TryAddScoped<CheapContext<TUser>>(sp => sp.GetRequiredService<CheapBusinessContext<TUser>>());
+            services.TryAddSingleton<IDbContextFactory<CheapCommunicationContext<TUser>>>(sp =>
                 new DbContextFactoryAdapter<CheapCommunicationContext<TUser>, CheapBusinessContext<TUser>>(
                     sp.GetRequiredService<IDbContextFactory<CheapBusinessContext<TUser>>>()));
-            services.AddSingleton<IDbContextFactory<CheapContext<TUser>>>(sp =>
+            services.TryAddSingleton<IDbContextFactory<CheapContext<TUser>>>(sp =>
                 new DbContextFactoryAdapter<CheapContext<TUser>, CheapBusinessContext<TUser>>(
                     sp.GetRequiredService<IDbContextFactory<CheapBusinessContext<TUser>>>()));
 

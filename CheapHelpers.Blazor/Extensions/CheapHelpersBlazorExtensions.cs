@@ -150,29 +150,7 @@ namespace CheapHelpers.Blazor.Extensions
             var options = contextOptions ?? new CheapContextOptions();
             services.TryAddSingleton(options);
 
-            services.AddDbContextFactory<TContext>(configureContext);
-
-            // AddDbContextFactory does NOT register TContext as scoped — add it so
-            // scoped consumers (controllers, services) can resolve TContext directly.
-            services.TryAddScoped(sp => sp.GetRequiredService<IDbContextFactory<TContext>>().CreateDbContext());
-
-            // Forward base-type scoped registrations so services injecting CheapContext<TUser> resolve correctly
-            services.AddScoped(sp => (CheapContext<TUser>)sp.GetRequiredService<TContext>());
-
-            // Forward base-type factory registrations via adapter (IDbContextFactory is not covariant)
-            services.TryAddSingleton<IDbContextFactory<CheapContext<TUser>>>(sp =>
-                new DbContextFactoryAdapter<CheapContext<TUser>, TContext>(
-                    sp.GetRequiredService<IDbContextFactory<TContext>>()));
-
-            // If TContext derives from CheapCommunicationContext, forward that level too
-            if (typeof(CheapCommunicationContext<TUser>).IsAssignableFrom(typeof(TContext)))
-            {
-                services.TryAddScoped<CheapCommunicationContext<TUser>>(sp =>
-                    (CheapCommunicationContext<TUser>)(object)sp.GetRequiredService<TContext>());
-                services.TryAddSingleton<IDbContextFactory<CheapCommunicationContext<TUser>>>(sp =>
-                    new CommunicationContextFactoryAdapter<TUser, TContext>(
-                        sp.GetRequiredService<IDbContextFactory<TContext>>()));
-            }
+            RegisterContextWithForwarding<TUser, TContext>(services, configureContext);
 
             services.AddCheapHelpersBlazor<TUser, TContext>(configureBlazor);
 
@@ -195,29 +173,7 @@ namespace CheapHelpers.Blazor.Extensions
             var options = contextOptions ?? new CheapContextOptions();
             services.TryAddSingleton(options);
 
-            services.AddDbContextFactory<TContext>(configureContext);
-
-            // AddDbContextFactory does NOT register TContext as scoped — add it so
-            // scoped consumers (controllers, services) can resolve TContext directly.
-            services.TryAddScoped(sp => sp.GetRequiredService<IDbContextFactory<TContext>>().CreateDbContext());
-
-            // Forward base-type scoped registrations so services injecting CheapContext<TUser> resolve correctly
-            services.AddScoped(sp => (CheapContext<TUser>)sp.GetRequiredService<TContext>());
-
-            // Forward base-type factory registrations via adapter (IDbContextFactory is not covariant)
-            services.TryAddSingleton<IDbContextFactory<CheapContext<TUser>>>(sp =>
-                new DbContextFactoryAdapter<CheapContext<TUser>, TContext>(
-                    sp.GetRequiredService<IDbContextFactory<TContext>>()));
-
-            // If TContext derives from CheapCommunicationContext, forward that level too
-            if (typeof(CheapCommunicationContext<TUser>).IsAssignableFrom(typeof(TContext)))
-            {
-                services.TryAddScoped<CheapCommunicationContext<TUser>>(sp =>
-                    (CheapCommunicationContext<TUser>)(object)sp.GetRequiredService<TContext>());
-                services.TryAddSingleton<IDbContextFactory<CheapCommunicationContext<TUser>>>(sp =>
-                    new CommunicationContextFactoryAdapter<TUser, TContext>(
-                        sp.GetRequiredService<IDbContextFactory<TContext>>()));
-            }
+            RegisterContextWithForwarding<TUser, TContext>(services, configureContext);
 
             services.AddIdentity<TUser, TRole>(identityOptions =>
             {
@@ -232,6 +188,39 @@ namespace CheapHelpers.Blazor.Extensions
             services.AddCheapHelpersBlazor<TUser, TContext>(configureBlazor);
 
             return services;
+        }
+
+        /// <summary>
+        /// Registers <typeparamref name="TContext"/> via factory + scoped, then forwards base-type
+        /// registrations (scoped and factory) so services injecting any level in the hierarchy resolve correctly.
+        /// </summary>
+        private static void RegisterContextWithForwarding<TUser, TContext>(
+            IServiceCollection services,
+            Action<DbContextOptionsBuilder> configureContext)
+            where TUser : CheapUser
+            where TContext : CheapContext<TUser>
+        {
+            services.AddDbContextFactory<TContext>(configureContext);
+
+            // AddDbContextFactory does NOT register TContext as scoped — add it so
+            // scoped consumers (controllers, services) can resolve TContext directly.
+            services.TryAddScoped(sp => sp.GetRequiredService<IDbContextFactory<TContext>>().CreateDbContext());
+
+            // Forward base-type scoped + factory registrations (IDbContextFactory is not covariant)
+            services.TryAddScoped(sp => (CheapContext<TUser>)sp.GetRequiredService<TContext>());
+            services.TryAddSingleton<IDbContextFactory<CheapContext<TUser>>>(sp =>
+                new DbContextFactoryAdapter<CheapContext<TUser>, TContext>(
+                    sp.GetRequiredService<IDbContextFactory<TContext>>()));
+
+            // If TContext derives from CheapCommunicationContext, forward that level too
+            if (typeof(CheapCommunicationContext<TUser>).IsAssignableFrom(typeof(TContext)))
+            {
+                services.TryAddScoped<CheapCommunicationContext<TUser>>(sp =>
+                    (CheapCommunicationContext<TUser>)(object)sp.GetRequiredService<TContext>());
+                services.TryAddSingleton<IDbContextFactory<CheapCommunicationContext<TUser>>>(sp =>
+                    new CommunicationContextFactoryAdapter<TUser, TContext>(
+                        sp.GetRequiredService<IDbContextFactory<TContext>>()));
+            }
         }
 
         /// <summary>

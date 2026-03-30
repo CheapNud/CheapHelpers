@@ -19,10 +19,11 @@ namespace CheapHelpers.Blazor.Extensions
         /// <summary>
         /// Register CheapHelpers Blazor services with full configuration
         /// </summary>
-        public static IServiceCollection AddCheapHelpersBlazor<TUser>(
+        public static IServiceCollection AddCheapHelpersBlazor<TUser, TContext>(
             this IServiceCollection services,
             Action<CheapHelpersBlazorOptions>? configure = null)
             where TUser : CheapUser
+            where TContext : CheapContext<TUser>
         {
             // Configure options
             var options = new CheapHelpersBlazorOptions();
@@ -66,7 +67,7 @@ namespace CheapHelpers.Blazor.Extensions
             }
 
             // Register core services
-            services.AddScoped<UserService<TUser>>();
+            services.AddScoped<UserService<TUser, TContext>>();
 
             // Register account route options (configurable via CheapHelpersBlazorOptions)
             if (options.AccountRouteOptions is not null)
@@ -74,10 +75,14 @@ namespace CheapHelpers.Blazor.Extensions
             else
                 services.AddSingleton(new Pages.Account.AccountRouteOptions());
 
-            // Register email service if configured
+            // Register email service — real provider or NullEmailService fallback
             if (options.EmailServiceType != null)
             {
                 services.AddScoped(typeof(IEmailService), options.EmailServiceType);
+            }
+            else
+            {
+                services.AddSingleton<IEmailService, NullEmailService>();
             }
 
             // Register DbContext factory if not already registered
@@ -108,7 +113,7 @@ namespace CheapHelpers.Blazor.Extensions
         public static IServiceCollection AddCheapHelpersBlazorMinimal(
             this IServiceCollection services)
         {
-            return services.AddCheapHelpersBlazor<CheapUser>(options =>
+            return services.AddCheapHelpersBlazor<CheapUser, CheapContext<CheapUser>>(options =>
             {
                 options.EnableLocalization = false;
                 options.EnableFileDownload = false;
@@ -122,7 +127,7 @@ namespace CheapHelpers.Blazor.Extensions
             this IServiceCollection services)
             where TUser : CheapUser
         {
-            return services.AddCheapHelpersBlazor<TUser>(options =>
+            return services.AddCheapHelpersBlazor<TUser, CheapContext<TUser>>(options =>
             {
                 options.EnableLocalization = false;
                 options.EnableFileDownload = false;
@@ -130,58 +135,53 @@ namespace CheapHelpers.Blazor.Extensions
         }
 
         /// <summary>
-        /// Complete setup: CheapContext + Blazor services in one call
+        /// Complete setup with derived context: registers context + Blazor services in one call.
+        /// <code>services.AddCheapHelpersComplete&lt;VoltiqUser, VoltiqDbContext&gt;(opts => opts.UseSqlServer(conn));</code>
         /// </summary>
-        public static IServiceCollection AddCheapHelpersComplete<TUser>(
+        public static IServiceCollection AddCheapHelpersComplete<TUser, TContext>(
             this IServiceCollection services,
             Action<DbContextOptionsBuilder> configureContext,
             CheapContextOptions? contextOptions = null,
             Action<CheapHelpersBlazorOptions>? configureBlazor = null)
             where TUser : CheapUser
+            where TContext : CheapContext<TUser>
         {
-            // Add CheapContext
-            services.AddCheapContext<TUser>(configureContext, contextOptions);
+            services.AddDbContextFactory<TContext>(configureContext);
 
-            // Add Blazor services
-            services.AddCheapHelpersBlazor<TUser>(configureBlazor);
+            // Register as base types so services requiring CheapContext<TUser> still resolve
+            services.AddScoped(sp => (CheapContext<TUser>)sp.GetRequiredService<TContext>());
+
+            services.AddCheapHelpersBlazor<TUser, TContext>(configureBlazor);
 
             return services;
         }
 
         /// <summary>
-        /// Complete setup with Identity: CheapContext + Identity + Blazor services
+        /// Complete setup with Identity and derived context.
         /// </summary>
-        public static IServiceCollection AddCheapHelpersCompleteWithIdentity<TUser, TRole>(
+        public static IServiceCollection AddCheapHelpersCompleteWithIdentity<TUser, TContext, TRole>(
             this IServiceCollection services,
             Action<DbContextOptionsBuilder> configureContext,
             CheapContextOptions? contextOptions = null,
             Action<IdentityOptions>? configureIdentity = null,
             Action<CheapHelpersBlazorOptions>? configureBlazor = null)
             where TUser : CheapUser
+            where TContext : CheapContext<TUser>
             where TRole : IdentityRole
         {
-            // Add CheapContext + Identity
-            services.AddCheapContext<TUser>(configureContext, contextOptions)
-                .AddIdentity<TRole>(configureIdentity);
+            services.AddDbContextFactory<TContext>(configureContext);
+            services.AddScoped(sp => (CheapContext<TUser>)sp.GetRequiredService<TContext>());
 
-            // Add Blazor services
-            services.AddCheapHelpersBlazor<TUser>(configureBlazor);
+            // Add Identity against the concrete context
+            services.AddIdentity<TUser, TRole>(identityOptions =>
+            {
+                configureIdentity?.Invoke(identityOptions);
+            }).AddEntityFrameworkStores<TContext>()
+              .AddDefaultTokenProviders();
+
+            services.AddCheapHelpersBlazor<TUser, TContext>(configureBlazor);
 
             return services;
-        }
-
-        /// <summary>
-        /// Simple complete setup with IdentityUser and IdentityRole
-        /// </summary>
-        public static IServiceCollection AddCheapHelpersCompleteWithIdentity(
-            this IServiceCollection services,
-            Action<DbContextOptionsBuilder> configureContext,
-            CheapContextOptions? contextOptions = null,
-            Action<IdentityOptions>? configureIdentity = null,
-            Action<CheapHelpersBlazorOptions>? configureBlazor = null)
-        {
-            return services.AddCheapHelpersCompleteWithIdentity<CheapUser, IdentityRole>(
-                configureContext, contextOptions, configureIdentity, configureBlazor);
         }
     }
 

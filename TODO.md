@@ -29,17 +29,16 @@
 
 ## Blocking
 
-- [ ] (2026-03-30) `UserService<TUser>` should resolve `IDbContextFactory` for derived context types [voltiq-dep]
-  - Currently requires exact `IDbContextFactory<CheapContext<TUser>>` — fails when consumer has `IDbContextFactory<VoltiqDbContext>` where `VoltiqDbContext : CheapBusinessContext<VoltiqUser>`
-  - Fix: accept `IDbContextFactory<TContext> where TContext : CheapContext<TUser>`, or use a factory resolver that walks the inheritance chain
-  - Same issue affects `UserRepo<TUser>` (base class)
-- [ ] (2026-03-30) Add built-in `NullEmailService` as auto-registered fallback [voltiq-dep]
-  - `CheapAccountController` constructor fails at DI if `IEmailService` not registered, even when consumer doesn't need email yet
-  - Add `NullEmailService : IEmailService` that logs warnings instead of sending — auto-registered when no real provider is configured
-  - Consumer replaces with SendGrid/MailKit when ready via normal DI override
-- [ ] (2026-03-30) `AddCheapHelpersComplete` should accept derived context type parameter [voltiq-dep]
-  - Enable: `services.AddCheapHelpersComplete<VoltiqUser, VoltiqDbContext>(options => ...)` — single call registers everything
-  - Currently requires manual bridge registrations for derived DbContext types
+- [x] (2026-03-30 → 2026-03-30) `UserService<TUser>` should resolve `IDbContextFactory` for derived context types [voltiq-dep]
+  - Added `TContext` generic parameter to `UserRepo<TUser, TContext>`, `UserService<TUser, TContext>`, `CheapAccountController<TUser, TContext>`
+  - Consumers pass their derived context: `UserService<VoltiqUser, VoltiqDbContext>`
+  - Backward-compat shims preserved for `CheapContext<CheapUser>` default
+- [x] (2026-03-30 → 2026-03-30) Add built-in `NullEmailService` as auto-registered fallback [voltiq-dep]
+  - `NullEmailService : IEmailService` logs warnings via `Debug.WriteLine` instead of sending
+  - Auto-registered in `AddCheapHelpersBlazor` when no email provider configured
+- [x] (2026-03-30 → 2026-03-30) `AddCheapHelpersComplete` should accept derived context type parameter [voltiq-dep]
+  - `AddCheapHelpersComplete<TUser, TContext>()` and `AddCheapHelpersCompleteWithIdentity<TUser, TContext, TRole>()`
+  - Registers derived context + base type bridge so services at all levels resolve correctly
 - [x] (2026-03-29 → 2026-03-29) Add protected constructor to `CheapContext<TUser>` for derived context support [voltiq-dep]
   - Added `protected CheapContext(DbContextOptions, CheapContextOptions?)` accepting non-generic options base
   - Converted from primary constructor to regular constructors (primary can't chain to `base` with different options type)

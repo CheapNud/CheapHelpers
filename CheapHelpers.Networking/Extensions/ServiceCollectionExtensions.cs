@@ -93,7 +93,8 @@ public static class ServiceCollectionExtensions
     {
         return services
             .AddDefaultDetectors()
-            .AddEnhancedDetectors();
+            .AddEnhancedDetectors()
+            .AddGameServerDetector();
     }
 
     /// <summary>
@@ -139,6 +140,16 @@ public static class ServiceCollectionExtensions
 
         services.TryAddSingleton<IMdnsDiscoveryService, MdnsDiscoveryService>();
 
+        return services;
+    }
+
+    /// <summary>
+    /// Adds the game server detector — probes known game ports (TCP connect + UDP knock)
+    /// to identify game servers on the LAN. A fun gimmick for LAN parties.
+    /// </summary>
+    public static IServiceCollection AddGameServerDetector(this IServiceCollection services)
+    {
+        services.AddSingleton<IDeviceTypeDetector, GameServerDetector>();
         return services;
     }
 

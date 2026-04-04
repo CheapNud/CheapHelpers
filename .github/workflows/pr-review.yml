@@ -109,6 +109,8 @@ jobs:
         - Do NOT suggest nice-to-have improvements or refactors
         - Only raise issues you are confident are real problems
         - If everything looks fine, just say so in 1-2 lines and approve
+        - NEVER repeat secrets, passwords, API keys, tokens, or internal URLs/IPs found in the diff — refer to them generically (e.g. 'the hardcoded password in line X'). Your review is posted as a public comment.
+        - If the diff introduces hardcoded credentials or secrets, flag it as a critical issue but do NOT quote the actual values.
 
         ---
 

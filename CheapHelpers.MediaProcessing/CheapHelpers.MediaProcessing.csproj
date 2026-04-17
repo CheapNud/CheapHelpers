@@ -54,18 +54,18 @@
     <PackageReference Include="FFMpegCore" Version="5.4.0" />
 
     <!-- Archive extraction for dependency installation -->
-    <PackageReference Include="SharpCompress" Version="0.47.3" />
+    <PackageReference Include="SharpCompress" Version="0.47.4" />
 
     <!-- Retry logic for downloads -->
     <PackageReference Include="Polly" Version="8.6.6" />
 
     <!-- DI extension -->
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.6" />
   </ItemGroup>
 
   <!-- Windows-only: Hardware detection via WMI -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net11.0-windows'">
-    <PackageReference Include="System.Management" Version="10.0.5" />
+    <PackageReference Include="System.Management" Version="10.0.6" />
   </ItemGroup>
 
   <ItemGroup>

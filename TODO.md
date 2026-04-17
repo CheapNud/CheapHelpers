@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-03-28 (Google/Microsoft OAuth added)
+  Last updated: 2026-04-16 (legacy Identity 2.3.9 removal blocking Voltiq CI)
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -28,6 +28,13 @@
 # TODO
 
 ## Blocking
+
+- [ ] (2026-04-16) Remove legacy `Microsoft.AspNetCore.Identity 2.3.9` reference from `CheapHelpers.EF.csproj` [voltiq-dep] [audit]
+  - Line 35 is dead weight — line 36 already references the modern `Microsoft.AspNetCore.Identity.EntityFrameworkCore 10.0.5` which provides all needed types via the same namespace
+  - Legacy 2.x package drags in `Microsoft.AspNetCore.DataProtection 2.3.0` → `System.Security.Cryptography.Xml 8.0.2` which has two high-severity CVEs (GHSA-w3x6-4m5h-cxqf, GHSA-37gx-xxp4-5rgx)
+  - Blocks Voltiq CI: `TreatWarningsAsErrors` + `NU1903` fails every build
+  - Fix: delete the `Microsoft.AspNetCore.Identity 2.3.9` PackageReference, bump CheapHelpers to 3.4.4, publish
+  - Verify: `dotnet nuget why CheapHelpers.EF.csproj System.Security.Cryptography.Xml` should return "no dependency"
 
 - [x] (2026-03-30 → 2026-03-30) `UserService<TUser>` should resolve `IDbContextFactory` for derived context types [voltiq-dep]
   - Added `TContext` generic parameter to `UserRepo<TUser, TContext>`, `UserService<TUser, TContext>`, `CheapAccountController<TUser, TContext>`

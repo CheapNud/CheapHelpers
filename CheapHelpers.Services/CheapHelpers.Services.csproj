@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net11.0</TargetFramework>
-    <Version>3.4.4</Version>
+    <Version>3.5.0</Version>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
@@ -90,7 +90,7 @@
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.6" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.6" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.6" />
-    <PackageReference Include="Microsoft.Graph" Version="5.103.0" />
+    <PackageReference Include="Microsoft.Graph" Version="5.104.0" />
     <PackageReference Include="RabbitMQ.Client" Version="7.2.1" />
     <PackageReference Include="SendGrid" Version="9.29.3" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />

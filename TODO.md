@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-07-11 (added ImageSharp replacement item)
+  Last updated: 2026-07-11 (added Android-safe barcode package item)
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -73,6 +73,11 @@
 - [ ] (2026-03-28) Publish CheapHelpers NuGet with complete API key system [voltiq-dep]
 
 ## Planned
+- [ ] (2026-07-11) Ship barcode services in an Android-safe package — CheapHelpers.Services can't be consumed from MAUI Android apps [user]
+  - `CheapHelpers.Services` depends on `CheapHelpers.EF`, whose `<FrameworkReference Include="Microsoft.AspNetCore.App" />` (added 2026-04-17) fails on Android with NETSDK1082 (no Microsoft.AspNetCore.App runtime pack for android RIDs)
+  - Barcode code (`CheapHelpers.Services/Communication/Barcode/`) only needs ZXing.Net + ImageSharp bindings — move it to CheapHelpers core or a new slim `CheapHelpers.Barcodes` package with no EF/AspNetCore chain, then publish
+  - Consumer waiting: CheapBarcodes app is pinned to `CheapHelpers.Services 1.1.2` because of this; its image scanning is dead (`ReadBarcodeAsync` in 1.1.2 throws NotImplementedException) until the split ships
+  - Coordinate with the ImageSharp replacement item below — if barcode moves packages, do the binding swap in the new home
 - [ ] (2026-07-11) Replace SixLabors.ImageSharp — 4.x requires paid license key at build time, pinned to 3.1.12 [user]
   - Only two touchpoints: `CheapHelpers.Services/Storage/BlobService.cs:240` (AutoOrient on upload) and `CheapHelpers.Services/Communication/Barcode/BarcodeService.cs` (ZXing.ImageSharp bindings)
   - Candidates: Magick.NET (drop-in AutoOrient + ZXing.Net.Bindings.Magick, heavy native binaries) or SkiaSharp (lighter, ZXing.Net.Bindings.SkiaSharp, manual EXIF orient helper needed)

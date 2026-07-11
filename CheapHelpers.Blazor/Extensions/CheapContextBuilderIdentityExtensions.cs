@@ -3,7 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 // Deliberately in the EF namespace: these used to be instance methods on CheapContextBuilder,
-// so existing call sites keep compiling without a new using directive.
+// so no new using directive is needed. Parameterless AddIdentity() call sites keep compiling
+// (all type args infer from the receiver). BREAKING: the role overload changed from
+// AddIdentity<TRole>() to AddIdentity<TUser, TContext, TRole>() — C# cannot partially infer
+// generic arguments on extension methods.
 namespace CheapHelpers.EF.Infrastructure
 {
     /// <summary>

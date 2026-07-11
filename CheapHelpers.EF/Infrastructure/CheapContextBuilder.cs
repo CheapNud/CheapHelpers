@@ -7,6 +7,9 @@ namespace CheapHelpers.EF.Infrastructure
     /// <summary>
     /// Builder for fluent CheapContext configuration.
     /// Tracks the concrete context type so Identity stores are registered against the correct level.
+    /// Identity registration (<c>AddIdentity</c>) lives in CheapHelpers.Blazor — it needs the
+    /// ASP.NET Core shared framework, which this package deliberately avoids so it stays
+    /// consumable from MAUI/Android targets.
     /// </summary>
     public class CheapContextBuilder<TUser, TContext>
         where TUser : IdentityUser
@@ -22,43 +25,14 @@ namespace CheapHelpers.EF.Infrastructure
         }
 
         /// <summary>
-        /// Adds Identity services with CheapContext defaults.
-        /// Identity stores are registered against the actual context type (<typeparamref name="TContext"/>),
-        /// not the base <c>CheapContext</c>, ensuring correct DI resolution at all context levels.
-        /// </summary>
-        public IdentityBuilder AddIdentity<TRole>(Action<IdentityOptions>? configureOptions = null)
-            where TRole : IdentityRole
-        {
-            var identityBuilder = _services.AddIdentity<TUser, TRole>(identityOptions =>
-            {
-                identityOptions.Password = _contextOptions.Identity.Password;
-                identityOptions.SignIn = _contextOptions.Identity.SignIn;
-                identityOptions.Lockout = _contextOptions.Identity.Lockout;
-                identityOptions.User = _contextOptions.Identity.User;
-                identityOptions.Stores = _contextOptions.Identity.Stores;
-                identityOptions.Tokens = _contextOptions.Identity.Tokens;
-                identityOptions.ClaimsIdentity = _contextOptions.Identity.ClaimsIdentity;
-
-                configureOptions?.Invoke(identityOptions);
-            })
-            .AddEntityFrameworkStores<TContext>()
-            .AddDefaultTokenProviders();
-
-            return identityBuilder;
-        }
-
-        /// <summary>
-        /// Adds Identity services with IdentityRole and CheapContext defaults.
-        /// </summary>
-        public IdentityBuilder AddIdentity(Action<IdentityOptions>? configureOptions = null)
-        {
-            return AddIdentity<IdentityRole>(configureOptions);
-        }
-
-        /// <summary>
         /// Access to the underlying service collection for additional configuration.
         /// </summary>
         public IServiceCollection Services => _services;
+
+        /// <summary>
+        /// The context options this builder was created with, so extensions can apply the configured defaults.
+        /// </summary>
+        public CheapContextOptions ContextOptions => _contextOptions;
     }
 
     /// <summary>

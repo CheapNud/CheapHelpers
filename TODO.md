@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-04-17 (legacy Identity 2.3.9 removed — NU1903 cleared)
+  Last updated: 2026-07-11 (added ImageSharp replacement item)
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -73,6 +73,10 @@
 - [ ] (2026-03-28) Publish CheapHelpers NuGet with complete API key system [voltiq-dep]
 
 ## Planned
+- [ ] (2026-07-11) Replace SixLabors.ImageSharp — 4.x requires paid license key at build time, pinned to 3.1.12 [user]
+  - Only two touchpoints: `CheapHelpers.Services/Storage/BlobService.cs:240` (AutoOrient on upload) and `CheapHelpers.Services/Communication/Barcode/BarcodeService.cs` (ZXing.ImageSharp bindings)
+  - Candidates: Magick.NET (drop-in AutoOrient + ZXing.Net.Bindings.Magick, heavy native binaries) or SkiaSharp (lighter, ZXing.Net.Bindings.SkiaSharp, manual EXIF orient helper needed)
+  - Verify ZXing binding package compatibility with ZXing.Net 0.16.11 before picking
 - [x] (2026-03-28 → 2026-03-28) Add API key distribution system tied to user identity [user]
   - `CheapHelpers.Models/Entities/ApiKey.cs` — EF entity with SHA-256 hashed keys, prefix display, scopes JSON, rate limits
   - `CheapHelpers.Services/ApiKeys/` — `IApiKeyService`, `ApiKeyService<TUser>` with generate/validate/revoke/rotate, ConcurrentDictionary cache

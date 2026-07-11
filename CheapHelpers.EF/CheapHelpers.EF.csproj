@@ -32,10 +32,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <!-- No FrameworkReference here on purpose: Microsoft.AspNetCore.App has no Android runtime
+         pack (NETSDK1082), and keeping it out lets MAUI apps consume this package.
+         Framework-dependent Identity wiring lives in CheapHelpers.Blazor. -->
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.9" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />

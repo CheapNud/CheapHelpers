@@ -82,9 +82,14 @@ namespace CheapHelpers.Blazor.Pages.Account
             };
         }
 
+        /// <summary>
+        /// Password sign-in. On failure redirects to <see cref="AccountRouteOptions.LoginRoute"/> with
+        /// <c>?failed=credentials|2fa|notallowed</c> so the login page can show feedback; lockouts go to
+        /// <see cref="AccountRouteOptions.LockoutRoute"/>. Virtual so consumers can override the flow.
+        /// </summary>
         [AllowAnonymous]
         [HttpPost]
-        public async Task<IActionResult> SignIn(IFormCollection fc)
+        public virtual async Task<IActionResult> SignIn(IFormCollection fc)
         {
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
@@ -98,7 +103,14 @@ namespace CheapHelpers.Blazor.Pages.Account
 
             LogSignInAttempt(username, signInResult.Succeeded, GetSignInDescription(signInResult));
 
-            return signInResult.Succeeded ? Redirect(Routes.HomeRoute) : Redirect(Routes.LoginRoute);
+            return signInResult switch
+            {
+                { Succeeded: true } => Redirect(Routes.HomeRoute),
+                { IsLockedOut: true } => Redirect(Routes.LockoutRoute),
+                { RequiresTwoFactor: true } => Redirect($"{Routes.LoginRoute}?failed=2fa"),
+                { IsNotAllowed: true } => Redirect($"{Routes.LoginRoute}?failed=notallowed"),
+                _ => Redirect($"{Routes.LoginRoute}?failed=credentials")
+            };
         }
 
         public new async Task<IActionResult> SignOut()

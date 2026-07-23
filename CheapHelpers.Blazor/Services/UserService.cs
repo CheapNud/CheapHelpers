@@ -5,6 +5,7 @@ using CheapHelpers.Models.Entities;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
 using System.Security.Claims;
 
@@ -15,7 +16,7 @@ namespace CheapHelpers.Blazor.Services
     /// All auth-state methods validate authentication before proceeding.
     /// </summary>
     /// <typeparam name="TUser">Concrete user type extending CheapUser</typeparam>
-    public class UserService<TUser, TContext>(IDbContextFactory<TContext> factory) : UserRepo<TUser, TContext>(factory)
+    public class UserService<TUser, TContext>(IDbContextFactory<TContext> factory, IServiceScopeFactory scopeFactory) : UserRepo<TUser, TContext>(factory, scopeFactory)
         where TUser : CheapUser
         where TContext : CheapContext<TUser>
     {
@@ -220,5 +221,5 @@ namespace CheapHelpers.Blazor.Services
     /// Backward-compatible UserService hardcoded to CheapUser.
     /// New consumers should use <see cref="UserService{TUser}"/> with their concrete user type.
     /// </summary>
-    public class UserService(IDbContextFactory<CheapContext<CheapUser>> factory) : UserService<CheapUser, CheapContext<CheapUser>>(factory);
+    public class UserService(IDbContextFactory<CheapContext<CheapUser>> factory, IServiceScopeFactory scopeFactory) : UserService<CheapUser, CheapContext<CheapUser>>(factory, scopeFactory);
 }

@@ -2,6 +2,7 @@
 using CheapHelpers.Models.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
 using System.Linq.Expressions;
 
@@ -11,7 +12,7 @@ namespace CheapHelpers.EF.Repositories
     /// Enhanced repository for user operations, replacing basic UserManager/RoleManager functionality
     /// Optimized for Blazor Server scenarios where HttpContext is not available
     /// </summary>
-    public class UserRepo<TUser, TContext>(IDbContextFactory<TContext> factory) : BaseRepo<TContext>(factory)
+    public class UserRepo<TUser, TContext>(IDbContextFactory<TContext> factory, IServiceScopeFactory scopeFactory) : BaseRepo<TContext>(factory)
         where TUser : CheapUser
         where TContext : CheapContext<TUser>
     {
@@ -24,6 +25,81 @@ namespace CheapHelpers.EF.Repositories
         public void OnChatRead()
         {
             RefreshNotifications.Invoke();
+        }
+
+        #endregion
+
+        #region Identity Operations (scope-per-call)
+
+        // Password/lockout/token operations need UserManager machinery (hasher, token providers) that
+        // can't be reimplemented on a bare DbContext. Each call resolves UserManager from a fresh DI
+        // scope so these are safe from Blazor Server circuits without capturing scoped Identity services.
+
+        /// <summary>
+        /// Creates a user via UserManager (hashing the password when provided) in an isolated DI scope.
+        /// </summary>
+        public async Task<IdentityResult> CreateUserAsync(TUser user, string? password = null)
+        {
+            ArgumentNullException.ThrowIfNull(user);
+
+            using var scope = scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+
+            return password is null
+                ? await userManager.CreateAsync(user)
+                : await userManager.CreateAsync(user, password);
+        }
+
+        /// <summary>
+        /// Generates a password reset token for the user in an isolated DI scope.
+        /// </summary>
+        public Task<string> GeneratePasswordResetTokenAsync(TUser user)
+            => WithUserManagerAsync(user, static (userManager, scopedUser) =>
+                userManager.GeneratePasswordResetTokenAsync(scopedUser));
+
+        /// <summary>
+        /// Verifies a user token for the given provider and purpose in an isolated DI scope.
+        /// </summary>
+        public Task<bool> VerifyUserTokenAsync(TUser user, string tokenProvider, string purpose, string verificationToken)
+            => WithUserManagerAsync(user, (userManager, scopedUser) =>
+                userManager.VerifyUserTokenAsync(scopedUser, tokenProvider, purpose, verificationToken));
+
+        /// <summary>
+        /// Resets the user's password with a reset token in an isolated DI scope.
+        /// </summary>
+        public Task<IdentityResult> ResetPasswordAsync(TUser user, string resetToken, string newPassword)
+            => WithUserManagerAsync(user, (userManager, scopedUser) =>
+                userManager.ResetPasswordAsync(scopedUser, resetToken, newPassword));
+
+        /// <summary>
+        /// Changes the user's password after verifying the current one in an isolated DI scope.
+        /// </summary>
+        public Task<IdentityResult> ChangePasswordAsync(TUser user, string currentPassword, string newPassword)
+            => WithUserManagerAsync(user, (userManager, scopedUser) =>
+                userManager.ChangePasswordAsync(scopedUser, currentPassword, newPassword));
+
+        /// <summary>
+        /// Sets the user's lockout end date in an isolated DI scope.
+        /// </summary>
+        public Task<IdentityResult> SetLockoutEndDateAsync(TUser user, DateTimeOffset? lockoutEnd)
+            => WithUserManagerAsync(user, (userManager, scopedUser) =>
+                userManager.SetLockoutEndDateAsync(scopedUser, lockoutEnd));
+
+        /// <summary>
+        /// Runs a UserManager operation in a fresh DI scope against a freshly loaded user,
+        /// so detached entities from other contexts never leak into Identity's store.
+        /// </summary>
+        private async Task<TResult> WithUserManagerAsync<TResult>(TUser user, Func<UserManager<TUser>, TUser, Task<TResult>> operation)
+        {
+            ArgumentNullException.ThrowIfNull(user);
+
+            using var scope = scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+
+            var scopedUser = await userManager.FindByIdAsync(user.Id)
+                ?? throw new InvalidOperationException($"User '{user.Id}' not found");
+
+            return await operation(userManager, scopedUser);
         }
 
         #endregion
@@ -679,5 +755,5 @@ namespace CheapHelpers.EF.Repositories
     /// Backward-compatible UserRepo hardcoded to CheapUser.
     /// New consumers should use <see cref="UserRepo{TUser}"/> with their concrete user type.
     /// </summary>
-    public class UserRepo(IDbContextFactory<CheapContext<CheapUser>> factory) : UserRepo<CheapUser, CheapContext<CheapUser>>(factory);
+    public class UserRepo(IDbContextFactory<CheapContext<CheapUser>> factory, IServiceScopeFactory scopeFactory) : UserRepo<CheapUser, CheapContext<CheapUser>>(factory, scopeFactory);
 }

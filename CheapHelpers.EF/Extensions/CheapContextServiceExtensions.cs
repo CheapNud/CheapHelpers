@@ -89,6 +89,43 @@ namespace CheapHelpers.EF.Extensions
 
             return new CheapContextBuilder<TUser, CheapBusinessContext<TUser>>(services, options);
         }
+
+        /// <summary>
+        /// Adds a consumer-derived business context (e.g. <c>MyDbContext : CheapBusinessContext&lt;MyUser&gt;</c>).
+        /// Forwards scoped + factory registrations for all CheapContext base levels so CheapHelpers services
+        /// (ApiKeyService, BillingService, reporting) resolve against the derived context without manual bridging.
+        /// The base factory adapters resolve <c>IDbContextFactory&lt;TContext&gt;</c> — register it via
+        /// <c>AddDbContextFactory&lt;TContext&gt;</c> if factory-based consumers are used.
+        /// Chain .AddIdentity() for Identity services.
+        /// </summary>
+        public static CheapContextBuilder<TUser, TContext> AddCheapBusinessContext<TUser, TContext>(
+            this IServiceCollection services,
+            Action<DbContextOptionsBuilder> configureContext,
+            CheapContextOptions? contextOptions = null)
+            where TUser : IdentityUser
+            where TContext : CheapBusinessContext<TUser>
+        {
+            var options = contextOptions ?? new CheapContextOptions();
+            services.TryAddSingleton(options);
+
+            services.AddDbContext<TContext>(configureContext);
+
+            // Forward scoped + factory registrations for all base levels
+            services.TryAddScoped<CheapBusinessContext<TUser>>(sp => sp.GetRequiredService<TContext>());
+            services.TryAddScoped<CheapCommunicationContext<TUser>>(sp => sp.GetRequiredService<TContext>());
+            services.TryAddScoped<CheapContext<TUser>>(sp => sp.GetRequiredService<TContext>());
+            services.TryAddSingleton<IDbContextFactory<CheapBusinessContext<TUser>>>(sp =>
+                new DbContextFactoryAdapter<CheapBusinessContext<TUser>, TContext>(
+                    sp.GetRequiredService<IDbContextFactory<TContext>>()));
+            services.TryAddSingleton<IDbContextFactory<CheapCommunicationContext<TUser>>>(sp =>
+                new DbContextFactoryAdapter<CheapCommunicationContext<TUser>, TContext>(
+                    sp.GetRequiredService<IDbContextFactory<TContext>>()));
+            services.TryAddSingleton<IDbContextFactory<CheapContext<TUser>>>(sp =>
+                new DbContextFactoryAdapter<CheapContext<TUser>, TContext>(
+                    sp.GetRequiredService<IDbContextFactory<TContext>>()));
+
+            return new CheapContextBuilder<TUser, TContext>(services, options);
+        }
     }
 
     // Usage Examples:

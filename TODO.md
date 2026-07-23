@@ -76,8 +76,8 @@
 
 ## Planned
 
-- [ ] (2026-07-23) CheapAccountController.SignIn is not virtual and redirects back bare on failure — consumers wanting login feedback must ship a parallel sign-in action; make SignIn virtual or add a failure-feedback redirect option (e.g. append ?failed=credentials|locked to LoginRoute) (found consuming from CheapFurniturePlanner) [user]
-  - `CheapHelpers.Blazor/Pages/Account/AccountController.cs:101` — failure path also ignores `RequiresTwoFactor`/`IsLockedOut` result states
+- [x] (2026-07-23 → 2026-07-23) CheapAccountController.SignIn is not virtual and redirects back bare on failure — consumers wanting login feedback must ship a parallel sign-in action; make SignIn virtual or add a failure-feedback redirect option (e.g. append ?failed=credentials|locked to LoginRoute) (found consuming from CheapFurniturePlanner) [user]
+  - Done in PR #52: SignIn now virtual; failure redirects carry `?failed=credentials|2fa|notallowed`, lockouts go to `LockoutRoute` (same pattern as SignInWithRecoveryCode)
 - [ ] (2026-07-23) Add factory-based password/lockout/token helpers to `UserRepo<TUser, TContext>` [voltiq-dep]
   - Voltiq still injects UserManager in InviteUserDialog (CreateAsync, GeneratePasswordResetTokenAsync), EditUserDialog (GeneratePasswordResetTokenAsync, SetLockoutEndDateAsync), AcceptInvite (VerifyUserTokenAsync, ResetPasswordAsync), Onboarding (ChangePasswordAsync)
   - Last callers blocking Voltiq's circuit-isolation — mirrors ../Voltiq TODO "CheapHelpers follow-ups"

@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-07-11 (3.6.0 tagged — Android-safe EF shipped, NuGet publish running)
+  Last updated: 2026-07-23 (SignIn feedback item + Voltiq follow-ups mirrored from ../Voltiq TODO)
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -75,6 +75,15 @@
   - 3.6.0 also ships the Android-safe CheapHelpers.EF (PR #49) and the July dependency bump
 
 ## Planned
+
+- [ ] (2026-07-23) CheapAccountController.SignIn is not virtual and redirects back bare on failure — consumers wanting login feedback must ship a parallel sign-in action; make SignIn virtual or add a failure-feedback redirect option (e.g. append ?failed=credentials|locked to LoginRoute) (found consuming from CheapFurniturePlanner) [user]
+  - `CheapHelpers.Blazor/Pages/Account/AccountController.cs:101` — failure path also ignores `RequiresTwoFactor`/`IsLockedOut` result states
+- [ ] (2026-07-23) Add factory-based password/lockout/token helpers to `UserRepo<TUser, TContext>` [voltiq-dep]
+  - Voltiq still injects UserManager in InviteUserDialog (CreateAsync, GeneratePasswordResetTokenAsync), EditUserDialog (GeneratePasswordResetTokenAsync, SetLockoutEndDateAsync), AcceptInvite (VerifyUserTokenAsync, ResetPasswordAsync), Onboarding (ChangePasswordAsync)
+  - Last callers blocking Voltiq's circuit-isolation — mirrors ../Voltiq TODO "CheapHelpers follow-ups"
+- [ ] (2026-07-23) `AddCheapBusinessContext<TUser, TContext>` overload for derived context types [voltiq-dep]
+  - Only `AddCheapBusinessContext<TUser>` exists (`CheapHelpers.EF/Extensions/CheapContextServiceExtensions.cs:69`) — consumers with a derived context (VoltiqDbContext) hand-register `CheapBusinessContext<TUser>` via scoped factory delegate, duplicated in Voltiq.Web + Voltiq.Api Program.cs
+  - Alternative: make ApiKeyService/BillingService depend on `IDbContextFactory` directly — mirrors ../Voltiq TODO "CheapHelpers follow-ups"
 - [ ] (2026-07-11) Ship barcode services in an Android-safe package — CheapHelpers.Services can't be consumed from MAUI Android apps [user]
   - ROOT CAUSE FIXED in 3.6.0 (PR #49): AddIdentity moved to CheapHelpers.Blazor, `Microsoft.AspNetCore.App` FrameworkReference dropped from CheapHelpers.EF — whole EF→Services chain no longer trips NETSDK1082
   - Remaining: verify with a real net11.0-android build, then unpin CheapBarcodes from `CheapHelpers.Services 1.1.2` (revives its dead `ReadBarcodeAsync`)

@@ -157,6 +157,8 @@
   - Tightened generic constraint from `IdentityUser` to `CheapUser` on provider + DI extension
 
 ## Future
+- [ ] (2026-07-23) Revisit UserRepo's internal UserManager delegation — decide whether the scope-per-call broker stays or the non-token ops (CreateUserAsync, SetLockoutEndDateAsync) get reimplemented on IPasswordHasher + EF [user]
+  - Token ops (generate/verify/reset) should stay on UserManager for DataProtector token compatibility with CheapAccountController email flows
 - [x] (2026-03-28 → 2026-03-29) Add billing service with PEPPOL BIS 3.0 invoicing [user]
   - UBL Invoice/CreditNote DTOs + PEPPOL constants (BIS 3.0 CustomizationId, ProfileId, Belgian endpoint schemes)
   - `UblInvoiceService` with `CreateInvoiceAsync`/`CreateCreditNoteAsync` using UblSharp InvoiceType/CreditNoteType

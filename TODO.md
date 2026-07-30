@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-07-23 (SignIn feedback item + Voltiq follow-ups mirrored from ../Voltiq TODO)
+  Last updated: 2026-07-29 (infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -28,6 +28,11 @@
 # TODO
 
 ## Blocking
+
+- [ ] (2026-07-28) `AzureNotificationHubBackend`: real Browser (Web Push) platform support [voltiq-dep] [user]
+  - `ParsePlatform` currently maps `"webpush"/"browser"` to `NotificationPlatform.Wns` as a placeholder (AzureNotificationHubBackend.cs:161) — needs `NotificationPlatform.Browser` with `BrowserPushSubscription` (endpoint, p256dh, auth) on registration
+  - `DeviceInstallation` model needs the browser subscription triplet; `CreateNotification` needs a plain Web Push JSON payload branch (current FCM/WNS bodies don't apply to browser PNS)
+  - Consumer: Voltiq web push (device-offline alerts → browser/PWA) — Voltiq builds the service worker + subscription UI against this contract
 
 - [x] (2026-04-16 → 2026-04-17) Remove legacy `Microsoft.AspNetCore.Identity 2.3.9` reference from `CheapHelpers.EF.csproj` [voltiq-dep] [audit]
   - Deleted the 2.3.9 PackageReference; added `<FrameworkReference Include="Microsoft.AspNetCore.App" />` so `IServiceCollection.AddIdentity<,>` resolves from the shared framework instead of the legacy NuGet
@@ -75,6 +80,33 @@
   - 3.6.0 also ships the Android-safe CheapHelpers.EF (PR #49) and the July dependency bump
 
 ## Planned
+
+- [ ] (2026-07-29) `infiniteScroll.js` hardcodes a consumer-specific callback name — unusable outside MecamApplication [audit]
+  - `CheapHelpers.Blazor/wwwroot/js/infiniteScroll.js:28,35` calls `invokeMethodAsync("LoadStock")`; every consumer must name its `[JSInvokable]` method `LoadStock`. Take the method name as a parameter on `setupInfiniteScroll(dotNetObject, methodName)`
+  - Same file logs scroll position to console on every scroll event (lines 21, 27, 34, 40) — drop or gate behind a debug flag
+  - `setupInfiniteScroll` attaches a `scroll` listener that `stopObserving` never removes (it only disconnects the three observers) — keep the handler reference and `removeEventListener`
+
+- [ ] (2026-07-29) `AddCheapHelpersBlazor` should register the non-generic `IStringLocalizer` its own components inject (found consuming from Voltiq) [bug]
+  - `DownloadHelper` (and the Account pages via `Loc`) take non-generic `IStringLocalizer`; `AddLocalization()` only registers the generic/factory forms — every consumer crashes at resolution until they hand-register `factory.Create(markerType)`
+  - Voltiq works around with a `SharedResources` marker + singleton factory registration (Voltiq.Web/Program.cs); consider shipping a default marker inside CheapHelpers.Blazor so it works out of the box
+- [ ] (2026-07-28) Streamline ntfy publishing — generalize from Voltiq's reference implementation [user]
+  - Voltiq ships `NtfyAlertPublisher` (../Voltiq/Voltiq.Worker/NtfyAlertPublisher.cs): POST body + X-Title/X-Priority/X-Tags headers, optional bearer token, IHttpClientFactory per publish, no-op when unconfigured
+  - Candidate shape: `NtfyNotificationChannel : INotificationChannel` next to Email/InApp/Sms, config-bound (topic URL + token); Voltiq migrates once published
+- [ ] (2026-07-28) `CheapAccountController`: antiforgery on auth-completing POSTs + TOTP challenge action (found consuming from Voltiq) [audit]
+  - `SignIn`/`SignInWithRecoveryCode` accept POSTs without `[ValidateAntiForgeryToken]` (login-CSRF); Blazor SSR forms can supply the token via `<AntiforgeryToken />`
+  - Base has recovery-code sign-in but no `TwoFactorAuthenticatorSignInAsync` action — consumers each rebuild the TOTP challenge POST
+  - Voltiq ships interim duplicates (`SignInWith2fa`, `SignInWithRecovery`, CSRF-validated) — retire them when this + the virtual-SignIn fix reach a published NuGet
+- [ ] (2026-07-28) Genericize Account 2FA pages to `TUser` (found consuming from Voltiq) [audit]
+  - `LoginWith2fa.razor` injects `SignInManager<IdentityUser>`, `Authenticator.razor` injects `UserManager<CheapUser>` — DI can't resolve these for consumers with derived user types, so the shipped 2FA pages are unusable outside the defaults
+  - Also: interactive-circuit `TwoFactorAuthenticatorSignInAsync` can't set auth cookies reliably — consider SSR form + controller POST pattern while touching this
+- [ ] (2026-07-28) Reporting docs reference `AddCheapPdfServices` which doesn't exist [bug]
+  - Implement the extension (register `IPdfTemplateService`/`IPdfExportService`) or fix the docs; Voltiq registers the concretes directly as a workaround
+  - 2026-07-29, same family: `AddCheapReporting` registers `ReportService<TUser>` but not its ctor deps `IPdfExportService`/`IXlsxService` — resolving `IReportService` throws at runtime (crashed Voltiq's Locations page circuit). `AddCheapReporting` should register the exporters itself (XlsxService is parameterless)
+
+- [ ] (2026-07-25) Add a generic OIDC external-auth provider to `CheapHelpers.Services/Auth` — first consumer: self-hosted **Authelia** [user]
+  - Today the OAuth folder hardcodes named providers (Apple/GitHub/Google/Microsoft `*AuthOptions`). Authelia (and Keycloak/Authentik) are standard OIDC IdPs — needs a **generic `OpenIdConnectAuthOptions`** (authority/discovery URL, client_id, client_secret, scopes, callback) wired through the existing `IExternalAuthProvider` pattern, using `Microsoft.AspNetCore.Authentication.OpenIdConnect`.
+  - Config-driven authority (e.g. `https://auth.cheapludes.be`) so any OIDC IdP works, not just Authelia. Map claims (`preferred_username`/`email`/`groups`) to `ExternalUserInfo` for `IExternalUserProvisioner`.
+  - Motivation: the homelab now runs Authelia (auth.cheapludes.be) as its SSO — lets CheapHelpers-based apps (CheapClerk, CheapTasks, CheapNights, etc.) do SSO against it instead of per-app logins.
 
 - [x] (2026-07-23 → 2026-07-23) CheapAccountController.SignIn is not virtual and redirects back bare on failure — consumers wanting login feedback must ship a parallel sign-in action; make SignIn virtual or add a failure-feedback redirect option (e.g. append ?failed=credentials|locked to LoginRoute) (found consuming from CheapFurniturePlanner) [user]
   - Done in PR #52: SignIn now virtual; failure redirects carry `?failed=credentials|2fa|notallowed`, lockouts go to `LockoutRoute` (same pattern as SignInWithRecoveryCode)

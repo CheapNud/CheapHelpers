@@ -149,12 +149,14 @@ public class PushNotificationOptions
     /// </summary>
     /// <param name="connectionString">Azure Notification Hub connection string (from Azure Portal → Access Policies).</param>
     /// <param name="hubName">Name of the Notification Hub.</param>
-    public void UseAzureNotificationHubs(string connectionString, string hubName)
+    /// <param name="enableBrowserPush">Enable Browser (Web Push) installations and sends via the NH REST API. Requires VAPID credentials on the hub's Browser (Web Push) blade.</param>
+    public void UseAzureNotificationHubs(string connectionString, string hubName, bool enableBrowserPush = false)
     {
         BackendFactory = sp => new AzureNotificationHubBackend(
             connectionString,
             hubName,
-            sp.GetService<ILogger<AzureNotificationHubBackend>>());
+            sp.GetService<ILogger<AzureNotificationHubBackend>>(),
+            enableBrowserPush);
     }
 
     /// <summary>

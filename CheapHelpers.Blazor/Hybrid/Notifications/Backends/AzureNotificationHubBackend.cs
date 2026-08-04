@@ -68,6 +68,17 @@ public class AzureNotificationHubBackend(
         }
         catch (Exception ex)
         {
+            // The SDK can't deserialize browser installations (no Browser value in its
+            // NotificationPlatform enum) — fall back to the REST installation GET
+            if (enableBrowserPush)
+            {
+                var browserDevice = await GetBrowserDeviceAsync(deviceId);
+                if (browserDevice is not null)
+                {
+                    return browserDevice;
+                }
+            }
+
             logger?.LogWarning(ex, "Failed to get device {DeviceId}", deviceId);
             return null;
         }
@@ -224,6 +235,45 @@ public class AzureNotificationHubBackend(
         {
             logger?.LogError(ex, "Failed to register browser device {InstallationId}", device.InstallationId);
             return false;
+        }
+    }
+
+    private async Task<DeviceInfo?> GetBrowserDeviceAsync(string deviceId)
+    {
+        try
+        {
+            using var request = CreateRestRequest(HttpMethod.Get, $"installations/{Uri.EscapeDataString(deviceId)}");
+            using var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            using var installationDoc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var root = installationDoc.RootElement;
+            if (root.GetProperty("platform").GetString() is not ("browser" or "Browser"))
+            {
+                return null;
+            }
+
+            return new DeviceInfo
+            {
+                DeviceId = deviceId,
+                Platform = "browser",
+                PushToken = root.TryGetProperty("pushChannel", out var channel) && channel.TryGetProperty("endpoint", out var endpoint)
+                    ? endpoint.GetString() ?? string.Empty
+                    : string.Empty,
+                IsActive = true,
+                Tags = root.TryGetProperty("tags", out var tags) && tags.ValueKind == JsonValueKind.Array
+                    ? [.. tags.EnumerateArray().Select(t => t.GetString() ?? string.Empty)]
+                    : [],
+                LastUpdated = DateTime.UtcNow,
+            };
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex, "Failed to get browser device {DeviceId} via REST", deviceId);
+            return null;
         }
     }
 

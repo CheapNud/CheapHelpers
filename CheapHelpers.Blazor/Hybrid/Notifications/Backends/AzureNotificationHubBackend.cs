@@ -227,6 +227,9 @@ public class AzureNotificationHubBackend(
         }
     }
 
+    // NH audience sends are queued: the POST returns 201 on acceptance regardless of how many
+    // installations match, so zero browser subscribers never fails the send — only real HTTP
+    // errors (bad SAS, browser/VAPID credentials missing on the hub) return false here.
     private async Task<bool> SendBrowserNotificationAsync(NotificationPayload payload)
     {
         try

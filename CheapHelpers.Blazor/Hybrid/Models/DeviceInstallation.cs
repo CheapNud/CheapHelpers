@@ -31,4 +31,11 @@ public class DeviceInstallation
     /// </summary>
     [JsonPropertyName("tags")]
     public List<string> Tags { get; set; } = [];
+
+    /// <summary>
+    /// Web Push subscription triplet — required when <see cref="Platform"/> is "webpush"/"browser",
+    /// ignored otherwise. <see cref="PushChannel"/> is not used for browser installations.
+    /// </summary>
+    [JsonPropertyName("browserSubscription")]
+    public WebPushSubscription? BrowserSubscription { get; set; }
 }

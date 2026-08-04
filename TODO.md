@@ -29,10 +29,10 @@
 
 ## Blocking
 
-- [ ] (2026-07-28) `AzureNotificationHubBackend`: real Browser (Web Push) platform support [voltiq-dep] [user]
-  - `ParsePlatform` currently maps `"webpush"/"browser"` to `NotificationPlatform.Wns` as a placeholder (AzureNotificationHubBackend.cs:161) — needs `NotificationPlatform.Browser` with `BrowserPushSubscription` (endpoint, p256dh, auth) on registration
-  - `DeviceInstallation` model needs the browser subscription triplet; `CreateNotification` needs a plain Web Push JSON payload branch (current FCM/WNS bodies don't apply to browser PNS)
-  - Consumer: Voltiq web push (device-offline alerts → browser/PWA) — Voltiq builds the service worker + subscription UI against this contract
+- [x] (2026-07-28 → 2026-08-04) `AzureNotificationHubBackend`: real Browser (Web Push) platform support [voltiq-dep] [user]
+  - Done in PR #57. The released NH SDK (4.2.0, latest) has NO Browser platform — browser goes through the NH REST API (api-version 2020-06, SAS auth): installation PUT with `pushChannel {endpoint, p256dh, auth}`, sends with `ServiceBusNotification-Format: browser`, REST GET fallback for reads
+  - Contract for Voltiq: `DeviceInstallation.BrowserSubscription` (`WebPushSubscription` triplet) + platform "webpush"/"browser"; opt in via `UseAzureNotificationHubs(conn, hub, enableBrowserPush: true)`; hub needs VAPID keys on the Browser (Web Push) blade; send payload reaches the service worker as `{title, body, data?}`
+  - WNS placeholder mapping removed — browser platform without the flag now fails registration with a logged error instead of silently registering as WNS
 
 - [x] (2026-04-16 → 2026-04-17) Remove legacy `Microsoft.AspNetCore.Identity 2.3.9` reference from `CheapHelpers.EF.csproj` [voltiq-dep] [audit]
   - Deleted the 2.3.9 PackageReference; added `<FrameworkReference Include="Microsoft.AspNetCore.App" />` so `IServiceCollection.AddIdentity<,>` resolves from the shared framework instead of the legacy NuGet

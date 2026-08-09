@@ -86,6 +86,9 @@
   - Same file logs scroll position to console on every scroll event (lines 21, 27, 34, 40) — drop or gate behind a debug flag
   - `setupInfiniteScroll` attaches a `scroll` listener that `stopObserving` never removes (it only disconnects the three observers) — keep the handler reference and `removeEventListener`
 
+- [ ] (2026-08-05) `wwwroot/js/boot.js` only works on pre-.NET8 `blazor.server.js` — the .NET 8+ unified `blazor.web.js` nests circuit options under `circuit: {...}`, so the shipped `Blazor.start({configureSignalR, reconnectionHandler})` is silently ignored on modern Blazor Web Apps (found consuming from Voltiq) [bug]
+  - Voltiq ships an adapted copy (Voltiq.Web/wwwroot/js/boot.js) as reference: same handler wrapped in `circuit: {}`; consider dual-shape detection or a `boot.web.js` variant
+  - Also carry over Voltiq's UX fix: attempt reconnect IMMEDIATELY and only show the toast after a ~3s grace — the original shows UI instantly then waits 3s before trying, which flashes the dialog on every mobile tab-switch blip
 - [ ] (2026-07-29) `AddCheapHelpersBlazor` should register the non-generic `IStringLocalizer` its own components inject (found consuming from Voltiq) [bug]
   - `DownloadHelper` (and the Account pages via `Loc`) take non-generic `IStringLocalizer`; `AddLocalization()` only registers the generic/factory forms — every consumer crashes at resolution until they hand-register `factory.Create(markerType)`
   - Voltiq works around with a `SharedResources` marker + singleton factory registration (Voltiq.Web/Program.cs); consider shipping a default marker inside CheapHelpers.Blazor so it works out of the box

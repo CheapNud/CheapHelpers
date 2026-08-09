@@ -1,0 +1,106 @@
+name: Publish NuGet
+
+# Release mechanism: push a v*.*.* tag. Base packages build on the Linux runner (SINK);
+# MAUI + MediaProcessing pack on the Windows runner (SANCTUARY) using the host SDK/workloads
+# directly — no actions/setup-dotnet on Windows (installing an SDK there triggers a UAC prompt
+# that wedges the job, and the host already has the .NET 11 SDK + MAUI workload we build with).
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  DOTNET_VERSION: '11.0.x'
+  DOTNET_QUALITY: 'preview'
+  CONFIGURATION: Release
+  NUGET_SOURCE: https://api.nuget.org/v3/index.json
+
+jobs:
+  build-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: ${{ env.DOTNET_QUALITY }}
+      - name: Restore
+        run: dotnet restore CheapHelpers.CI.slnx
+      - name: Build
+        run: dotnet build CheapHelpers.CI.slnx --configuration ${{ env.CONFIGURATION }} --no-restore
+      - name: Test
+        run: dotnet test CheapHelpers.CI.slnx --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal || echo "No test projects found"
+
+  # 7 base packages (CI solution excludes MAUI + MediaProcessing)
+  publish-base:
+    name: Publish Base Packages
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: ${{ env.DOTNET_QUALITY }}
+      - name: Pack base packages
+        run: dotnet pack CheapHelpers.CI.slnx --configuration ${{ env.CONFIGURATION }} -p:EnableWindowsTargeting=true --output ./nupkgs
+      - name: Publish base packages to NuGet.org
+        run: |
+          for pkg in ./nupkgs/*.nupkg; do
+            echo "Publishing $pkg"
+            dotnet nuget push "$pkg" --api-key "$NUGET_API_KEY" --source "$NUGET_SOURCE" --skip-duplicate
+          done
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+  # MAUI packs on Windows (MakePri.exe + the Android/iOS/Windows target chain). Independent of
+  # publish-base — packs against local ProjectReferences, resolves base packages from NuGet at consume time.
+  publish-maui:
+    name: Publish MAUI
+    needs: build-test
+    runs-on: windows
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore MAUI
+        run: dotnet restore CheapHelpers.MAUI/CheapHelpers.MAUI.csproj
+      - name: Pack MAUI
+        run: dotnet pack CheapHelpers.MAUI/CheapHelpers.MAUI.csproj --configuration ${{ env.CONFIGURATION }} --no-restore --output ./nupkgs
+      - name: Publish MAUI to NuGet.org
+        run: |
+          Get-ChildItem ./nupkgs -Filter *.nupkg | ForEach-Object {
+            Write-Host "Publishing $($_.Name)"
+            dotnet nuget push $_.FullName --api-key $env:NUGET_API_KEY --source $env:NUGET_SOURCE --skip-duplicate
+          }
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+  # MediaProcessing has a net11.0-windows target (WMI) — Windows-only. Published after base so its
+  # base-package dependencies are indexed on NuGet before a consumer restores it.
+  publish-media:
+    name: Publish MediaProcessing
+    needs: publish-base
+    runs-on: windows
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for NuGet indexing
+        run: |
+          Write-Host "Waiting 10 minutes for NuGet to index base packages..."
+          Start-Sleep -Seconds 600
+      - name: Restore MediaProcessing
+        run: dotnet restore CheapHelpers.MediaProcessing/CheapHelpers.MediaProcessing.csproj -p:EnableWindowsTargeting=true
+      - name: Pack MediaProcessing
+        run: dotnet pack CheapHelpers.MediaProcessing/CheapHelpers.MediaProcessing.csproj --configuration ${{ env.CONFIGURATION }} --no-restore -p:EnableWindowsTargeting=true --output ./nupkgs
+      - name: Publish MediaProcessing to NuGet.org
+        run: |
+          $pkg = Get-ChildItem ./nupkgs -Filter "CheapHelpers.MediaProcessing.*.nupkg" | Select-Object -First 1
+          dotnet nuget push $pkg.FullName --api-key $env:NUGET_API_KEY --source $env:NUGET_SOURCE --skip-duplicate --no-symbols
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}

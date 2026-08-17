@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-08-17 (localizer + reporting DI fixed; ProgressButton merge-back + PageHeader/StatusChip extraction; infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
+  Last updated: 2026-08-17 (localizer + reporting DI + boot.js + infiniteScroll fixed; ProgressButton merge-back + PageHeader/StatusChip extraction; infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -86,14 +86,13 @@
   - `PageHeader`: kicker (`Typo.overline`, secondary) + `Typo.h4` title + `Typo.body2` subtitle + right-aligned `Actions` RenderFragment, wrapper `d-flex flex-wrap align-center justify-space-between gap-4 mb-6`
   - `StatusChip<TEnum>`: generic take on the lifecycle chip — `MudChip Size="Size.Small" Variant="Variant.Text"` with a caller-supplied enum→`Color` map and label humaniser. Full conventions in the global CLAUDE.md "UI/UX House Rules (MudBlazor)" section
 
-- [ ] (2026-07-29) `infiniteScroll.js` hardcodes a consumer-specific callback name — unusable outside MecamApplication [audit]
-  - `CheapHelpers.Blazor/wwwroot/js/infiniteScroll.js:28,35` calls `invokeMethodAsync("LoadStock")`; every consumer must name its `[JSInvokable]` method `LoadStock`. Take the method name as a parameter on `setupInfiniteScroll(dotNetObject, methodName)`
-  - Same file logs scroll position to console on every scroll event (lines 21, 27, 34, 40) — drop or gate behind a debug flag
-  - `setupInfiniteScroll` attaches a `scroll` listener that `stopObserving` never removes (it only disconnects the three observers) — keep the handler reference and `removeEventListener`
+- [x] (2026-07-29 → 2026-08-17) `infiniteScroll.js` hardcodes a consumer-specific callback name — unusable outside MecamApplication [audit]
+  - Done in forge PR #4: `setupInfiniteScroll(dotNetObject, methodName)` with "LoadStock" default (MecamApplication unaffected); per-scroll console.log spam removed (console.error kept)
+  - `stopObserving` now removes the scroll listeners from BOTH setupInfiniteScroll and startObserving (same leak), and repeated setup calls no longer stack listeners
 
-- [ ] (2026-08-05) `wwwroot/js/boot.js` only works on pre-.NET8 `blazor.server.js` — the .NET 8+ unified `blazor.web.js` nests circuit options under `circuit: {...}`, so the shipped `Blazor.start({configureSignalR, reconnectionHandler})` is silently ignored on modern Blazor Web Apps (found consuming from Voltiq) [bug]
-  - Voltiq ships an adapted copy (Voltiq.Web/wwwroot/js/boot.js) as reference: same handler wrapped in `circuit: {}`; consider dual-shape detection or a `boot.web.js` variant
-  - Also carry over Voltiq's UX fix: attempt reconnect IMMEDIATELY and only show the toast after a ~3s grace — the original shows UI instantly then waits 3s before trying, which flashes the dialog on every mobile tab-switch blip
+- [x] (2026-08-05 → 2026-08-17) `wwwroot/js/boot.js` only works on pre-.NET8 `blazor.server.js` — the .NET 8+ unified `blazor.web.js` nests circuit options under `circuit: {...}`, so the shipped `Blazor.start({configureSignalR, reconnectionHandler})` is silently ignored on modern Blazor Web Apps (found consuming from Voltiq) [bug]
+  - Done in forge PR #4: dual-shape `Blazor.start({...circuitOptions, circuit: circuitOptions})` — each loader reads its own shape, one file serves both generations
+  - Voltiq's UX carried over: reconnect attempts immediately, modal shows only after 3s grace; retries 3→8; modal element null-guarded. Voltiq can retire its adapted copy
 - [x] (2026-07-29 → 2026-08-17) `AddCheapHelpersBlazor` should register the non-generic `IStringLocalizer` its own components inject (found consuming from Voltiq) [bug]
   - Done in forge PR #3: `TryAddScoped<IStringLocalizer>` backed by the library's own `Properties.Language` resources via `IStringLocalizerFactory` — consumers registering their own marker first still win; Voltiq can drop its `SharedResources` workaround
 - [ ] (2026-07-28) Streamline ntfy publishing — generalize from Voltiq's reference implementation [user]

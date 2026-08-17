@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-08-17 (OIDC provider + components merged + localizer + reporting DI + boot.js + infiniteScroll fixed; ProgressButton merge-back + PageHeader/StatusChip extraction; infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
+  Last updated: 2026-08-17 (auth cluster + OIDC provider + components merged + localizer + reporting DI + boot.js + infiniteScroll fixed; ProgressButton merge-back + PageHeader/StatusChip extraction; infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -97,13 +97,13 @@
 - [ ] (2026-07-28) Streamline ntfy publishing — generalize from Voltiq's reference implementation [user]
   - Voltiq ships `NtfyAlertPublisher` (../Voltiq/Voltiq.Worker/NtfyAlertPublisher.cs): POST body + X-Title/X-Priority/X-Tags headers, optional bearer token, IHttpClientFactory per publish, no-op when unconfigured
   - Candidate shape: `NtfyNotificationChannel : INotificationChannel` next to Email/InApp/Sms, config-bound (topic URL + token); Voltiq migrates once published
-- [ ] (2026-07-28) `CheapAccountController`: antiforgery on auth-completing POSTs + TOTP challenge action (found consuming from Voltiq) [audit]
-  - `SignIn`/`SignInWithRecoveryCode` accept POSTs without `[ValidateAntiForgeryToken]` (login-CSRF); Blazor SSR forms can supply the token via `<AntiforgeryToken />`
-  - Base has recovery-code sign-in but no `TwoFactorAuthenticatorSignInAsync` action — consumers each rebuild the TOTP challenge POST
-  - Voltiq ships interim duplicates (`SignInWith2fa`, `SignInWithRecovery`, CSRF-validated) — retire them when this + the virtual-SignIn fix reach a published NuGet
-- [ ] (2026-07-28) Genericize Account 2FA pages to `TUser` (found consuming from Voltiq) [audit]
-  - `LoginWith2fa.razor` injects `SignInManager<IdentityUser>`, `Authenticator.razor` injects `UserManager<CheapUser>` — DI can't resolve these for consumers with derived user types, so the shipped 2FA pages are unusable outside the defaults
-  - Also: interactive-circuit `TwoFactorAuthenticatorSignInAsync` can't set auth cookies reliably — consider SSR form + controller POST pattern while touching this
+- [x] (2026-07-28 → 2026-08-17) `CheapAccountController`: antiforgery on auth-completing POSTs + TOTP challenge action (found consuming from Voltiq) [audit]
+  - Done in forge PR #7: `[ValidateAntiForgeryToken]` on SignIn/SignInWithRecoveryCode/SignInWith2fa (shipped forms carry `<AntiforgeryToken />`); new virtual `SignInWith2fa` with RememberMachine support; recovery action now virtual, redirects instead of throwing, `?failed=code` feedback; form fields null-guarded against malformed POSTs
+  - New `TwoFactorRoute`/`RecoveryCodeRoute` on AccountRouteOptions; SignIn's RequiresTwoFactor now goes straight to the challenge page (no more `?failed=2fa` bounce)
+  - BREAKING: consumers posting to these actions with custom forms must include the antiforgery token. Voltiq can retire `SignInWith2fa`/`SignInWithRecovery` duplicates + its Login2FA forwarding hack
+- [x] (2026-07-28 → 2026-08-17) Genericize Account 2FA pages to `TUser` (found consuming from Voltiq) [audit]
+  - Done in forge PR #7: LoginWith2fa + LoginWithRecoveryCode rebuilt as SSR form POSTs to the controller — no typed SignInManager injection left, auth cookies set in a real HTTP request; failure feedback via `?failed=code`
+  - Authenticator.razor now uses non-generic `IAccountIdentityService` (scope-per-call `AccountIdentityService<TUser>` registered by AddCheapHelpersBlazor) instead of `UserManager<CheapUser>`/`UserService` — pages resolve for any derived TUser
 - [x] (2026-07-28 → 2026-08-17) Reporting docs reference `AddCheapPdfServices` which doesn't exist [bug]
   - Done in forge PR #3: created `DataExchange/DataExchangeServiceExtensions.cs` with `AddCheapPdfServices()` (IPdfTemplateService + IPdfExportService) and `AddCheapXlsxServices()` (IXlsxService), all TryAddScoped
   - `AddCheapReporting` now calls both itself — resolving `IReportService` can no longer throw for missing exporters; Voltiq can drop its direct concrete registrations

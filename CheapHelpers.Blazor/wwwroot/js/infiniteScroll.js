@@ -32,7 +32,11 @@ window.infiniteScroll = {
                 dotNetObject.invokeMethodAsync(callback).catch(err => console.error(`Error invoking ${callback}:`, err));
             }
 
-            // Attach scroll event listener, keeping the reference so stopObserving can remove it
+            // Attach scroll event listener, keeping the reference so stopObserving can remove it.
+            // Remove any previous one first so repeated setup calls don't stack listeners.
+            if (this.scrollHandler) {
+                window.removeEventListener("scroll", this.scrollHandler);
+            }
             this.scrollHandler = checkScroll;
             window.addEventListener("scroll", checkScroll);
         }
@@ -64,6 +68,9 @@ window.infiniteScroll = {
             }
         };
 
+        if (this.visibilityScrollHandler) {
+            window.removeEventListener("scroll", this.visibilityScrollHandler);
+        }
         this.visibilityScrollHandler = handler;
         window.addEventListener("scroll", handler);
     },

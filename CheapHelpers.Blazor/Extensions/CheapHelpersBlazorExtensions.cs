@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Localization;
 using MudBlazor;
 using MudBlazor.Services;
 using System.Diagnostics;
@@ -65,6 +66,12 @@ namespace CheapHelpers.Blazor.Extensions
             if (options.EnableLocalization)
             {
                 services.AddLocalization();
+
+                // Components inject the non-generic IStringLocalizer, which AddLocalization does not
+                // register. Default it to the library's own Language resources; TryAdd lets consumers
+                // register their own marker first to override.
+                services.TryAddScoped<IStringLocalizer>(sp =>
+                    sp.GetRequiredService<IStringLocalizerFactory>().Create(typeof(Properties.Language)));
             }
 
             // Register core services

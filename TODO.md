@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-08-16 (ProgressButton merge-back + PageHeader/StatusChip extraction; infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
+  Last updated: 2026-08-17 (localizer + reporting DI fixed; ProgressButton merge-back + PageHeader/StatusChip extraction; infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -94,9 +94,8 @@
 - [ ] (2026-08-05) `wwwroot/js/boot.js` only works on pre-.NET8 `blazor.server.js` — the .NET 8+ unified `blazor.web.js` nests circuit options under `circuit: {...}`, so the shipped `Blazor.start({configureSignalR, reconnectionHandler})` is silently ignored on modern Blazor Web Apps (found consuming from Voltiq) [bug]
   - Voltiq ships an adapted copy (Voltiq.Web/wwwroot/js/boot.js) as reference: same handler wrapped in `circuit: {}`; consider dual-shape detection or a `boot.web.js` variant
   - Also carry over Voltiq's UX fix: attempt reconnect IMMEDIATELY and only show the toast after a ~3s grace — the original shows UI instantly then waits 3s before trying, which flashes the dialog on every mobile tab-switch blip
-- [ ] (2026-07-29) `AddCheapHelpersBlazor` should register the non-generic `IStringLocalizer` its own components inject (found consuming from Voltiq) [bug]
-  - `DownloadHelper` (and the Account pages via `Loc`) take non-generic `IStringLocalizer`; `AddLocalization()` only registers the generic/factory forms — every consumer crashes at resolution until they hand-register `factory.Create(markerType)`
-  - Voltiq works around with a `SharedResources` marker + singleton factory registration (Voltiq.Web/Program.cs); consider shipping a default marker inside CheapHelpers.Blazor so it works out of the box
+- [x] (2026-07-29 → 2026-08-17) `AddCheapHelpersBlazor` should register the non-generic `IStringLocalizer` its own components inject (found consuming from Voltiq) [bug]
+  - Done in forge PR #3: `TryAddScoped<IStringLocalizer>` backed by the library's own `Properties.Language` resources via `IStringLocalizerFactory` — consumers registering their own marker first still win; Voltiq can drop its `SharedResources` workaround
 - [ ] (2026-07-28) Streamline ntfy publishing — generalize from Voltiq's reference implementation [user]
   - Voltiq ships `NtfyAlertPublisher` (../Voltiq/Voltiq.Worker/NtfyAlertPublisher.cs): POST body + X-Title/X-Priority/X-Tags headers, optional bearer token, IHttpClientFactory per publish, no-op when unconfigured
   - Candidate shape: `NtfyNotificationChannel : INotificationChannel` next to Email/InApp/Sms, config-bound (topic URL + token); Voltiq migrates once published
@@ -107,9 +106,9 @@
 - [ ] (2026-07-28) Genericize Account 2FA pages to `TUser` (found consuming from Voltiq) [audit]
   - `LoginWith2fa.razor` injects `SignInManager<IdentityUser>`, `Authenticator.razor` injects `UserManager<CheapUser>` — DI can't resolve these for consumers with derived user types, so the shipped 2FA pages are unusable outside the defaults
   - Also: interactive-circuit `TwoFactorAuthenticatorSignInAsync` can't set auth cookies reliably — consider SSR form + controller POST pattern while touching this
-- [ ] (2026-07-28) Reporting docs reference `AddCheapPdfServices` which doesn't exist [bug]
-  - Implement the extension (register `IPdfTemplateService`/`IPdfExportService`) or fix the docs; Voltiq registers the concretes directly as a workaround
-  - 2026-07-29, same family: `AddCheapReporting` registers `ReportService<TUser>` but not its ctor deps `IPdfExportService`/`IXlsxService` — resolving `IReportService` throws at runtime (crashed Voltiq's Locations page circuit). `AddCheapReporting` should register the exporters itself (XlsxService is parameterless)
+- [x] (2026-07-28 → 2026-08-17) Reporting docs reference `AddCheapPdfServices` which doesn't exist [bug]
+  - Done in forge PR #3: created `DataExchange/DataExchangeServiceExtensions.cs` with `AddCheapPdfServices()` (IPdfTemplateService + IPdfExportService) and `AddCheapXlsxServices()` (IXlsxService), all TryAddScoped
+  - `AddCheapReporting` now calls both itself — resolving `IReportService` can no longer throw for missing exporters; Voltiq can drop its direct concrete registrations
 
 - [ ] (2026-07-25) Add a generic OIDC external-auth provider to `CheapHelpers.Services/Auth` — first consumer: self-hosted **Authelia** [user]
   - Today the OAuth folder hardcodes named providers (Apple/GitHub/Google/Microsoft `*AuthOptions`). Authelia (and Keycloak/Authentik) are standard OIDC IdPs — needs a **generic `OpenIdConnectAuthOptions`** (authority/discovery URL, client_id, client_secret, scopes, callback) wired through the existing `IExternalAuthProvider` pattern, using `Microsoft.AspNetCore.Authentication.OpenIdConnect`.

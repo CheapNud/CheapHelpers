@@ -60,12 +60,12 @@
     <PackageReference Include="Polly" Version="8.7.0" />
 
     <!-- DI extension -->
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
   </ItemGroup>
 
   <!-- Windows-only: Hardware detection via WMI -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net11.0-windows'">
-    <PackageReference Include="System.Management" Version="10.0.10" />
+    <PackageReference Include="System.Management" Version="10.0.11" />
   </ItemGroup>
 
   <ItemGroup>

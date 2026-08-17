@@ -1,4 +1,4 @@
-﻿window.blazorIsConnected = function () {
+window.blazorIsConnected = function () {
     // Check if Blazor exists and has internal components initialized
     if (!Blazor || !Blazor._internal || !Blazor._internal.navigationManager) {
         return false; // Explicitly return false instead of undefined/null
@@ -14,25 +14,31 @@ window.registerConnectionRestoredCallback = function (dotNetRef, methodName) {
 };
 
 (() => {
-    const maximumRetryCount = 3;
+    const maximumRetryCount = 8;
     const retryIntervalMilliseconds = 1000 * 3;
+    // Fast reconnects (mobile tab switches background the socket and restore it in under a
+    // second) must resolve invisibly — the modal only appears when we're still down after the
+    // grace period. Popping UI for a sub-second blip is worse than the blip.
+    const modalGraceMilliseconds = 1000 * 3;
     const reconnectModal = document.getElementById('reconnect-modal');
 
     const startReconnectionProcess = () => {
-        reconnectModal.style.display = 'block';
-
         let isCanceled = false;
+
+        const modalTimer = setTimeout(() => {
+            if (!isCanceled && reconnectModal) {
+                reconnectModal.style.display = 'block';
+            }
+        }, modalGraceMilliseconds);
 
         (async () => {
             for (let i = 0; i < maximumRetryCount; i++) {
-                reconnectModal.innerText = `Attempting to reconnect: ${i + 1} of ${maximumRetryCount}`;
-
-                await new Promise(resolve => setTimeout(resolve, retryIntervalMilliseconds));
-
-                if (isCanceled) {
-                    return;
+                if (reconnectModal) {
+                    reconnectModal.innerText = `Attempting to reconnect: ${i + 1} of ${maximumRetryCount}`;
                 }
 
+                // Attempt FIRST — the common case reconnects on try one with no wait;
+                // onConnectionUp then cancels the pending modal.
                 try {
                     const result = await Blazor.reconnect();
                     if (!result) {
@@ -44,7 +50,13 @@ window.registerConnectionRestoredCallback = function (dotNetRef, methodName) {
                     // Successfully reconnected to the server.
                     return;
                 } catch {
-                    // Didn't reach the server; try again.
+                    // Didn't reach the server; wait, then try again.
+                }
+
+                await new Promise(resolve => setTimeout(resolve, retryIntervalMilliseconds));
+
+                if (isCanceled) {
+                    return;
                 }
             }
 
@@ -55,14 +67,17 @@ window.registerConnectionRestoredCallback = function (dotNetRef, methodName) {
         return {
             cancel: () => {
                 isCanceled = true;
-                reconnectModal.style.display = 'none';
+                clearTimeout(modalTimer);
+                if (reconnectModal) {
+                    reconnectModal.style.display = 'none';
+                }
             },
         };
     };
 
     let currentReconnectionProcess = null;
 
-    Blazor.start({
+    const circuitOptions = {
         configureSignalR: function (builder) {
             builder.withServerTimeout(60 * 1000).withKeepAliveInterval(30 * 1000);
         },
@@ -83,5 +98,10 @@ window.registerConnectionRestoredCallback = function (dotNetRef, methodName) {
                 }
             }
         }
-    });
+    };
+
+    // Dual-shape start: pre-.NET8 blazor.server.js reads circuit options at the top level;
+    // .NET 8+ blazor.web.js reads them nested under `circuit`. Each loader ignores the
+    // other's shape, so passing both works on either.
+    Blazor.start({ ...circuitOptions, circuit: circuitOptions });
 })();

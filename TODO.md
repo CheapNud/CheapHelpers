@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-07-29 (infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
+  Last updated: 2026-08-16 (ProgressButton merge-back + PageHeader/StatusChip extraction; infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -80,6 +80,11 @@
   - 3.6.0 also ships the Android-safe CheapHelpers.EF (PR #49) and the July dependency bump
 
 ## Planned
+
+- [ ] (2026-08-16) Merge the evolved `ProgressButton` back, and add `PageHeader` + `StatusChip` to `CheapHelpers.Blazor/Shared` [user]
+  - `ProgressButton` was taken from here into an internal app and improved: `ChildContent` RenderFragment instead of a `ButtonText` string, StartIcon swapped for the spinner while running (never both), re-entry guard, and `try/finally` so it resets when the handler throws. The version here still has localisation and `CaptureUnmatchedValues`, which the fork dropped — so this is a **merge**, keep both sides
+  - `PageHeader`: kicker (`Typo.overline`, secondary) + `Typo.h4` title + `Typo.body2` subtitle + right-aligned `Actions` RenderFragment, wrapper `d-flex flex-wrap align-center justify-space-between gap-4 mb-6`
+  - `StatusChip<TEnum>`: generic take on the lifecycle chip — `MudChip Size="Size.Small" Variant="Variant.Text"` with a caller-supplied enum→`Color` map and label humaniser. Full conventions in the global CLAUDE.md "UI/UX House Rules (MudBlazor)" section
 
 - [ ] (2026-07-29) `infiniteScroll.js` hardcodes a consumer-specific callback name — unusable outside MecamApplication [audit]
   - `CheapHelpers.Blazor/wwwroot/js/infiniteScroll.js:28,35` calls `invokeMethodAsync("LoadStock")`; every consumer must name its `[JSInvokable]` method `LoadStock`. Take the method name as a parameter on `setupInfiniteScroll(dotNetObject, methodName)`

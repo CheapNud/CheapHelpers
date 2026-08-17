@@ -1,3 +1,4 @@
+using CheapHelpers.Services.DataExchange;
 using CheapHelpers.Services.Reporting.Configuration;
 using CheapHelpers.Services.Reporting.Distribution;
 using CheapHelpers.Services.Reporting.Storage;
@@ -25,11 +26,12 @@ public static class ReportingServiceExtensions
     /// that must be registered separately:
     /// </para>
     /// <list type="bullet">
-    /// <item><description>PDF reports require IPdfExportService to be registered (use AddCheapPdfServices)</description></item>
-    /// <item><description>Excel reports require IXlsxService to be registered</description></item>
     /// <item><description>Report distribution requires IEmailService to be registered</description></item>
     /// <item><description>Scheduled reports require IScheduledTaskService to be registered (use AddCheapScheduling)</description></item>
     /// </list>
+    /// <para>
+    /// The PDF and Excel exporters (IPdfExportService, IXlsxService) are registered automatically.
+    /// </para>
     /// </remarks>
     public static IServiceCollection AddCheapReporting<TUser>(
         this IServiceCollection services,
@@ -55,6 +57,11 @@ public static class ReportingServiceExtensions
             services.AddSingleton<IReportStorageProvider>(
                 new LocalFileReportStorageProvider(reportingOptions.LocalStoragePath));
         }
+
+        // ReportService's ctor needs the exporters — register them here so resolving
+        // IReportService can't throw at runtime (TryAdd: consumer registrations win)
+        services.AddCheapPdfServices();
+        services.AddCheapXlsxServices();
 
         // Register core reporting services
         services.AddScoped<IReportService, ReportService<TUser>>();

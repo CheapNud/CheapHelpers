@@ -1,26 +1,28 @@
-﻿<MudButton @attributes="@CapturedAttributes"
+@* House rule: any async action self-disables, swaps its StartIcon for a spinner,
+   guards re-entry and resets in finally — never a bare MudButton on an awaited call. *@
+<MudButton @attributes="@CapturedAttributes"
            HtmlTag="@HtmlTag"
            Class="@Class"
            Variant="@Variant"
            Color="@Color"
            OnClick="Clicked"
-           StartIcon="@StartIcon"
+           StartIcon="@(processing ? null : StartIcon)"
            Size="@Size"
            FullWidth=@FullWidth
-           Disabled=@(Disabled ? Disabled : processing)
+           Disabled=@(Disabled || processing)
            Ripple=@(!processing)
            for="@For">
     @if (processing)
     {
-        if (Disabled)
-        {
-            @ButtonText
-        }
-        else
-        {
-            <MudProgressCircular Class="ms-n1" Size="MudBlazor.Size.Small" Indeterminate="true" />
-            <MudText Class="ms-2">@Loc["Processing"]</MudText>
-        }
+        <MudProgressCircular Class="ms-n1 mr-2" Size="MudBlazor.Size.Small" Indeterminate="true" Color="MudBlazor.Color.Inherit" />
+    }
+    @if (ChildContent is not null)
+    {
+        @ChildContent
+    }
+    else if (processing)
+    {
+        <MudText>@Loc["Processing"]</MudText>
     }
     else
     {
@@ -38,8 +40,17 @@
     [Parameter]
     public bool Disabled { get; set; } = false;
 
+    /// <summary>
+    /// Legacy text content. Prefer <see cref="ChildContent"/>; when both are set, ChildContent wins.
+    /// </summary>
     [Parameter]
     public string ButtonText { get; set; }
+
+    /// <summary>
+    /// Button content. Stays visible while running (spinner is prepended, StartIcon hidden).
+    /// </summary>
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
 
     [Parameter]
     public string HtmlTag { get; set; }
@@ -67,15 +78,27 @@
     public MudBlazor.Size Size { get; set; } = Size.Medium;
 
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;
-    
+
     private bool processing = false;
-
-
 
     private async Task Clicked(MouseEventArgs args)
     {
+        // Re-entry guard: a double-click before the first render disables the button
+        // would fire the handler twice
+        if (processing)
+        {
+            return;
+        }
+
         processing = true;
-        await OnClick.InvokeAsync(args);
-        processing = false;
+        try
+        {
+            await OnClick.InvokeAsync(args);
+        }
+        finally
+        {
+            // Reset even when the handler throws, so the button doesn't stay stuck
+            processing = false;
+        }
     }
 }

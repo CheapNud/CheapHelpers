@@ -1,0 +1,42 @@
+@* Page anatomy header: kicker names the section, title names the action
+   ("ASSEMBLIES" / "Create a new assembly"). Actions right-aligned, primary CTA last. *@
+<div class="d-flex flex-wrap align-center justify-space-between gap-4 mb-6">
+    <div>
+        @if (!string.IsNullOrEmpty(Kicker))
+        {
+            <MudText Typo="Typo.overline" Color="Color.Secondary">@Kicker</MudText>
+        }
+        <MudText Typo="Typo.h4">@Title</MudText>
+        @if (!string.IsNullOrEmpty(Subtitle))
+        {
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">@Subtitle</MudText>
+        }
+    </div>
+    @if (Actions is not null)
+    {
+        <div class="d-flex align-center gap-2">
+            @Actions
+        </div>
+    }
+</div>
+
+@code {
+    [EditorRequired]
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Overline above the title naming the module/section (e.g. "ASSEMBLIES")
+    /// </summary>
+    [Parameter]
+    public string Kicker { get; set; }
+
+    [Parameter]
+    public string Subtitle { get; set; }
+
+    /// <summary>
+    /// Right-aligned action buttons; put the primary CTA last
+    /// </summary>
+    [Parameter]
+    public RenderFragment Actions { get; set; }
+}

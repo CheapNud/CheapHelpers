@@ -1,0 +1,31 @@
+@typeparam TEnum where TEnum : struct, Enum
+@using Humanizer
+
+@* Lifecycle status chip. Colour semantics are fixed by convention:
+   Error terminal failure · Warning in remediation · Info recovered · Success completed ·
+   Secondary at-rest/stable · Primary actively in progress · Default unknown. *@
+<MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@ColorMap(Value)">
+    @FormatLabel(Value)
+</MudChip>
+
+@code {
+    [EditorRequired]
+    [Parameter]
+    public TEnum Value { get; set; }
+
+    /// <summary>
+    /// Maps each enum value to its semantic colour
+    /// </summary>
+    [EditorRequired]
+    [Parameter]
+    public Func<TEnum, Color> ColorMap { get; set; } = default!;
+
+    /// <summary>
+    /// Optional label override; defaults to humanising the enum name (Rma_Created → "Rma Created")
+    /// </summary>
+    [Parameter]
+    public Func<TEnum, string> Label { get; set; }
+
+    private string FormatLabel(TEnum enumValue) =>
+        Label?.Invoke(enumValue) ?? enumValue.ToString().Replace('_', ' ').Humanize(LetterCasing.Title);
+}

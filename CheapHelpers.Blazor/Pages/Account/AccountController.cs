@@ -57,46 +57,94 @@ namespace CheapHelpers.Blazor.Pages.Account
             return Ok();
         }
 
+        /// <summary>
+        /// Recovery-code sign-in for users without their authenticator. The two-factor user
+        /// comes from the TwoFactorUserId cookie set by the password sign-in; a missing session
+        /// redirects to login instead of throwing. Virtual so consumers can override the flow.
+        /// </summary>
         [AllowAnonymous]
         [HttpPost]
-        public async Task<IActionResult> SignInWithRecoveryCode(IFormCollection fc)
+        [ValidateAntiForgeryToken]
+        public virtual async Task<IActionResult> SignInWithRecoveryCode(IFormCollection fc)
         {
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
             var user = await signInManager.GetTwoFactorAuthenticationUserAsync();
             if (user == null)
             {
-                throw new InvalidOperationException(UnableToLoadTwoFactorUserMessage);
+                return Redirect(Routes.LoginRoute);
             }
 
-            var recoveryCode = ((string)fc["RecoveryCode"]).Replace(" ", string.Empty);
+            var recoveryCode = ((string?)fc["RecoveryCode"] ?? string.Empty).Replace(" ", string.Empty).Replace("-", string.Empty);
             var result = await signInManager.TwoFactorRecoveryCodeSignInAsync(recoveryCode);
 
             LogSignInAttempt(user.UserName, result.Succeeded, GetSignInDescription(result));
 
-            return result.Succeeded switch
+            return result switch
             {
-                true => Redirect(Routes.HomeRoute),
-                false when result.IsLockedOut => Redirect(Routes.LockoutRoute),
-                _ => Redirect(Routes.LoginRoute)
+                { Succeeded: true } => Redirect(Routes.HomeRoute),
+                { IsLockedOut: true } => Redirect(Routes.LockoutRoute),
+                _ => Redirect($"{Routes.RecoveryCodeRoute}?failed=code")
+            };
+        }
+
+        /// <summary>
+        /// TOTP challenge after a password sign-in that required two-factor. The two-factor user
+        /// comes from the TwoFactorUserId cookie set by the password sign-in. Virtual so consumers
+        /// can override the flow.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public virtual async Task<IActionResult> SignInWith2fa(IFormCollection fc)
+        {
+            var user = await signInManager.GetTwoFactorAuthenticationUserAsync();
+            if (user == null)
+            {
+                return Redirect(Routes.LoginRoute);
+            }
+
+            var authenticatorCode = ((string?)fc["TwoFactorCode"] ?? string.Empty).Replace(" ", string.Empty).Replace("-", string.Empty);
+            var rememberMachine = string.Equals(fc["RememberMachine"], "true", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(fc["RememberMachine"], "on", StringComparison.OrdinalIgnoreCase);
+
+            // isPersistent: true matches SignIn above, which also always signs in persistent
+            // (there is no remember-me choice in this flow); rememberMachine skips the 2FA
+            // challenge on this browser next time when the user opted in
+            var result = await signInManager.TwoFactorAuthenticatorSignInAsync(
+                authenticatorCode,
+                isPersistent: true,
+                rememberClient: rememberMachine);
+
+            LogSignInAttempt(user.UserName, result.Succeeded, GetSignInDescription(result));
+
+            return result switch
+            {
+                { Succeeded: true } => Redirect(Routes.HomeRoute),
+                { IsLockedOut: true } => Redirect(Routes.LockoutRoute),
+                _ => Redirect($"{Routes.TwoFactorRoute}?failed=code")
             };
         }
 
         /// <summary>
         /// Password sign-in. On failure redirects to <see cref="AccountRouteOptions.LoginRoute"/> with
-        /// <c>?failed=credentials|2fa|notallowed</c> so the login page can show feedback; lockouts go to
+        /// <c>?failed=credentials|notallowed</c> so the login page can show feedback; two-factor
+        /// continues at <see cref="AccountRouteOptions.TwoFactorRoute"/>, lockouts go to
         /// <see cref="AccountRouteOptions.LockoutRoute"/>. Virtual so consumers can override the flow.
         /// </summary>
         [AllowAnonymous]
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public virtual async Task<IActionResult> SignIn(IFormCollection fc)
         {
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
-            string username = fc["UserName"];
+            // StringValues → string casts yield null for absent fields; guard so a
+            // malformed POST can't 500 the action
+            string username = (string?)fc["UserName"] ?? string.Empty;
             var signInResult = await signInManager.PasswordSignInAsync(
                 username,
-                fc["Password"],
+                (string?)fc["Password"] ?? string.Empty,
                 isPersistent: true,
                 lockoutOnFailure: false
             );
@@ -107,7 +155,7 @@ namespace CheapHelpers.Blazor.Pages.Account
             {
                 { Succeeded: true } => Redirect(Routes.HomeRoute),
                 { IsLockedOut: true } => Redirect(Routes.LockoutRoute),
-                { RequiresTwoFactor: true } => Redirect($"{Routes.LoginRoute}?failed=2fa"),
+                { RequiresTwoFactor: true } => Redirect(Routes.TwoFactorRoute),
                 { IsNotAllowed: true } => Redirect($"{Routes.LoginRoute}?failed=notallowed"),
                 _ => Redirect($"{Routes.LoginRoute}?failed=credentials")
             };

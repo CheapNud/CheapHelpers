@@ -77,6 +77,9 @@ namespace CheapHelpers.Blazor.Extensions
             // Register core services
             services.AddScoped<UserService<TUser, TContext>>();
 
+            // Non-generic bridge so the shared Account pages work with any TUser
+            services.TryAddSingleton<IAccountIdentityService, AccountIdentityService<TUser>>();
+
             // Register account route options (configurable via CheapHelpersBlazorOptions)
             if (options.AccountRouteOptions is not null)
                 services.AddSingleton(options.AccountRouteOptions);

@@ -17,4 +17,14 @@ public class AccountRouteOptions
     public string LoginRoute { get; set; } = "/Account/Login/";
     public string LockoutRoute { get; set; } = "/Account/Lockout/";
     public string EnableAuthenticatorRoute { get; set; } = "/Account/EnableAuthenticator";
+
+    /// <summary>
+    /// TOTP challenge page shown when a password sign-in requires two-factor.
+    /// </summary>
+    public string TwoFactorRoute { get; set; } = "/Account/Login2FA";
+
+    /// <summary>
+    /// Recovery-code fallback page for users without their authenticator.
+    /// </summary>
+    public string RecoveryCodeRoute { get; set; } = "/Account/LoginWithRecoveryCode";
 }

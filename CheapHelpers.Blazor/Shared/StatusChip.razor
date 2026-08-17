@@ -4,7 +4,7 @@
 @* Lifecycle status chip. Colour semantics are fixed by convention:
    Error terminal failure · Warning in remediation · Info recovered · Success completed ·
    Secondary at-rest/stable · Primary actively in progress · Default unknown. *@
-<MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@ColorMap(Value)">
+<MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@(ColorMap?.Invoke(Value) ?? Color.Default)">
     @FormatLabel(Value)
 </MudChip>
 

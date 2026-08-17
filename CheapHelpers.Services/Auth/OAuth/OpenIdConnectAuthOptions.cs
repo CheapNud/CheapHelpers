@@ -15,7 +15,9 @@ public class OpenIdConnectAuthOptions : OAuthProviderOptions
     public OpenIdConnectAuthOptions()
     {
         // OIDC defaults: email for provisioning, groups for authorization.
-        // The handler always requests openid + profile.
+        // The handler always requests openid + profile. "groups" is not a standard OIDC
+        // scope but is used by Authelia/Keycloak/Authentik — strict IdPs that reject
+        // unknown scopes need Scopes.Remove("groups").
         Scopes = ["email", "groups"];
     }
 
@@ -40,7 +42,9 @@ public class OpenIdConnectAuthOptions : OAuthProviderOptions
     public string RemoteCallbackPath { get; set; } = "/signin-oidc";
 
     /// <summary>
-    /// Authentication scheme name. Change it when registering multiple OIDC providers side by side.
+    /// Authentication scheme name. When registering multiple OIDC providers side by side,
+    /// give each a unique scheme AND a unique <see cref="RemoteCallbackPath"/>,
+    /// <see cref="OAuthProviderOptions.StartPath"/> and <see cref="OAuthProviderOptions.CallbackPath"/>.
     /// </summary>
     public string AuthenticationScheme { get; set; } = "oidc";
 

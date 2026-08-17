@@ -240,6 +240,7 @@ public static class OAuthBlazorExtensions
                 opt.ClientId = oidcOptions.ClientId;
                 opt.ClientSecret = oidcOptions.ClientSecret;
                 opt.ResponseType = OpenIdConnectResponseType.Code;
+                opt.UsePkce = true; // handler default for code flow, stated explicitly
                 opt.SignInScheme = ExternalCookieScheme;
                 opt.CallbackPath = oidcOptions.RemoteCallbackPath;
                 opt.RequireHttpsMetadata = oidcOptions.RequireHttpsMetadata;

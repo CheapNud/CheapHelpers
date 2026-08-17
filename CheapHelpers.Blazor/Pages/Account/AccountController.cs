@@ -75,7 +75,7 @@ namespace CheapHelpers.Blazor.Pages.Account
                 return Redirect(Routes.LoginRoute);
             }
 
-            var recoveryCode = ((string)fc["RecoveryCode"]).Replace(" ", string.Empty).Replace("-", string.Empty);
+            var recoveryCode = ((string?)fc["RecoveryCode"] ?? string.Empty).Replace(" ", string.Empty).Replace("-", string.Empty);
             var result = await signInManager.TwoFactorRecoveryCodeSignInAsync(recoveryCode);
 
             LogSignInAttempt(user.UserName, result.Succeeded, GetSignInDescription(result));
@@ -104,12 +104,13 @@ namespace CheapHelpers.Blazor.Pages.Account
                 return Redirect(Routes.LoginRoute);
             }
 
-            var authenticatorCode = ((string)fc["TwoFactorCode"]).Replace(" ", string.Empty).Replace("-", string.Empty);
+            var authenticatorCode = ((string?)fc["TwoFactorCode"] ?? string.Empty).Replace(" ", string.Empty).Replace("-", string.Empty);
             var rememberMachine = string.Equals(fc["RememberMachine"], "true", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(fc["RememberMachine"], "on", StringComparison.OrdinalIgnoreCase);
 
-            // isPersistent matches the password sign-in; rememberMachine skips the challenge
-            // on this browser next time when the user opted in
+            // isPersistent: true matches SignIn above, which also always signs in persistent
+            // (there is no remember-me choice in this flow); rememberMachine skips the 2FA
+            // challenge on this browser next time when the user opted in
             var result = await signInManager.TwoFactorAuthenticatorSignInAsync(
                 authenticatorCode,
                 isPersistent: true,
@@ -138,10 +139,12 @@ namespace CheapHelpers.Blazor.Pages.Account
         {
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
 
-            string username = fc["UserName"];
+            // StringValues → string casts yield null for absent fields; guard so a
+            // malformed POST can't 500 the action
+            string username = (string?)fc["UserName"] ?? string.Empty;
             var signInResult = await signInManager.PasswordSignInAsync(
                 username,
-                fc["Password"],
+                (string?)fc["Password"] ?? string.Empty,
                 isPersistent: true,
                 lockoutOnFailure: false
             );

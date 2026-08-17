@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-08-17 (components merged + localizer + reporting DI + boot.js + infiniteScroll fixed; ProgressButton merge-back + PageHeader/StatusChip extraction; infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
+  Last updated: 2026-08-17 (OIDC provider + components merged + localizer + reporting DI + boot.js + infiniteScroll fixed; ProgressButton merge-back + PageHeader/StatusChip extraction; infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -108,10 +108,10 @@
   - Done in forge PR #3: created `DataExchange/DataExchangeServiceExtensions.cs` with `AddCheapPdfServices()` (IPdfTemplateService + IPdfExportService) and `AddCheapXlsxServices()` (IXlsxService), all TryAddScoped
   - `AddCheapReporting` now calls both itself — resolving `IReportService` can no longer throw for missing exporters; Voltiq can drop its direct concrete registrations
 
-- [ ] (2026-07-25) Add a generic OIDC external-auth provider to `CheapHelpers.Services/Auth` — first consumer: self-hosted **Authelia** [user]
-  - Today the OAuth folder hardcodes named providers (Apple/GitHub/Google/Microsoft `*AuthOptions`). Authelia (and Keycloak/Authentik) are standard OIDC IdPs — needs a **generic `OpenIdConnectAuthOptions`** (authority/discovery URL, client_id, client_secret, scopes, callback) wired through the existing `IExternalAuthProvider` pattern, using `Microsoft.AspNetCore.Authentication.OpenIdConnect`.
-  - Config-driven authority (e.g. `https://auth.cheapludes.be`) so any OIDC IdP works, not just Authelia. Map claims (`preferred_username`/`email`/`groups`) to `ExternalUserInfo` for `IExternalUserProvisioner`.
-  - Motivation: the homelab now runs Authelia (auth.cheapludes.be) as its SSO — lets CheapHelpers-based apps (CheapClerk, CheapTasks, CheapNights, etc.) do SSO against it instead of per-app logins.
+- [x] (2026-07-25 → 2026-08-17) Add a generic OIDC external-auth provider to `CheapHelpers.Services/Auth` — first consumer: self-hosted **Authelia** [user]
+  - Done in forge PR #6: `OpenIdConnectAuthOptions` (authority discovery, configurable DisplayName/scheme/claims, RequireHttpsMetadata toggle) + `AddOpenIdConnectAuth()` — code flow with PKCE, claims via userinfo, wired through the shared external-cookie callback and `IExternalUserProvisioner`
+  - Groups → role claims on the app cookie (`[Authorize(Roles=...)]` works against Authelia groups) and `ExternalUserInfo.AdditionalClaims["groups"]` for provisioners; `MapOAuthEndpoints` maps `/auth/oidc-start` + `/auth/oidc-callback`
+  - Consumer side (per app): `AddOpenIdConnectAuth` with authority `https://auth.cheapludes.be` + client id/secret; Authelia needs a client entry per app (redirect_uri = host + `/signin-oidc`, scopes openid profile email groups) — homelab-agent territory
 
 - [x] (2026-07-23 → 2026-07-23) CheapAccountController.SignIn is not virtual and redirects back bare on failure — consumers wanting login feedback must ship a parallel sign-in action; make SignIn virtual or add a failure-feedback redirect option (e.g. append ?failed=credentials|locked to LoginRoute) (found consuming from CheapFurniturePlanner) [user]
   - Done in PR #52: SignIn now virtual; failure redirects carry `?failed=credentials|2fa|notallowed`, lockouts go to `LockoutRoute` (same pattern as SignInWithRecoveryCode)

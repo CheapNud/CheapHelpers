@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-08-17 (localizer + reporting DI + boot.js + infiniteScroll fixed; ProgressButton merge-back + PageHeader/StatusChip extraction; infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
+  Last updated: 2026-08-17 (components merged + localizer + reporting DI + boot.js + infiniteScroll fixed; ProgressButton merge-back + PageHeader/StatusChip extraction; infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -81,10 +81,9 @@
 
 ## Planned
 
-- [ ] (2026-08-16) Merge the evolved `ProgressButton` back, and add `PageHeader` + `StatusChip` to `CheapHelpers.Blazor/Shared` [user]
-  - `ProgressButton` was taken from here into an internal app and improved: `ChildContent` RenderFragment instead of a `ButtonText` string, StartIcon swapped for the spinner while running (never both), re-entry guard, and `try/finally` so it resets when the handler throws. The version here still has localisation and `CaptureUnmatchedValues`, which the fork dropped — so this is a **merge**, keep both sides
-  - `PageHeader`: kicker (`Typo.overline`, secondary) + `Typo.h4` title + `Typo.body2` subtitle + right-aligned `Actions` RenderFragment, wrapper `d-flex flex-wrap align-center justify-space-between gap-4 mb-6`
-  - `StatusChip<TEnum>`: generic take on the lifecycle chip — `MudChip Size="Size.Small" Variant="Variant.Text"` with a caller-supplied enum→`Color` map and label humaniser. Full conventions in the global CLAUDE.md "UI/UX House Rules (MudBlazor)" section
+- [x] (2026-08-16 → 2026-08-17) Merge the evolved `ProgressButton` back, and add `PageHeader` + `StatusChip` to `CheapHelpers.Blazor/Shared` [user]
+  - Done in forge PR #5. ProgressButton merged from the CheapClerk copy of the fork: ChildContent + spinner-swaps-StartIcon + re-entry guard + try/finally, keeping localisation, CaptureUnmatchedValues, ButtonText and the EventCallback signature — existing consumers compile unchanged (ChildContent wins when both set)
+  - PageHeader + StatusChip<TEnum> added per the house rules; StatusChip takes Func ColorMap (falls back to Color.Default when unmapped) + optional Label override over the Humanizer default
 
 - [x] (2026-07-29 → 2026-08-17) `infiniteScroll.js` hardcodes a consumer-specific callback name — unusable outside MecamApplication [audit]
   - Done in forge PR #4: `setupInfiniteScroll(dotNetObject, methodName)` with "LoadStock" default (MecamApplication unaffected); per-scroll console.log spam removed (console.error kept)

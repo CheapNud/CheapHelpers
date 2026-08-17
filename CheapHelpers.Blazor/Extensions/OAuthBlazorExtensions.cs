@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.MicrosoftAccount;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Routing;
@@ -201,11 +202,74 @@ public static class OAuthBlazorExtensions
     }
 
     /// <summary>
-    /// Maps OAuth start and callback endpoints for all registered OAuth providers (Google, Microsoft, GitHub, Apple).
+    /// Adds a generic OpenID Connect provider (Authelia, Keycloak, Authentik, any compliant IdP).
+    /// Endpoints are discovered from <see cref="OpenIdConnectAuthOptions.Authority"/>; uses
+    /// authorization-code flow with PKCE. Groups from <see cref="OpenIdConnectAuthOptions.GroupsClaim"/>
+    /// become role claims on the signed-in principal.
+    /// </summary>
+    /// <example>
+    /// services.AddOpenIdConnectAuth(opt =>
+    /// {
+    ///     opt.DisplayName = "Authelia";
+    ///     opt.Authority = "https://auth.example.com";
+    ///     opt.ClientId = "myapp";
+    ///     opt.ClientSecret = configuration["Oidc:ClientSecret"];
+    /// });
+    /// </example>
+    public static IServiceCollection AddOpenIdConnectAuth(
+        this IServiceCollection services,
+        Action<OpenIdConnectAuthOptions> configureOptions)
+    {
+        ArgumentNullException.ThrowIfNull(configureOptions);
+
+        var oidcOptions = new OpenIdConnectAuthOptions();
+        configureOptions(oidcOptions);
+
+        if (string.IsNullOrWhiteSpace(oidcOptions.Authority))
+            throw new InvalidOperationException($"{nameof(OpenIdConnectAuthOptions)}.{nameof(oidcOptions.Authority)} is required");
+
+        services.AddSingleton(oidcOptions);
+        services.AddSingleton<IExternalAuthProvider>(new SimpleAuthProvider(oidcOptions.ProviderName));
+
+        EnsureExternalCookieScheme(services);
+
+        services.AddAuthentication()
+            .AddOpenIdConnect(oidcOptions.AuthenticationScheme, opt =>
+            {
+                opt.Authority = oidcOptions.Authority;
+                opt.ClientId = oidcOptions.ClientId;
+                opt.ClientSecret = oidcOptions.ClientSecret;
+                opt.ResponseType = OpenIdConnectResponseType.Code;
+                opt.UsePkce = true; // handler default for code flow, stated explicitly
+                opt.SignInScheme = ExternalCookieScheme;
+                opt.CallbackPath = oidcOptions.RemoteCallbackPath;
+                opt.RequireHttpsMetadata = oidcOptions.RequireHttpsMetadata;
+
+                // IdPs like Authelia deliver most claims (groups, email) via userinfo, not the id_token
+                opt.GetClaimsFromUserInfoEndpoint = true;
+                opt.ClaimActions.MapJsonKey(oidcOptions.GroupsClaim, oidcOptions.GroupsClaim);
+                opt.ClaimActions.MapJsonKey(oidcOptions.UsernameClaim, oidcOptions.UsernameClaim);
+
+                opt.TokenValidationParameters.NameClaimType = oidcOptions.UsernameClaim;
+                opt.TokenValidationParameters.RoleClaimType = oidcOptions.GroupsClaim;
+
+                foreach (var scope in oidcOptions.Scopes)
+                    opt.Scope.Add(scope);
+            });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Maps OAuth start and callback endpoints for all registered OAuth providers (Google, Microsoft, GitHub, Apple, OIDC).
     /// Logout is shared with Plex's existing logout endpoint — no duplicate needed.
     /// </summary>
     public static IEndpointRouteBuilder MapOAuthEndpoints(this IEndpointRouteBuilder endpoints)
     {
+        var oidcOptions = endpoints.ServiceProvider.GetService<OpenIdConnectAuthOptions>();
+        if (oidcOptions is not null)
+            MapProviderEndpoints(endpoints, oidcOptions, oidcOptions.AuthenticationScheme);
+
         MapProviderEndpoints(endpoints,
             endpoints.ServiceProvider.GetService<GoogleAuthOptions>(),
             GoogleDefaults.AuthenticationScheme);
@@ -262,9 +326,11 @@ public static class OAuthBlazorExtensions
         var externalPrincipal = authResult.Principal;
 
         // Extract claims from the external principal
-        var externalId = externalPrincipal.FindFirstValue(ClaimTypes.NameIdentifier);
+        var externalId = externalPrincipal.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? externalPrincipal.FindFirstValue("sub"); // OIDC without inbound claim mapping
         var displayName = externalPrincipal.FindFirstValue(ClaimTypes.Name);
-        var email = externalPrincipal.FindFirstValue(ClaimTypes.Email);
+        var email = externalPrincipal.FindFirstValue(ClaimTypes.Email)
+            ?? externalPrincipal.FindFirstValue("email");
         var avatarUrl = externalPrincipal.FindFirstValue("picture") // Google
             ?? externalPrincipal.FindFirstValue("urn:google:picture") // Google fallback
             ?? externalPrincipal.FindFirstValue("urn:github:avatar"); // GitHub
@@ -286,13 +352,22 @@ public static class OAuthBlazorExtensions
             }
         }
 
+        // OIDC: prefer the configured username claim, collect groups for roles + provisioning
+        List<string> oidcGroups = [];
+        if (providerOptions is OpenIdConnectAuthOptions oidcProviderOptions)
+        {
+            displayName = externalPrincipal.FindFirstValue(oidcProviderOptions.UsernameClaim) ?? displayName;
+            oidcGroups = [.. externalPrincipal.FindAll(oidcProviderOptions.GroupsClaim).Select(c => c.Value)];
+        }
+
         // Build ExternalUserInfo
         var userInfo = new ExternalUserInfo(
             ProviderName: providerOptions.ProviderName,
             ExternalId: externalId,
             Email: email,
             Username: displayName,
-            AvatarUrl: avatarUrl);
+            AvatarUrl: avatarUrl,
+            AdditionalClaims: oidcGroups.Count > 0 ? new Dictionary<string, string> { ["groups"] = string.Join(",", oidcGroups) } : null);
 
         // Run optional authorization hook
         if (providerOptions.AuthorizeUser is not null)
@@ -319,6 +394,10 @@ public static class OAuthBlazorExtensions
 
         if (avatarUrl is not null)
             claims.Add(new Claim("Avatar", avatarUrl));
+
+        // OIDC groups become role claims so [Authorize(Roles = ...)] works on the app cookie
+        foreach (var group in oidcGroups)
+            claims.Add(new Claim(ClaimTypes.Role, group));
 
         if (providerOptions.AdditionalClaimsFactory is not null)
         {

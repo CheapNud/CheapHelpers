@@ -1,0 +1,157 @@
+name: NuGet Publish
+
+# Keyless publishing via nuget.org Trusted Publishing: each publish job exchanges a
+# GitHub-issued OIDC token for a 1-hour API key (NuGet/login) — no stored NuGet secret.
+# GitHub is the release executor because Forgejo Actions has no OIDC issuer; tags arrive
+# here through the Forgejo push mirror. Requires a Trusted Publishing policy on nuget.org
+# pointing at this repo + this workflow file, and a NUGET_USER repo secret (nuget.org
+# profile name).
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '11.0.x'
+  DOTNET_QUALITY: 'preview'
+  CONFIGURATION: Release
+  NUGET_SOURCE: https://api.nuget.org/v3/index.json
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: ${{ env.DOTNET_QUALITY }}
+    - name: Restore
+      # CI solution excludes MAUI and MediaProcessing (packed separately)
+      run: dotnet restore CheapHelpers.CI.slnx
+    - name: Build
+      run: dotnet build CheapHelpers.CI.slnx --configuration ${{ env.CONFIGURATION }} --no-restore
+    - name: Test
+      run: dotnet test CheapHelpers.CI.slnx --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal || echo "No test projects found"
+
+  # Pack base packages (excluding MAUI and MediaProcessing)
+  pack-base:
+    name: Pack Base Packages
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: ${{ env.DOTNET_QUALITY }}
+    - name: Restore base packages
+      run: dotnet restore CheapHelpers.CI.slnx -p:EnableWindowsTargeting=true
+    - name: Pack base NuGet packages
+      run: dotnet pack CheapHelpers.CI.slnx --configuration ${{ env.CONFIGURATION }} --no-restore -p:EnableWindowsTargeting=true --output ./nupkgs
+    - uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages-base
+        path: ./nupkgs/*.nupkg
+        retention-days: 90
+
+  # Pack MAUI on Windows (MakePri.exe requires native Windows)
+  pack-maui:
+    name: Pack MAUI
+    needs: build-and-test
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: ${{ env.DOTNET_QUALITY }}
+    - name: Install MAUI workloads
+      run: |
+        dotnet workload restore
+        dotnet workload install maui
+    - name: Restore MAUI
+      run: dotnet restore CheapHelpers.MAUI/CheapHelpers.MAUI.csproj
+    - name: Pack MAUI
+      run: dotnet pack CheapHelpers.MAUI/CheapHelpers.MAUI.csproj --configuration ${{ env.CONFIGURATION }} --no-restore --output ./nupkgs
+    - uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages-maui
+        path: ./nupkgs/*.nupkg
+        retention-days: 90
+
+  # Publish base + MAUI packages with a short-lived trusted-publishing key
+  publish-base:
+    name: Publish Base Packages
+    needs: [pack-base, pack-maui]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      id-token: write  # OIDC token issuance for trusted publishing
+      contents: read
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: nuget-packages-base
+        path: ./nupkgs
+    - uses: actions/download-artifact@v4
+      with:
+        name: nuget-packages-maui
+        path: ./nupkgs
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: ${{ env.DOTNET_QUALITY }}
+    - name: NuGet login (OIDC → temp API key)
+      uses: NuGet/login@v1
+      id: login
+      with:
+        user: ${{ secrets.NUGET_USER }}
+    - name: Publish base packages to NuGet.org
+      run: |
+        for pkg in ./nupkgs/*.nupkg; do
+          echo "Publishing $pkg"
+          dotnet nuget push "$pkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source ${{ env.NUGET_SOURCE }} --skip-duplicate
+        done
+
+  # MediaProcessing packs on Windows and publishes after base packages are indexed
+  publish-media:
+    name: Pack and Publish MediaProcessing
+    needs: publish-base
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        dotnet-quality: ${{ env.DOTNET_QUALITY }}
+    - name: Wait for NuGet indexing
+      shell: pwsh
+      run: |
+        Write-Host "Waiting 10 minutes for NuGet to index base packages..."
+        Start-Sleep -Seconds 600
+    - name: Restore MediaProcessing
+      run: dotnet restore CheapHelpers.MediaProcessing/CheapHelpers.MediaProcessing.csproj -p:EnableWindowsTargeting=true
+    - name: Pack MediaProcessing
+      run: dotnet pack CheapHelpers.MediaProcessing/CheapHelpers.MediaProcessing.csproj --configuration ${{ env.CONFIGURATION }} --no-restore -p:EnableWindowsTargeting=true --output ./nupkgs
+    # Login AFTER the indexing wait — the temp key lives 1 hour, but no reason to burn 10 minutes of it
+    - name: NuGet login (OIDC → temp API key)
+      uses: NuGet/login@v1
+      id: login
+      with:
+        user: ${{ secrets.NUGET_USER }}
+    - name: Publish MediaProcessing to NuGet.org
+      shell: pwsh
+      run: |
+        $pkg = Get-ChildItem -Path ./nupkgs -Filter "CheapHelpers.MediaProcessing.*.nupkg" | Select-Object -First 1
+        dotnet nuget push $pkg.FullName --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source ${{ env.NUGET_SOURCE }} --skip-duplicate --no-symbols

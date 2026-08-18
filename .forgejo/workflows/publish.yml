@@ -47,10 +47,13 @@ jobs:
       - name: Pack base packages
         run: dotnet pack CheapHelpers.CI.slnx --configuration ${{ env.CONFIGURATION }} -p:EnableWindowsTargeting=true --output ./nupkgs
       - name: Publish base packages to NuGet.org
+        # --no-symbols: some snupkgs contain no .pdb (nuget.org rejects them with 400, which
+        # aborts the loop). The old GitHub workflow masked this with `|| true` — symbols were
+        # never reliably published. Fixing snupkg generation is tracked in TODO.
         run: |
           for pkg in ./nupkgs/*.nupkg; do
             echo "Publishing $pkg"
-            dotnet nuget push "$pkg" --api-key "$NUGET_API_KEY" --source "$NUGET_SOURCE" --skip-duplicate
+            dotnet nuget push "$pkg" --api-key "$NUGET_API_KEY" --source "$NUGET_SOURCE" --skip-duplicate --no-symbols
           done
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
@@ -63,7 +66,8 @@ jobs:
     runs-on: windows
     defaults:
       run:
-        shell: pwsh
+        # powershell, not pwsh: SANCTUARY has Windows PowerShell 5.1 only
+        shell: powershell
     steps:
       - uses: actions/checkout@v4
       - name: Restore MAUI
@@ -74,7 +78,7 @@ jobs:
         run: |
           Get-ChildItem ./nupkgs -Filter *.nupkg | ForEach-Object {
             Write-Host "Publishing $($_.Name)"
-            dotnet nuget push $_.FullName --api-key $env:NUGET_API_KEY --source $env:NUGET_SOURCE --skip-duplicate
+            dotnet nuget push $_.FullName --api-key $env:NUGET_API_KEY --source $env:NUGET_SOURCE --skip-duplicate --no-symbols
           }
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
@@ -87,7 +91,8 @@ jobs:
     runs-on: windows
     defaults:
       run:
-        shell: pwsh
+        # powershell, not pwsh: SANCTUARY has Windows PowerShell 5.1 only
+        shell: powershell
     steps:
       - uses: actions/checkout@v4
       - name: Wait for NuGet indexing

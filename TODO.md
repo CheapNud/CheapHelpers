@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-08-17 (auth cluster + OIDC provider + components merged + localizer + reporting DI + boot.js + infiniteScroll fixed; ProgressButton merge-back + PageHeader/StatusChip extraction; infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
+  Last updated: 2026-08-18 (snupkg fix filed; auth cluster + OIDC provider + components merged + localizer + reporting DI + boot.js + infiniteScroll fixed; ProgressButton merge-back + PageHeader/StatusChip extraction; infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -80,6 +80,10 @@
   - 3.6.0 also ships the Android-safe CheapHelpers.EF (PR #49) and the July dependency bump
 
 ## Planned
+
+- [ ] (2026-08-18) Fix symbol package (.snupkg) generation — publish currently uses --no-symbols everywhere [bug]
+  - nuget.org rejects some of our snupkgs with 400 "does not contain any symbol (.pdb) files" (hit CheapHelpers.3.8.0.snupkg on the first forge publish; the old GitHub loop masked it with `|| true`, so symbols were never reliably published)
+  - Likely cause: embedded debug info leaves the snupkg without portable .pdb files — check DebugType per csproj, then drop --no-symbols from .forgejo/workflows/publish.yml
 
 - [x] (2026-08-16 → 2026-08-17) Merge the evolved `ProgressButton` back, and add `PageHeader` + `StatusChip` to `CheapHelpers.Blazor/Shared` [user]
   - Done in forge PR #5. ProgressButton merged from the CheapClerk copy of the fork: ChildContent + spinner-swaps-StartIcon + re-entry guard + try/finally, keeping localisation, CaptureUnmatchedValues, ButtonText and the EventCallback signature — existing consumers compile unchanged (ChildContent wins when both set)

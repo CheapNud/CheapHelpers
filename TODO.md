@@ -1,6 +1,6 @@
 <!--
   TODO.md — CheapHelpers project work tracker
-  Last updated: 2026-08-18 (snupkg fix filed; auth cluster + OIDC provider + components merged + localizer + reporting DI + boot.js + infiniteScroll fixed; ProgressButton merge-back + PageHeader/StatusChip extraction; infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
+  Last updated: 2026-09-03 (UpdateUserAsync property loss fixed; snupkg fix filed; auth cluster + OIDC provider + components merged + localizer + reporting DI + boot.js + infiniteScroll fixed; ProgressButton merge-back + PageHeader/StatusChip extraction; infiniteScroll.js hardcoded LoadStock callback + console spam + leaked listener; AddCheapHelpersBlazor missing non-generic IStringLocalizer registration; AddCheapReporting missing exporter deps; ntfy channel generalization; browser web push backend [voltiq-dep])
 
   RULES FOR AI AGENTS:
   - Update the "Last updated" date above whenever you modify this file
@@ -29,9 +29,9 @@
 
 ## Blocking
 
-- [ ] (2026-08-22) `UserRepo.UpdateUserAsync` silently drops derived-class properties — its hardcoded copy list (FirstName/LastName/PhoneNumber/TimeZoneInfoId/IsDarkMode/PinCodeHash) never persists consumer-specific fields, and the "uncomment and modify as needed" comment confirms it's a template stub [voltiq-dep]
+- [x] (2026-08-22 → 2026-09-03) `UserRepo.UpdateUserAsync` silently drops derived-class properties — its hardcoded copy list (FirstName/LastName/PhoneNumber/TimeZoneInfoId/IsDarkMode/PinCodeHash) never persists consumer-specific fields, and the "uncomment and modify as needed" comment confirms it's a template stub [voltiq-dep]
   - Bit Voltiq twice: `IsFirstLogin=false` never saved (onboarding redirect loop) and `CompanyName` edits vanished; Voltiq now bypasses the helper with direct factory writes until fixed
-  - Fix direction: copy all scalar properties via `entry.CurrentValues.SetValues(user)` (excluding concurrency/security stamps), or accept an `Action<TUser>` mutator so callers declare the fields; either removes the silent-loss trap
+  - Done in forge PR #10: `SetValues(user)` copies all scalars (derived included); 13 Identity/security columns restored from DB via `protected virtual ProtectedUserProperties` — derived repos extend it for their own sensitive columns. Verified with a SQLite self-check incl. tamper attempt. Bonus: `IsFirstLogin` is a BASE CheapUser property — the old list dropped base fields too
 
 - [x] (2026-07-28 → 2026-08-04) `AzureNotificationHubBackend`: real Browser (Web Push) platform support [voltiq-dep] [user]
   - Done in PR #57. The released NH SDK (4.2.0, latest) has NO Browser platform — browser goes through the NH REST API (api-version 2020-06, SAS auth): installation PUT with `pushChannel {endpoint, p256dh, auth}`, sends with `ServiceBusNotification-Format: browser`, REST GET fallback for reads

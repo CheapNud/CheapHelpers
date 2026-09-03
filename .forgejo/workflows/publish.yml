@@ -71,6 +71,10 @@ jobs:
         shell: cmd
     steps:
       - uses: actions/checkout@v4
+      - name: Heal package cache
+        # ONE-TIME heal, remove after v3.8.1 ships: racing jobs left corrupt package
+        # extractions (XA1004 on an androidx aar) in the persistent runner workspace
+        run: if exist packages rd /s /q packages
       - name: Restore MAUI
         run: dotnet restore CheapHelpers.MAUI/CheapHelpers.MAUI.csproj
       - name: Pack MAUI

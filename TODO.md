@@ -29,6 +29,10 @@
 
 ## Blocking
 
+- [ ] (2026-08-22) `UserRepo.UpdateUserAsync` silently drops derived-class properties — its hardcoded copy list (FirstName/LastName/PhoneNumber/TimeZoneInfoId/IsDarkMode/PinCodeHash) never persists consumer-specific fields, and the "uncomment and modify as needed" comment confirms it's a template stub [voltiq-dep]
+  - Bit Voltiq twice: `IsFirstLogin=false` never saved (onboarding redirect loop) and `CompanyName` edits vanished; Voltiq now bypasses the helper with direct factory writes until fixed
+  - Fix direction: copy all scalar properties via `entry.CurrentValues.SetValues(user)` (excluding concurrency/security stamps), or accept an `Action<TUser>` mutator so callers declare the fields; either removes the silent-loss trap
+
 - [x] (2026-07-28 → 2026-08-04) `AzureNotificationHubBackend`: real Browser (Web Push) platform support [voltiq-dep] [user]
   - Done in PR #57. The released NH SDK (4.2.0, latest) has NO Browser platform — browser goes through the NH REST API (api-version 2020-06, SAS auth): installation PUT with `pushChannel {endpoint, p256dh, auth}`, sends with `ServiceBusNotification-Format: browser`, REST GET fallback for reads
   - Contract for Voltiq: `DeviceInstallation.BrowserSubscription` (`WebPushSubscription` triplet) + platform "webpush"/"browser"; opt in via `UseAzureNotificationHubs(conn, hub, enableBrowserPush: true)`; hub needs VAPID keys on the Browser (Web Push) blade; send payload reaches the service worker as `{title, body, data?}`

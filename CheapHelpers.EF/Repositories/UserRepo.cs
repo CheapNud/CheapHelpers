@@ -435,7 +435,27 @@ namespace CheapHelpers.EF.Repositories
         #region User Management
 
         /// <summary>
-        /// Updates user information with proper change tracking
+        /// Columns <see cref="UpdateUserAsync"/> never writes: Identity-managed and security-critical
+        /// fields. Override in a derived repo to ADD consumer-sensitive columns (tenant ids, roles,
+        /// balances, audit fields) — call base and append.
+        /// </summary>
+        protected virtual IEnumerable<string> ProtectedUserProperties =>
+        [
+            nameof(CheapUser.UserName), nameof(CheapUser.NormalizedUserName),
+            nameof(CheapUser.Email), nameof(CheapUser.NormalizedEmail), nameof(CheapUser.EmailConfirmed),
+            nameof(CheapUser.PasswordHash), nameof(CheapUser.SecurityStamp), nameof(CheapUser.ConcurrencyStamp),
+            nameof(CheapUser.PhoneNumberConfirmed), nameof(CheapUser.TwoFactorEnabled),
+            nameof(CheapUser.LockoutEnd), nameof(CheapUser.LockoutEnabled), nameof(CheapUser.AccessFailedCount),
+        ];
+
+        /// <summary>
+        /// Updates user profile information: persists ALL scalar properties of <typeparamref name="TUser"/>
+        /// except <see cref="ProtectedUserProperties"/>.
+        /// <para>
+        /// SECURITY: do not pass entities model-bound directly from untrusted input — construct or load
+        /// the entity in server code. Derived repos with additional sensitive columns must extend
+        /// <see cref="ProtectedUserProperties"/>.
+        /// </para>
         /// </summary>
         public async Task<bool> UpdateUserAsync(TUser user, CancellationToken token = default)
         {
@@ -452,13 +472,21 @@ namespace CheapHelpers.EF.Repositories
                     return false;
                 }
 
-                // Update user properties - uncomment and modify as needed
-                trackedUser.FirstName = user.FirstName;
-                trackedUser.LastName = user.LastName;
-                trackedUser.PhoneNumber = user.PhoneNumber;
-                trackedUser.TimeZoneInfoId = user.TimeZoneInfoId;
-                trackedUser.IsDarkMode = user.IsDarkMode;
-                trackedUser.PinCodeHash = user.PinCodeHash;
+                // Copy ALL scalar properties (including consumer-derived ones — a hardcoded
+                // list silently dropped them), then restore the Identity-managed and
+                // security-critical columns: this is a profile updater, and the incoming
+                // entity may be stale on those (identity changes go through their own flows)
+                var entry = context.Entry(trackedUser);
+                var currentValues = entry.CurrentValues;
+
+                var keptValues = ProtectedUserProperties.ToDictionary(p => p, p => currentValues[p]);
+
+                currentValues.SetValues(user);
+
+                foreach (var kept in keptValues)
+                {
+                    currentValues[kept.Key] = kept.Value;
+                }
 
                 await context.SaveChangesAsync(token);
                 return true;

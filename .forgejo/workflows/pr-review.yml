@@ -11,8 +11,8 @@ env:
   CLAUDE_MODEL: "claude-opus-4-8"
   MAX_TOKENS: 4096
   MAX_DIFF_SIZE_BYTES: 300000
-  # Your Gitea instance base URL — update if you have a hostname
-  GITEA_URL: "http://192.168.1.15:3000"
+  # The forge's own URL as the runner knows it — survives instance moves
+  GITEA_URL: ${{ github.server_url }}
 
 jobs:
   claude-review:

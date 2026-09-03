@@ -452,13 +452,29 @@ namespace CheapHelpers.EF.Repositories
                     return false;
                 }
 
-                // Update user properties - uncomment and modify as needed
-                trackedUser.FirstName = user.FirstName;
-                trackedUser.LastName = user.LastName;
-                trackedUser.PhoneNumber = user.PhoneNumber;
-                trackedUser.TimeZoneInfoId = user.TimeZoneInfoId;
-                trackedUser.IsDarkMode = user.IsDarkMode;
-                trackedUser.PinCodeHash = user.PinCodeHash;
+                // Copy ALL scalar properties (including consumer-derived ones — a hardcoded
+                // list silently dropped them), then restore the Identity-managed and
+                // security-critical columns: this is a profile updater, and the incoming
+                // entity may be stale on those (identity changes go through their own flows)
+                var entry = context.Entry(trackedUser);
+                var currentValues = entry.CurrentValues;
+
+                string[] protectedProperties =
+                [
+                    nameof(CheapUser.UserName), nameof(CheapUser.NormalizedUserName),
+                    nameof(CheapUser.Email), nameof(CheapUser.NormalizedEmail), nameof(CheapUser.EmailConfirmed),
+                    nameof(CheapUser.PasswordHash), nameof(CheapUser.SecurityStamp), nameof(CheapUser.ConcurrencyStamp),
+                    nameof(CheapUser.PhoneNumberConfirmed), nameof(CheapUser.TwoFactorEnabled),
+                    nameof(CheapUser.LockoutEnd), nameof(CheapUser.LockoutEnabled), nameof(CheapUser.AccessFailedCount),
+                ];
+                var keptValues = protectedProperties.ToDictionary(p => p, p => currentValues[p]);
+
+                currentValues.SetValues(user);
+
+                foreach (var kept in keptValues)
+                {
+                    currentValues[kept.Key] = kept.Value;
+                }
 
                 await context.SaveChangesAsync(token);
                 return true;

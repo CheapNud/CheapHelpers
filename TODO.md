@@ -85,6 +85,10 @@
 
 ## Planned
 
+- [ ] (2026-09-03) File-set fingerprint helper: record + verify a content manifest for an installed artifact set [user]
+  - API shape: build a manifest (relative path → SHA256) for a directory/file set; later verify the on-disk state against the recorded manifest and report drift (changed/missing/extra files)
+  - The point: a VERSION match is not a CONTENT match — hand-patched files otherwise persist silently. Verify should also re-check even when versions agree
+  - Consumers lined up: Voltiq deploy-integrity check, CheapFleet agent self-check (see both repos' TODOs) — build here once, share
 - [ ] (2026-08-18) Fix symbol package (.snupkg) generation — publish currently uses --no-symbols everywhere [bug]
   - nuget.org rejects some of our snupkgs with 400 "does not contain any symbol (.pdb) files" (hit CheapHelpers.3.8.0.snupkg on the first forge publish; the old GitHub loop masked it with `|| true`, so symbols were never reliably published)
   - Likely cause: embedded debug info leaves the snupkg without portable .pdb files — check DebugType per csproj, then drop --no-symbols from .forgejo/workflows/publish.yml

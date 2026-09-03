@@ -66,8 +66,10 @@ jobs:
     runs-on: windows
     defaults:
       run:
-        # powershell, not pwsh: SANCTUARY has Windows PowerShell 5.1 only
-        shell: powershell
+        # powershell, not pwsh: SANCTUARY has Windows PowerShell 5.1 only.
+        # Explicit -ExecutionPolicy Bypass: the runner service runs as LocalSystem,
+        # whose default Restricted policy blocks the generated step scripts.
+        shell: powershell -ExecutionPolicy Bypass -Command ". '{0}'"
     steps:
       - uses: actions/checkout@v4
       - name: Restore MAUI
@@ -91,8 +93,10 @@ jobs:
     runs-on: windows
     defaults:
       run:
-        # powershell, not pwsh: SANCTUARY has Windows PowerShell 5.1 only
-        shell: powershell
+        # powershell, not pwsh: SANCTUARY has Windows PowerShell 5.1 only.
+        # Explicit -ExecutionPolicy Bypass: the runner service runs as LocalSystem,
+        # whose default Restricted policy blocks the generated step scripts.
+        shell: powershell -ExecutionPolicy Bypass -Command ". '{0}'"
     steps:
       - uses: actions/checkout@v4
       - name: Wait for NuGet indexing

@@ -66,10 +66,9 @@ jobs:
     runs-on: windows
     defaults:
       run:
-        # powershell, not pwsh: SANCTUARY has Windows PowerShell 5.1 only.
-        # Explicit -ExecutionPolicy Bypass: the runner service runs as LocalSystem,
-        # whose default Restricted policy blocks the generated step scripts.
-        shell: powershell -ExecutionPolicy Bypass -Command ". '{0}'"
+        # cmd, not powershell: the runner service runs as LocalSystem, whose Restricted
+        # execution policy blocks generated .ps1 step scripts — batch files are immune
+        shell: cmd
     steps:
       - uses: actions/checkout@v4
       - name: Restore MAUI
@@ -77,11 +76,7 @@ jobs:
       - name: Pack MAUI
         run: dotnet pack CheapHelpers.MAUI/CheapHelpers.MAUI.csproj --configuration ${{ env.CONFIGURATION }} --no-restore --output ./nupkgs
       - name: Publish MAUI to NuGet.org
-        run: |
-          Get-ChildItem ./nupkgs -Filter *.nupkg | ForEach-Object {
-            Write-Host "Publishing $($_.Name)"
-            dotnet nuget push $_.FullName --api-key $env:NUGET_API_KEY --source $env:NUGET_SOURCE --skip-duplicate --no-symbols
-          }
+        run: dotnet nuget push nupkgs\*.nupkg --api-key %NUGET_API_KEY% --source %NUGET_SOURCE% --skip-duplicate --no-symbols
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
@@ -93,23 +88,20 @@ jobs:
     runs-on: windows
     defaults:
       run:
-        # powershell, not pwsh: SANCTUARY has Windows PowerShell 5.1 only.
-        # Explicit -ExecutionPolicy Bypass: the runner service runs as LocalSystem,
-        # whose default Restricted policy blocks the generated step scripts.
-        shell: powershell -ExecutionPolicy Bypass -Command ". '{0}'"
+        # cmd, not powershell: see publish-maui
+        shell: cmd
     steps:
       - uses: actions/checkout@v4
       - name: Wait for NuGet indexing
+        # ping as sleep: timeout /t needs an interactive console the runner lacks
         run: |
-          Write-Host "Waiting 10 minutes for NuGet to index base packages..."
-          Start-Sleep -Seconds 600
+          echo Waiting 10 minutes for NuGet to index base packages...
+          ping -n 601 127.0.0.1 >nul
       - name: Restore MediaProcessing
         run: dotnet restore CheapHelpers.MediaProcessing/CheapHelpers.MediaProcessing.csproj -p:EnableWindowsTargeting=true
       - name: Pack MediaProcessing
         run: dotnet pack CheapHelpers.MediaProcessing/CheapHelpers.MediaProcessing.csproj --configuration ${{ env.CONFIGURATION }} --no-restore -p:EnableWindowsTargeting=true --output ./nupkgs
       - name: Publish MediaProcessing to NuGet.org
-        run: |
-          $pkg = Get-ChildItem ./nupkgs -Filter "CheapHelpers.MediaProcessing.*.nupkg" | Select-Object -First 1
-          dotnet nuget push $pkg.FullName --api-key $env:NUGET_API_KEY --source $env:NUGET_SOURCE --skip-duplicate --no-symbols
+        run: dotnet nuget push nupkgs\CheapHelpers.MediaProcessing.*.nupkg --api-key %NUGET_API_KEY% --source %NUGET_SOURCE% --skip-duplicate --no-symbols
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}

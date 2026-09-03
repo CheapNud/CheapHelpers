@@ -435,7 +435,27 @@ namespace CheapHelpers.EF.Repositories
         #region User Management
 
         /// <summary>
-        /// Updates user information with proper change tracking
+        /// Columns <see cref="UpdateUserAsync"/> never writes: Identity-managed and security-critical
+        /// fields. Override in a derived repo to ADD consumer-sensitive columns (tenant ids, roles,
+        /// balances, audit fields) — call base and append.
+        /// </summary>
+        protected virtual IEnumerable<string> ProtectedUserProperties =>
+        [
+            nameof(CheapUser.UserName), nameof(CheapUser.NormalizedUserName),
+            nameof(CheapUser.Email), nameof(CheapUser.NormalizedEmail), nameof(CheapUser.EmailConfirmed),
+            nameof(CheapUser.PasswordHash), nameof(CheapUser.SecurityStamp), nameof(CheapUser.ConcurrencyStamp),
+            nameof(CheapUser.PhoneNumberConfirmed), nameof(CheapUser.TwoFactorEnabled),
+            nameof(CheapUser.LockoutEnd), nameof(CheapUser.LockoutEnabled), nameof(CheapUser.AccessFailedCount),
+        ];
+
+        /// <summary>
+        /// Updates user profile information: persists ALL scalar properties of <typeparamref name="TUser"/>
+        /// except <see cref="ProtectedUserProperties"/>.
+        /// <para>
+        /// SECURITY: do not pass entities model-bound directly from untrusted input — construct or load
+        /// the entity in server code. Derived repos with additional sensitive columns must extend
+        /// <see cref="ProtectedUserProperties"/>.
+        /// </para>
         /// </summary>
         public async Task<bool> UpdateUserAsync(TUser user, CancellationToken token = default)
         {
@@ -459,15 +479,7 @@ namespace CheapHelpers.EF.Repositories
                 var entry = context.Entry(trackedUser);
                 var currentValues = entry.CurrentValues;
 
-                string[] protectedProperties =
-                [
-                    nameof(CheapUser.UserName), nameof(CheapUser.NormalizedUserName),
-                    nameof(CheapUser.Email), nameof(CheapUser.NormalizedEmail), nameof(CheapUser.EmailConfirmed),
-                    nameof(CheapUser.PasswordHash), nameof(CheapUser.SecurityStamp), nameof(CheapUser.ConcurrencyStamp),
-                    nameof(CheapUser.PhoneNumberConfirmed), nameof(CheapUser.TwoFactorEnabled),
-                    nameof(CheapUser.LockoutEnd), nameof(CheapUser.LockoutEnabled), nameof(CheapUser.AccessFailedCount),
-                ];
-                var keptValues = protectedProperties.ToDictionary(p => p, p => currentValues[p]);
+                var keptValues = ProtectedUserProperties.ToDictionary(p => p, p => currentValues[p]);
 
                 currentValues.SetValues(user);
 

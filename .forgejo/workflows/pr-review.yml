@@ -8,11 +8,13 @@ on:
       - 'docs/**'
 
 env:
-  CLAUDE_MODEL: "claude-opus-4-8"
-  MAX_TOKENS: 4096
+  CLAUDE_MODEL: "claude-opus-5-5"
+  # Opus 5.5 always thinks and the thinking tokens count against max_tokens,
+  # so the cap leaves room for the reasoning plus the review itself.
+  MAX_TOKENS: 16000
   MAX_DIFF_SIZE_BYTES: 300000
-  # The forge's own URL as the runner knows it — survives instance moves
-  GITEA_URL: ${{ github.server_url }}
+  # Your Gitea instance base URL — update if you have a hostname
+  GITEA_URL: "http://192.168.1.40:3000"
 
 jobs:
   claude-review:
@@ -37,13 +39,15 @@ jobs:
           REPO=${{ github.repository }}
           echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_OUTPUT
 
-          # Fetch PR details from Gitea API
-          if ! curl -sf \
+          # Fetch PR details from Gitea API. -f hides the response on failure, so
+          # capture the status code explicitly — a token-scope rejection (401/403)
+          # and an unreachable host look identical otherwise.
+          HTTP_STATUS=$(curl -s -o pr-details.json -w "%{http_code}" \
             -H "Authorization: token $GITEA_TOKEN" \
             -H "Content-Type: application/json" \
-            "${{ env.GITEA_URL }}/api/v1/repos/${REPO}/pulls/${PR_NUMBER}" \
-            > pr-details.json; then
-            echo "::error::Failed to fetch PR details from Gitea API"
+            "${{ env.GITEA_URL }}/api/v1/repos/${REPO}/pulls/${PR_NUMBER}" || echo "000")
+          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+            echo "::error::Failed to fetch PR details from Gitea API (HTTP ${HTTP_STATUS}): $(head -c 300 pr-details.json)"
             exit 1
           fi
 
@@ -56,6 +60,12 @@ jobs:
             echo "::error::Failed to fetch PR diff from Gitea API"
             exit 1
           fi
+
+          # Generated EF migration files (both providers keep them under a Migrations/ folder)
+          # drown the review in machine output and blow the size cap - drop them from the diff.
+          # The migration content itself is guarded by ef tooling and has-pending-model-changes.
+          awk '/^diff --git/{skip = ($0 ~ "/Migrations/")} !skip' pr-diff.txt > pr-diff-filtered.txt
+          mv pr-diff-filtered.txt pr-diff.txt
 
           echo "✅ Successfully fetched PR details and diff"
 
@@ -103,19 +113,29 @@ jobs:
           Format your review as:
           1. **Summary** (1-2 sentences max)
           2. **Code Quality** followed by a 1-5 star rating using filled ⭐ and empty ☆ (e.g. ⭐⭐⭐⭐☆). Below the rating, add one short sentence highlighting a strength or positive aspect of the PR.
-          3. **Issues** (only bugs, security problems, deadlocks, resource leaks, or breaking changes - skip this section entirely if none found). Prefix each issue with a severity orb: 🔴 Critical, 🟡 Warning, 🟢 Minor. Place the orb directly before the issue title, e.g. 🔴 DependencyChecker.cs — process not disposed. Do NOT put orbs on section headers.
+          3. **Issues** (only bugs, security problems, deadlocks, resource leaks, or breaking changes - skip this section entirely if none found). Prefix each issue with a severity orb: 🔴 Critical, 🟡 Warning, 🟢 Minor. Place the orb directly before the issue title, e.g. 🔴 UserRepository.cs — DbContext not disposed. Do NOT put orbs on section headers.
           4. **Verdict**: One of these three:
              - **APPROVE** — code is good to merge
              - **REQUEST CHANGES** — there are issues that should be fixed before merging. List the specific changes needed as a short bullet list directly under the verdict
              - **REJECT** — code has fundamental or critical problems that require a rethink
 
-          Rules:
+          Project-specific rules to enforce:
+          - Primary constructors preferred over traditional constructors for DI
+          - Lambda LINQ only — never query syntax
+          - Debug.WriteLine() not Console.WriteLine()
+          - Add() not AddAsync() for EF Core
+          - SaveChangesAsync() must not be inside loops
+          - IDbContextFactory pattern required in Blazor Server
+          - No async void
+          - No Task.FromResult
+
+          General rules:
           - Do NOT comment on style, naming, or minor preferences
           - Do NOT suggest nice-to-have improvements or refactors
           - Only raise issues you are confident are real problems
-          - If everything looks fine, just say so in 1-2 lines and approve
           - NEVER repeat secrets, passwords, API keys, tokens, or internal URLs/IPs found in the diff — refer to them generically (e.g. 'the hardcoded password in line X'). Your review is posted as a public comment.
           - If the diff introduces hardcoded credentials or secrets, flag it as a critical issue but do NOT quote the actual values.
+          - If everything looks fine, just say so in 1-2 lines and approve
 
           ---
 
@@ -158,19 +178,23 @@ jobs:
 
           ERROR=$(echo "$RESPONSE" | jq -r '.error.message // empty')
           if [ -n "$ERROR" ]; then
+            ERROR_TYPE=$(echo "$RESPONSE" | jq -r '.error.type // "unknown"')
             echo "::error::Claude API Error: $ERROR"
+            echo "Claude API error (${ERROR_TYPE}): ${ERROR}" > review-error.txt
             exit 1
           fi
 
-          REVIEW=$(echo "$RESPONSE" | jq -r '.content[0].text // empty')
+          # Thinking blocks come first in the content array; join only the text blocks.
+          REVIEW=$(echo "$RESPONSE" | jq -r '[.content[]? | select(.type == "text") | .text] | join("")')
           if [ -z "$REVIEW" ]; then
             echo "::error::No review content received from Claude"
+            echo "Claude API returned no review content" > review-error.txt
             exit 1
           fi
 
           INPUT_TOKENS=$(echo "$RESPONSE" | jq -r '.usage.input_tokens // 0')
           OUTPUT_TOKENS=$(echo "$RESPONSE" | jq -r '.usage.output_tokens // 0')
-          COST=$(awk "BEGIN {printf \"%.4f\", ($INPUT_TOKENS * 5 + $OUTPUT_TOKENS * 25) / 1000000}")
+          COST=$(awk "BEGIN {printf \"%.4f\", ($INPUT_TOKENS * 4 + $OUTPUT_TOKENS * 20) / 1000000}")
 
           echo "📊 Token usage: ${INPUT_TOKENS} input + ${OUTPUT_TOKENS} output"
           echo "💰 Estimated cost: \$${COST}"
@@ -197,7 +221,7 @@ jobs:
           COMMENT_ID=$(curl -sf \
             -H "Authorization: token $GITEA_TOKEN" \
             "${{ env.GITEA_URL }}/api/v1/repos/${REPO}/issues/${PR_NUMBER}/comments" \
-            | jq -r '.[] | select(.user.login == "gitea-actions" or (.body | contains("🤖 Claude AI Code Review"))) | .id' \
+            | jq -r '.[] | select(.user.login == "gitea-actions" or .user.login == "forgejo-actions" or (.body | contains("🤖 Claude AI Code Review"))) | .id' \
             | head -n 1 || echo "")
 
           if [ -n "$COMMENT_ID" ]; then
@@ -227,7 +251,7 @@ jobs:
           # Build comment body — use jq --rawfile to avoid shell expansion breaking on backticks/quotes
           FOOTER="---
           📊 **Tokens**: ${INPUT_TOKENS} input + ${OUTPUT_TOKENS} output | 💰 **Cost**: ~\$${COST}
-          *Generated by Claude Opus 4.8 via Gitea Actions*"
+          *Generated by Claude Opus 5.5 via Forgejo Actions*"
 
           jq -n --rawfile review claude-review.md --arg footer "$FOOTER" \
             '{"body": ("## 🤖 Claude AI Code Review\n\n" + $review + "\n\n" + $footer)}' \
@@ -264,3 +288,23 @@ jobs:
             echo "Response: $BODY"
             exit 1
           fi
+
+      # A silent red X on the review job means reading runner logs to find out
+      # why — surface the reason on the PR itself instead. Reasons never contain
+      # credentials (API error messages and step names only).
+      - name: Report review failure on the PR
+        if: failure()
+        env:
+          GITEA_TOKEN: ${{ github.token }}
+        run: |
+          REASON=$(cat review-error.txt 2>/dev/null || echo "failed before the Claude API call — likely fetching the PR details/diff; check the run log")
+
+          jq -n --arg reason "$REASON" \
+            '{"body": ("## 🤖 Claude AI Code Review\n\n⚠️ **Review could not run**: " + $reason)}' \
+            > failure-payload.json
+
+          curl -s -o /dev/null -w "posted failure notice: HTTP %{http_code}\n" -X POST \
+            -H "Authorization: token $GITEA_TOKEN" \
+            -H "Content-Type: application/json" \
+            "${{ env.GITEA_URL }}/api/v1/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            -d @failure-payload.json

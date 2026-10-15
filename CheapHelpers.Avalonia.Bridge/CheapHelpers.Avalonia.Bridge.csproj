@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net11.0</TargetFramework>
-    <Version>3.8.1</Version>
+    <Version>3.9.0</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <OutputType>Library</OutputType>
@@ -39,7 +39,7 @@
 
   <ItemGroup>
     <!-- CheapAvaloniaBlazor desktop interop -->
-    <PackageReference Include="CheapAvaloniaBlazor" Version="3.2.0" />
+    <PackageReference Include="CheapAvaloniaBlazor" Version="3.4.1" />
   </ItemGroup>
 
 </Project>

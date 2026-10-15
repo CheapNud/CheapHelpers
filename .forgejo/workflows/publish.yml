@@ -1,8 +1,9 @@
 name: Publish NuGet
 
-# Release mechanism: push a v*.*.* tag. Base packages build on the Linux runner (SINK);
+# Release mechanism: push a v*.*.* tag. Base packages build on the Linux runner pool (x-8,
+# ubuntu-latest = the ci-dotnet image with the .NET 11 SDK baked in, so no actions/setup-dotnet);
 # MAUI + MediaProcessing pack on the Windows runner (SANCTUARY) using the host SDK/workloads
-# directly — no actions/setup-dotnet on Windows (installing an SDK there triggers a UAC prompt
+# directly — no actions/setup-dotnet on Windows either (installing an SDK there triggers a UAC prompt
 # that wedges the job, and the host already has the .NET 11 SDK + MAUI workload we build with).
 
 on:
@@ -11,8 +12,6 @@ on:
       - 'v*.*.*'
 
 env:
-  DOTNET_VERSION: '11.0.x'
-  DOTNET_QUALITY: 'preview'
   CONFIGURATION: Release
   NUGET_SOURCE: https://api.nuget.org/v3/index.json
 
@@ -22,10 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-          dotnet-quality: ${{ env.DOTNET_QUALITY }}
       - name: Restore
         run: dotnet restore CheapHelpers.CI.slnx
       - name: Build
@@ -40,10 +35,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-          dotnet-quality: ${{ env.DOTNET_QUALITY }}
       - name: Pack base packages
         run: dotnet pack CheapHelpers.CI.slnx --configuration ${{ env.CONFIGURATION }} -p:EnableWindowsTargeting=true --output ./nupkgs
       - name: Publish base packages to NuGet.org

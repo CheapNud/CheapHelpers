@@ -3,7 +3,7 @@
   <PropertyGroup>
     <!-- Multi-target for cross-platform support -->
     <TargetFrameworks>net11.0;net11.0-windows</TargetFrameworks>
-    <Version>3.8.1</Version>
+    <Version>3.9.0</Version>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
@@ -51,21 +51,21 @@
 
   <ItemGroup>
     <!-- FFmpeg wrapper -->
-    <PackageReference Include="FFMpegCore" Version="5.4.0" />
+    <PackageReference Include="FFMpegCore" Version="5.5.0" />
 
     <!-- Archive extraction for dependency installation -->
     <PackageReference Include="SharpCompress" Version="1.0.0" />
 
     <!-- Retry logic for downloads -->
-    <PackageReference Include="Polly" Version="8.7.0" />
+    <PackageReference Include="Polly" Version="8.8.0" />
 
     <!-- DI extension -->
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.13" />
   </ItemGroup>
 
   <!-- Windows-only: Hardware detection via WMI -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net11.0-windows'">
-    <PackageReference Include="System.Management" Version="10.0.11" />
+    <PackageReference Include="System.Management" Version="10.0.13" />
   </ItemGroup>
 
   <ItemGroup>

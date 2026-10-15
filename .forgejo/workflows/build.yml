@@ -1,14 +1,12 @@
 name: Build
 
+# PR-only on purpose: every master commit arrives through a PR this already
+# validated, and the tag publish rebuilds anyway. A master-push trigger races
+# the tag publish's build for the runner's shared toolcache volume when a
+# release pushes master and the tag together, which stalls both mid-compile.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  push:
-    branches: [ master ]
-
-env:
-  DOTNET_VERSION: '11.0.x'
-  DOTNET_QUALITY: 'preview'
 
 jobs:
   build:
@@ -20,19 +18,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-          dotnet-quality: ${{ env.DOTNET_QUALITY }}
-
-      - name: Cache NuGet packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: nuget-${{ hashFiles('**/*.csproj') }}
-          restore-keys: nuget-
-
+      # No setup-dotnet: the ubuntu-latest label maps to a runner image with the
+      # .NET 11 SDK baked in (ci-dotnet), so the SDK download is gone too.
+      # No actions/cache: the runner mounts a persistent nuget-ci-cache volume
+      # into every job (act_runner container.options) — restore hits a warm local
+      # cache without the tar-and-transfer round trip the cache action cost.
       # CI solution excludes MAUI and MediaProcessing (Windows-only packaging)
       - name: Restore
         run: dotnet restore CheapHelpers.CI.slnx

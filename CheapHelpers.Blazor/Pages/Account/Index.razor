@@ -1,7 +1,6 @@
 ﻿@* Account/Index.razor - Refactored for extensibility *@
 @page "/Account"
 @page "/Account/{TabIndex:int}"
-@typeparam TUser where TUser : IdentityUser
 @using CheapHelpers.Blazor.Helpers
 @using CheapHelpers.Blazor.Services
 @using CheapHelpers.Services.Email
@@ -129,8 +128,6 @@
 }
 
 @code {
-    [Inject] protected UserService UserService { get; set; } = default!;
-    [Inject] protected UserManager<CheapUser> UserManager { get; set; } = default!;
     [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
     [Inject] protected AccountRouteOptions Routes { get; set; } = default!;
     [Inject] protected NavigationManager Nav { get; set; } = default!;
@@ -161,7 +158,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        CurrentUser = await UserService.GetUserAsync(AuthenticationState);
+        CurrentUser = await AccountIdentity.GetUserAsync((await AuthenticationState).User);
         if (CurrentUser != null)
         {
             wasDarkMode = CurrentUser.IsDarkMode;
@@ -199,7 +196,7 @@
         try
         {
             CurrentUser.IsDarkMode = b.GetValueOrDefault();
-            await UserService.UpdateUserAsync(CurrentUser);
+            await AccountIdentity.UpdateUserAsync(CurrentUser);
             
             if (OnDarkModeChanged.HasDelegate)
             {
@@ -225,7 +222,13 @@
         
         try
         {
-            await UserService.UpdateUserAsync(CurrentUser);
+            var updateResult = await AccountIdentity.UpdateUserAsync(CurrentUser);
+            if (!updateResult.Succeeded)
+            {
+                ToastService.Add(Loc["ErrorMessage"], Severity.Error);
+                return;
+            }
+
             ToastService.Add(Loc["Saved"], Severity.Success);
             
             if (OnUserSaved.HasDelegate)
@@ -246,7 +249,7 @@
         
         try
         {
-            var code = await UserManager.GenerateEmailConfirmationTokenAsync(CurrentUser);
+            var code = await AccountIdentity.GenerateEmailConfirmationTokenAsync(CurrentUser.Id);
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
             var link = $"{Nav.BaseUri}Account/ConfirmEmail?userid={CurrentUser.Id}&code={code}";
             await Mailer.SendEmailConfirmationAsync(CurrentUser.Email, link);

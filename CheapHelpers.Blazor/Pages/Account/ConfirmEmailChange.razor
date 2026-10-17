@@ -1,4 +1,5 @@
 @page "/Account/ConfirmEmailChange"
+@using CheapHelpers.Blazor.Services
 @using System.Text
 @using Microsoft.AspNetCore.WebUtilities
 
@@ -22,7 +23,7 @@
 
     private string Message = "";
 
-    [Inject] protected UserManager<CheapUser> UserManager { get; set; } = default!;
+    [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
     [Inject] protected ISnackbar ToastService { get; set; } = default!;
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;
     [Inject] protected NavigationManager Nav { get; set; } = default!;
@@ -37,7 +38,7 @@
                 return;
             }
 
-            var user = await UserManager.FindByIdAsync(UserId);
+            var user = await AccountIdentity.FindByIdAsync(UserId);
             if (user is null)
             {
                 Debug.WriteLine($"Unable to load user with ID '{UserId}'.");
@@ -47,19 +48,13 @@
             }
 
             var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
-            var changeResult = await UserManager.ChangeEmailAsync(user, Email, code);
+            // Also moves the username along when it was the old email
+            var changeResult = await AccountIdentity.ChangeEmailAsync(user.Id, Email, code);
 
             if (!changeResult.Succeeded)
             {
                 Message = Loc["ConfirmError"];
                 return;
-            }
-
-            // If the username was the old email, update it to the new email
-            var currentUsername = await UserManager.GetUserNameAsync(user);
-            if (string.Equals(currentUsername, user.Email, StringComparison.OrdinalIgnoreCase))
-            {
-                await UserManager.SetUserNameAsync(user, Email);
             }
 
             Message = Loc["EmailChangeConfirmed"];

@@ -1,4 +1,5 @@
 ﻿@page "/Account/Lockout"
+@using CheapHelpers.Blazor.Services
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @attribute [AllowAnonymous]
@@ -131,16 +132,9 @@
 </MudContainer>
 
 @code {
-    public class LockoutInfo
-    {
-        public DateTimeOffset? LockoutEnd { get; set; }
-        public bool IsLockedOut { get; set; }
-        public int AccessFailedCount { get; set; }
-    }
-
     [Inject] private NavigationManager Nav { get; set; } = default!;
     [Inject] private IStringLocalizer Loc { get; set; } = default!;
-    [Inject] private UserManager<IdentityUser>? UserManager { get; set; }
+    [Inject] private IAccountIdentityService AccountIdentity { get; set; } = default!;
     [Inject] private ISnackbar ToastService { get; set; } = default!;
 
     [SupplyParameterFromQuery] private string? Email { get; set; }
@@ -159,18 +153,10 @@
     {
         try
         {
-            if (UserManager != null && !string.IsNullOrEmpty(Email))
+            // Null for unknown emails: the page then shows only the generic message
+            if (!string.IsNullOrEmpty(Email))
             {
-                var user = await UserManager.FindByEmailAsync(Email);
-                if (user != null)
-                {
-                    lockoutInfo = new LockoutInfo
-                    {
-                        LockoutEnd = await UserManager.GetLockoutEndDateAsync(user),
-                        IsLockedOut = await UserManager.IsLockedOutAsync(user),
-                        AccessFailedCount = await UserManager.GetAccessFailedCountAsync(user)
-                    };
-                }
+                lockoutInfo = await AccountIdentity.GetLockoutAsync(Email);
             }
 
             UpdateTimeRemaining();

@@ -22,6 +22,8 @@ public class AccountRouteOptions
     public string LoginRoute { get; set; } = "/Account/Login/";
     public string LockoutRoute { get; set; } = "/Account/Lockout/";
     public string EnableAuthenticatorRoute { get; set; } = "/Account/EnableAuthenticator";
+    public string ChangePasswordRoute { get; set; } = "/Account/ChangePassword";
+    public string SetPasswordRoute { get; set; } = "/Account/SetPassword";
 
     /// <summary>
     /// TOTP challenge page shown when a password sign-in requires two-factor.

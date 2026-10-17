@@ -20,7 +20,7 @@ namespace CheapHelpers.Blazor.Shared
         protected Dictionary<string, bool> LocalNavigationState { get; set; } = new();
 
         [CascadingParameter] protected Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
-        [Inject] protected UserService UserService { get; set; } = default!;
+        [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
 
         protected override async Task OnInitializedAsync()
         {
@@ -34,22 +34,20 @@ namespace CheapHelpers.Blazor.Shared
         {
             try
             {
-                if (await UserService.IsAuthenticated(AuthenticationStateTask))
+                // Null when signed out
+                User = await AccountIdentity.GetUserAsync((await AuthenticationStateTask).User);
+                if (User != null)
                 {
-                    User = await UserService.GetUserAsync(AuthenticationStateTask);
-                    if (User != null)
+                    DarkMode = User.IsDarkMode;
+
+                    // Load navigation states if needed
+                    var allStates = User.GetAllExpandStates();
+                    foreach (var kvp in allStates)
                     {
-                        DarkMode = User.IsDarkMode;
-
-                        // Load navigation states if needed
-                        var allStates = User.GetAllExpandStates();
-                        foreach (var kvp in allStates)
-                        {
-                            LocalNavigationState[kvp.Key] = kvp.Value;
-                        }
-
-                        Debug.WriteLine($"LayoutBase: Loaded preferences for user {User.UserName} - DarkMode: {DarkMode}");
+                        LocalNavigationState[kvp.Key] = kvp.Value;
                     }
+
+                    Debug.WriteLine($"LayoutBase: Loaded preferences for user {User.UserName} - DarkMode: {DarkMode}");
                 }
                 IsInitialized = true;
             }
@@ -78,7 +76,7 @@ namespace CheapHelpers.Blazor.Shared
                 {
                     try
                     {
-                        await UserService.UpdateUserAsync(User);
+                        await AccountIdentity.UpdateUserAsync(User);
                         Debug.WriteLine($"LayoutBase: Dark mode preference saved");
                     }
                     catch (Exception ex)
@@ -123,7 +121,7 @@ namespace CheapHelpers.Blazor.Shared
                 {
                     try
                     {
-                        await UserService.UpdateNavigationStateAsync(User.Id, key, expanded);
+                        await AccountIdentity.UpdateNavigationStatesAsync(User.Id, new() { [key] = expanded });
                     }
                     catch (Exception ex)
                     {
@@ -146,7 +144,7 @@ namespace CheapHelpers.Blazor.Shared
                 {
                     try
                     {
-                        await UserService.UpdateNavigationStatesAsync(User.Id, LocalNavigationState);
+                        await AccountIdentity.UpdateNavigationStatesAsync(User.Id, LocalNavigationState);
                         Debug.WriteLine($"LayoutBase: Batch saved {LocalNavigationState.Count} navigation states on dispose");
                     }
                     catch (Exception ex)

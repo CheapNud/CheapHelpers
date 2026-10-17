@@ -1,4 +1,6 @@
 @page "/Account/Register"
+@using CheapHelpers.Blazor.Configuration
+@using CheapHelpers.Blazor.Services
 @using CheapHelpers.Blazor.Shared
 @using CheapHelpers.Services.Email
 @using Microsoft.AspNetCore.Identity
@@ -32,24 +34,17 @@
     }
 
     /// <summary>
-    /// Factory to create a concrete CheapUser instance.
-    /// Required because CheapUser is abstract — consumers must provide their concrete type.
-    /// </summary>
-    [Parameter, EditorRequired]
-    public Func<CheapUser> UserFactory { get; set; } = default!;
-
-    /// <summary>
     /// Optional callback after successful registration.
     /// </summary>
     [Parameter]
     public EventCallback<CheapUser> OnUserRegistered { get; set; }
 
-    [Inject] protected UserManager<CheapUser> UserManager { get; set; } = default!;
+    [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
+    [Inject] protected CheapHelpersBlazorOptions BlazorOptions { get; set; } = default!;
     [Inject] protected IEmailService? Mailer { get; set; }
     [Inject] protected ISnackbar ToastService { get; set; } = default!;
     [Inject] protected NavigationManager Nav { get; set; } = default!;
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;
-    [Inject] protected IDbContextFactory<CheapContext<CheapUser>> Factory { get; set; } = default!;
 
     private RegisterViewModel _model = new();
     private MudForm _form = default!;
@@ -67,7 +62,7 @@
 
         try
         {
-            var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+            var code = await AccountIdentity.GenerateEmailConfirmationTokenAsync(user.Id);
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
             var link = $"{Nav.BaseUri}Account/ConfirmEmail?userid={user.Id}&code={code}";
             await Mailer.SendEmailConfirmationAsync(user.Email, link);
@@ -89,13 +84,14 @@
                 return;
             }
 
-            var user = UserFactory();
+            // CheapUser is abstract; the option creates the app's own user type
+            var user = BlazorOptions.CreateUser!();
             user.FirstName = _model.FirstName;
             user.LastName = _model.LastName;
             user.Email = _model.Email;
             user.UserName = _model.Email;
 
-            var identityResult = await UserManager.CreateAsync(user, _model.Password);
+            var identityResult = await AccountIdentity.CreateUserAsync(user, _model.Password);
             if (identityResult.Succeeded)
             {
                 if (_sendMail)

@@ -1,5 +1,6 @@
 ﻿@page "/Account/ConfirmEmail"
 
+@using CheapHelpers.Blazor.Services
 @using System.Text;
 @using Microsoft.AspNetCore.WebUtilities;
 
@@ -19,8 +20,7 @@
 
     public string Message { get; set; }
 
-    [Inject]
-    private UserManager<CheapUser> UserManager { get; set; }
+    [Inject] private IAccountIdentityService AccountIdentity { get; set; } = default!;
 
     [Inject] protected ISnackbar ToastService { get; set; } = default!;
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;
@@ -36,7 +36,7 @@
             }
 
 
-            var user = await UserManager.FindByIdAsync(UserId);
+            var user = await AccountIdentity.FindByIdAsync(UserId);
             if (user == null)
             {
                 Debug.WriteLine($"Unable to load user with ID '{UserId}'.");
@@ -46,7 +46,7 @@
             }
 
             var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
-            var result = await UserManager.ConfirmEmailAsync(user, code);
+            var result = await AccountIdentity.ConfirmEmailAsync(user.Id, code);
             Message = result.Succeeded ? Loc["ConfirmSuccess"] : Loc["ConfirmError"];
         }
         catch (Exception ex)

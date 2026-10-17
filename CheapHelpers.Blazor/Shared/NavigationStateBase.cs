@@ -21,25 +21,22 @@ namespace CheapHelpers.Blazor.Shared
         protected bool IsInitialized { get; set; } = false;
 
         [CascadingParameter] protected Task<AuthenticationState> AuthenticationState { get; set; } = default!;
-        [Inject] protected UserService UserService { get; set; } = default!;
+        [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
 
         protected override async Task OnInitializedAsync()
         {
             try
             {
-                var auth = await UserService.IsAuthenticated(AuthenticationState);
-                if (auth)
+                // Null when signed out
+                User = await AccountIdentity.GetUserAsync((await AuthenticationState).User);
+                if (User != null)
                 {
-                    User = await UserService.GetUserAsync(AuthenticationState);
-                    if (User != null)
+                    var allStates = User.GetAllExpandStates();
+                    foreach (var kvp in allStates)
                     {
-                        var allStates = User.GetAllExpandStates();
-                        foreach (var kvp in allStates)
-                        {
-                            LocalNavigationState[kvp.Key] = kvp.Value;
-                        }
-                        Debug.WriteLine($"NavigationStateBase: Loaded {LocalNavigationState.Count} navigation states for user {User.UserName}");
+                        LocalNavigationState[kvp.Key] = kvp.Value;
                     }
+                    Debug.WriteLine($"NavigationStateBase: Loaded {LocalNavigationState.Count} navigation states for user {User.UserName}");
                 }
                 IsInitialized = true;
             }
@@ -75,7 +72,7 @@ namespace CheapHelpers.Blazor.Shared
                 {
                     try
                     {
-                        await UserService.UpdateNavigationStateAsync(User.Id, key, expanded);
+                        await AccountIdentity.UpdateNavigationStatesAsync(User.Id, new() { [key] = expanded });
                         Debug.WriteLine($"NavigationStateBase: Navigation state saved to database: {key} = {expanded}");
                     }
                     catch (Exception ex)
@@ -100,7 +97,7 @@ namespace CheapHelpers.Blazor.Shared
                 {
                     try
                     {
-                        await UserService.UpdateNavigationStatesAsync(User.Id, LocalNavigationState);
+                        await AccountIdentity.UpdateNavigationStatesAsync(User.Id, LocalNavigationState);
                         Debug.WriteLine($"NavigationStateBase: Batch saved {LocalNavigationState.Count} navigation states on dispose");
                     }
                     catch (Exception ex)

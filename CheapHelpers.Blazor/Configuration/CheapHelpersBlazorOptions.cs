@@ -1,4 +1,5 @@
 ﻿using CheapHelpers.Blazor.Pages.Account;
+using CheapHelpers.Models.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using MudBlazor;
 
@@ -10,6 +11,13 @@ namespace CheapHelpers.Blazor.Configuration
         /// Configure account controller route paths. Null uses defaults (/Account/...).
         /// </summary>
         public AccountRouteOptions? AccountRouteOptions { get; set; }
+
+        /// <summary>
+        /// Creates the empty user the Register page fills in. Must return the app's user type.
+        /// Null uses the user type's parameterless constructor.
+        /// </summary>
+        public Func<CheapUser>? CreateUser { get; set; }
+
         /// <summary>
         /// Enable localization support
         /// </summary>

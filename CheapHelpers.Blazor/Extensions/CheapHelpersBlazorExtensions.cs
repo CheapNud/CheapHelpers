@@ -103,6 +103,12 @@ namespace CheapHelpers.Blazor.Extensions
                 Debug.WriteLine($"Warning: IDbContextFactory<CheapContext<{typeof(TUser).Name}>> not found. Make sure to register it in your Program.cs");
             }
 
+            // The shared selectors only query Set<T>(), so they take a plain DbContext factory
+            // instead of one closed over a user type. Resolved lazily, so registration order doesn't matter.
+            services.TryAddSingleton<IDbContextFactory<DbContext>>(sp =>
+                new DbContextFactoryAdapter<DbContext, CheapContext<TUser>>(
+                    sp.GetRequiredService<IDbContextFactory<CheapContext<TUser>>>()));
+
             // Register additional services based on options
             if (options.EnableFileDownload)
             {

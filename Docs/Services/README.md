@@ -90,14 +90,16 @@ Azure Cognitive Services integration for Translation and Vision.
 - `AzureVisionService` - Computer Vision API
 
 ### Voice Services
-Speech-to-text behind `ISpeechToText`. Providers never throw for network or auth errors: they log and return an empty result. Cancellation still propagates.
+Speech-to-text behind `ISpeechToText` and text-to-speech behind `ITextToSpeech`. Providers never throw for network or auth errors: they log and return an empty result. Cancellation still propagates.
 
 | Call | Registers | Config section |
 |---|---|---|
 | `AddWhisperSpeechToText()` | `WhisperSpeechToText` (typed HttpClient), `ISpeechToText` if not yet registered | `Voice:Whisper`: `BaseUrl`, `ApiKey`, `Model`, `Language`, `Timeout` |
 | `AddAzureSpeechToText()` | `AzureSpeechToText` (typed HttpClient), `ISpeechToText` if not yet registered | `Voice:Azure`: `Region`, `SubscriptionKey`, `Language` |
+| `AddEdgeTextToSpeech()` | `EdgeTextToSpeech` and `EdgeTtsVoiceCatalog` singletons, `ITextToSpeech` and `TimeProvider.System` if not yet registered | `Voice:Edge`: `Voice`, `Rate`, `Pitch`, `Volume` |
+| `AddAzureTextToSpeech()` | `AzureTextToSpeech` (typed HttpClient), `ITextToSpeech` if not yet registered | `Voice:Azure`: `Region`, `SubscriptionKey`, `Language`, `Voice`, `OutputFormat` |
 
-The first provider added becomes the interface default; inject the concrete type to pick another. Whisper works against any OpenAI-compatible server (set `BaseUrl` to a local whisper.cpp). Azure speech-to-text takes 16 kHz mono PCM WAV of at most 60 seconds. Each call takes optional `SttOptions` to override language or model.
+The first provider added becomes the interface default; inject the concrete type to pick another. Whisper works against any OpenAI-compatible server (set `BaseUrl` to a local whisper.cpp). Azure speech-to-text takes 16 kHz mono PCM WAV of at most 60 seconds. Edge text-to-speech is the free Edge read-aloud service: no key, MP3 output, and `EdgeTtsVoiceCatalog.GetVoicesAsync()` lists its voices. Each call takes optional `SttOptions` (language, model) or `TtsOptions` (voice, language).
 
 ```csharp
 builder.Services.Configure<WhisperSttOptions>(builder.Configuration.GetSection(WhisperSttOptions.SectionName));

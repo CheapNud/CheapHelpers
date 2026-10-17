@@ -1,7 +1,7 @@
 namespace CheapHelpers.Services.Voice;
 
 /// <summary>
-/// Configuration shared by the Azure speech-to-text and text-to-speech providers (Azure Speech resource region and key).
+/// Configuration shared by <see cref="AzureSpeechToText"/> and <see cref="AzureTextToSpeech"/> (Azure Speech resource region and key).
 /// </summary>
 public class AzureSpeechOptions
 {

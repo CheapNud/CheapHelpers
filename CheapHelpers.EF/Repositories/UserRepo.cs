@@ -3,16 +3,24 @@ using CheapHelpers.Models.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Linq.Expressions;
 
 namespace CheapHelpers.EF.Repositories
 {
     /// <summary>
-    /// Enhanced repository for user operations, replacing basic UserManager/RoleManager functionality
+    /// Enhanced repository for user operations, replacing the basic Identity user and role manager functionality
     /// Optimized for Blazor Server scenarios where HttpContext is not available
     /// </summary>
-    public class UserRepo<TUser, TContext>(IDbContextFactory<TContext> factory, IServiceScopeFactory scopeFactory) : BaseRepo<TContext>(factory)
+    public class UserRepo<TUser, TContext>(
+        IDbContextFactory<TContext> factory,
+        IPasswordHasher<TUser> passwordHasher,
+        ILookupNormalizer normalizer,
+        IOptions<IdentityOptions> identityOptions,
+        IdentityErrorDescriber errors,
+        IServiceScopeFactory scopeFactory) : BaseRepo<TContext>(factory)
         where TUser : CheapUser
         where TContext : CheapContext<TUser>
     {
@@ -29,26 +37,269 @@ namespace CheapHelpers.EF.Repositories
 
         #endregion
 
-        #region Identity Operations (scope-per-call)
+        #region Identity Operations
 
-        // Password/lockout/token operations need UserManager machinery (hasher, token providers) that
-        // can't be reimplemented on a bare DbContext. Each call resolves UserManager from a fresh DI
-        // scope so these are safe from Blazor Server circuits without capturing scoped Identity services.
+        // These run on EF with Identity's password hasher, lookup normalizer, options and error describer, so
+        // UserRepo holds no Identity user manager. Token operations (password reset, email, 2FA, recovery codes)
+        // need Identity's token providers and live in UserService.
 
         /// <summary>
-        /// Creates a user via UserManager (hashing the password when provided) in an isolated DI scope.
+        /// Identity options the app registered (password rules, user rules, lockout, claim types).
         /// </summary>
-        public async Task<IdentityResult> CreateUserAsync(TUser user, string? password = null)
+        protected IdentityOptions IdentityOptions => identityOptions.Value;
+
+        /// <summary>
+        /// Identity's error describer, for results that match Identity's error codes.
+        /// </summary>
+        protected IdentityErrorDescriber ErrorDescriber => errors;
+
+        /// <summary>
+        /// Creates a user, hashing the password when given. Same checks and order as Identity's
+        /// CreateAsync: password rules, then user name and email rules.
+        /// </summary>
+        public async Task<IdentityResult> CreateUserAsync(TUser user, string? password = null, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(user);
 
-            using var scope = scopeFactory.CreateScope();
-            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+            if (password is not null)
+            {
+                var passwordResult = SetPasswordHash(user, password);
+                if (!passwordResult.Succeeded)
+                {
+                    return passwordResult;
+                }
+            }
 
-            return password is null
-                ? await userManager.CreateAsync(user)
-                : await userManager.CreateAsync(user, password);
+            user.SecurityStamp = NewSecurityStamp();
+
+            using var context = _factory.CreateDbContext();
+
+            var userResult = await ValidateUserAsync(context, user, token);
+            if (!userResult.Succeeded)
+            {
+                return userResult;
+            }
+
+            if (IdentityOptions.Lockout.AllowedForNewUsers)
+            {
+                user.LockoutEnabled = true;
+            }
+
+            user.NormalizedUserName = normalizer.NormalizeName(user.UserName);
+            user.NormalizedEmail = normalizer.NormalizeEmail(user.Email);
+
+            context.Users.Add(user);
+            await context.SaveChangesAsync(token);
+            return IdentityResult.Success;
         }
+
+        /// <summary>
+        /// Changes the password after checking the current one. A wrong current password gives PasswordMismatch.
+        /// </summary>
+        public Task<IdentityResult> ChangePasswordAsync(TUser user, string currentPassword, string newPassword, CancellationToken token = default)
+            => UpdateStoredUserAsync(user, storedUser =>
+                // SuccessRehashNeeded counts as a match; the new hash replaces the old one anyway
+                storedUser.PasswordHash is null
+                || passwordHasher.VerifyHashedPassword(storedUser, storedUser.PasswordHash, currentPassword) == PasswordVerificationResult.Failed
+                    ? IdentityResult.Failed(errors.PasswordMismatch())
+                    : SetPasswordHash(storedUser, newPassword), token);
+
+        /// <summary>
+        /// Adds a password to a user without one. Gives UserAlreadyHasPassword when one is set.
+        /// </summary>
+        public Task<IdentityResult> AddPasswordAsync(TUser user, string newPassword, CancellationToken token = default)
+            => UpdateStoredUserAsync(user, storedUser => storedUser.PasswordHash is not null
+                ? IdentityResult.Failed(errors.UserAlreadyHasPassword())
+                : SetPasswordHash(storedUser, newPassword), token);
+
+        /// <summary>
+        /// Sets the password without checking the current one. Only for flows that verified the user
+        /// another way first, such as a password reset token.
+        /// </summary>
+        public Task<IdentityResult> SetPasswordAsync(TUser user, string newPassword, CancellationToken token = default)
+            => UpdateStoredUserAsync(user, storedUser => SetPasswordHash(storedUser, newPassword), token);
+
+        /// <summary>
+        /// Whether the stored user has a password.
+        /// </summary>
+        public async Task<bool> HasPasswordAsync(TUser user, CancellationToken token = default)
+        {
+            ArgumentNullException.ThrowIfNull(user);
+
+            using var context = _factory.CreateDbContext();
+            return await context.Users.AnyAsync(u => u.Id == user.Id && u.PasswordHash != null, token);
+        }
+
+        /// <summary>
+        /// Sets the lockout end date. Gives UserLockoutNotEnabled when lockout is off for the user.
+        /// A date in the past unlocks the user.
+        /// </summary>
+        public Task<IdentityResult> SetLockoutEndDateAsync(TUser user, DateTimeOffset? lockoutEnd, CancellationToken token = default)
+            => UpdateStoredUserAsync(user, storedUser =>
+            {
+                if (!storedUser.LockoutEnabled)
+                {
+                    return IdentityResult.Failed(errors.UserLockoutNotEnabled());
+                }
+
+                storedUser.LockoutEnd = lockoutEnd;
+                return IdentityResult.Success;
+            }, token);
+
+        /// <summary>
+        /// Same rule as Identity's IsLockedOutAsync: locked out while lockout is enabled and the end date has not passed.
+        /// </summary>
+        public async Task<bool> IsLockedOutAsync(TUser user, CancellationToken token = default)
+        {
+            ArgumentNullException.ThrowIfNull(user);
+
+            using var context = _factory.CreateDbContext();
+            var lockout = await context.Users.AsNoTracking()
+                .Where(u => u.Id == user.Id)
+                .Select(u => new { u.LockoutEnabled, u.LockoutEnd })
+                .FirstOrDefaultAsync(token);
+
+            // Compared here, not in SQL: SQLite cannot translate DateTimeOffset comparisons
+            return lockout is { LockoutEnabled: true } && lockout.LockoutEnd >= DateTimeOffset.UtcNow;
+        }
+
+        /// <summary>
+        /// Loads a tracked copy of the user, applies the change and saves it with a new ConcurrencyStamp,
+        /// like the EF user store does. Callers' detached or stale instances never reach the context.
+        /// </summary>
+        private async Task<IdentityResult> UpdateStoredUserAsync(TUser user, Func<TUser, IdentityResult> change, CancellationToken token)
+        {
+            ArgumentNullException.ThrowIfNull(user);
+
+            using var context = _factory.CreateDbContext();
+            var storedUser = await context.Users.FirstOrDefaultAsync(u => u.Id == user.Id, token)
+                ?? throw new InvalidOperationException($"User '{user.Id}' not found");
+
+            var changeResult = change(storedUser);
+            if (!changeResult.Succeeded)
+            {
+                return changeResult;
+            }
+
+            storedUser.ConcurrencyStamp = Guid.NewGuid().ToString();
+
+            try
+            {
+                await context.SaveChangesAsync(token);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return IdentityResult.Failed(errors.ConcurrencyFailure());
+            }
+
+            return IdentityResult.Success;
+        }
+
+        /// <summary>
+        /// Validates the password, then hashes it and renews the security stamp, like Identity's UpdatePasswordHash.
+        /// </summary>
+        private IdentityResult SetPasswordHash(TUser user, string password)
+        {
+            var passwordResult = ValidatePassword(password);
+            if (!passwordResult.Succeeded)
+            {
+                return passwordResult;
+            }
+
+            user.PasswordHash = passwordHasher.HashPassword(user, password);
+            user.SecurityStamp = NewSecurityStamp();
+            return IdentityResult.Success;
+        }
+
+        /// <summary>
+        /// Identity's PasswordValidator rules from <see cref="IdentityOptions.Password"/>, same checks and error order.
+        /// </summary>
+        private IdentityResult ValidatePassword(string? password)
+        {
+            var options = IdentityOptions.Password;
+            password ??= string.Empty;
+            List<IdentityError> passwordErrors = [];
+
+            if (string.IsNullOrWhiteSpace(password) || password.Length < options.RequiredLength)
+            {
+                passwordErrors.Add(errors.PasswordTooShort(options.RequiredLength));
+            }
+
+            // ASCII only, like PasswordValidator: an accented letter counts as non-alphanumeric
+            if (options.RequireNonAlphanumeric && password.All(char.IsAsciiLetterOrDigit))
+            {
+                passwordErrors.Add(errors.PasswordRequiresNonAlphanumeric());
+            }
+
+            if (options.RequireDigit && !password.Any(char.IsAsciiDigit))
+            {
+                passwordErrors.Add(errors.PasswordRequiresDigit());
+            }
+
+            if (options.RequireLowercase && !password.Any(char.IsAsciiLetterLower))
+            {
+                passwordErrors.Add(errors.PasswordRequiresLower());
+            }
+
+            if (options.RequireUppercase && !password.Any(char.IsAsciiLetterUpper))
+            {
+                passwordErrors.Add(errors.PasswordRequiresUpper());
+            }
+
+            if (options.RequiredUniqueChars >= 1 && password.Distinct().Count() < options.RequiredUniqueChars)
+            {
+                passwordErrors.Add(errors.PasswordRequiresUniqueChars(options.RequiredUniqueChars));
+            }
+
+            return passwordErrors.Count > 0 ? IdentityResult.Failed([.. passwordErrors]) : IdentityResult.Success;
+        }
+
+        /// <summary>
+        /// Identity's UserValidator rules from <see cref="IdentityOptions.User"/>: user name, then email
+        /// when <see cref="UserOptions.RequireUniqueEmail"/> is on. Duplicates are found on the normalized columns.
+        /// </summary>
+        private async Task<IdentityResult> ValidateUserAsync(TContext context, TUser user, CancellationToken token)
+        {
+            var options = IdentityOptions.User;
+            List<IdentityError> userErrors = [];
+
+            var userName = user.UserName;
+            if (string.IsNullOrWhiteSpace(userName)
+                || (!string.IsNullOrEmpty(options.AllowedUserNameCharacters) && userName.Any(c => !options.AllowedUserNameCharacters.Contains(c))))
+            {
+                userErrors.Add(errors.InvalidUserName(userName));
+            }
+            else
+            {
+                var normalizedName = normalizer.NormalizeName(userName);
+                if (await context.Users.AnyAsync(u => u.NormalizedUserName == normalizedName && u.Id != user.Id, token))
+                {
+                    userErrors.Add(errors.DuplicateUserName(userName));
+                }
+            }
+
+            if (options.RequireUniqueEmail)
+            {
+                var email = user.Email;
+                if (string.IsNullOrWhiteSpace(email) || !new EmailAddressAttribute().IsValid(email))
+                {
+                    userErrors.Add(errors.InvalidEmail(email));
+                }
+                else
+                {
+                    var normalizedEmail = normalizer.NormalizeEmail(email);
+                    if (await context.Users.AnyAsync(u => u.NormalizedEmail == normalizedEmail && u.Id != user.Id, token))
+                    {
+                        userErrors.Add(errors.DuplicateEmail(email));
+                    }
+                }
+            }
+
+            return userErrors.Count > 0 ? IdentityResult.Failed([.. userErrors]) : IdentityResult.Success;
+        }
+
+        // Opaque value: Identity only compares it and feeds it to the token providers
+        private static string NewSecurityStamp() => Guid.NewGuid().ToString("N");
 
         /// <summary>
         /// Generates a password reset token for the user in an isolated DI scope.
@@ -70,20 +321,6 @@ namespace CheapHelpers.EF.Repositories
         public Task<IdentityResult> ResetPasswordAsync(TUser user, string resetToken, string newPassword)
             => WithUserManagerAsync(user, (userManager, scopedUser) =>
                 userManager.ResetPasswordAsync(scopedUser, resetToken, newPassword));
-
-        /// <summary>
-        /// Changes the user's password after verifying the current one in an isolated DI scope.
-        /// </summary>
-        public Task<IdentityResult> ChangePasswordAsync(TUser user, string currentPassword, string newPassword)
-            => WithUserManagerAsync(user, (userManager, scopedUser) =>
-                userManager.ChangePasswordAsync(scopedUser, currentPassword, newPassword));
-
-        /// <summary>
-        /// Sets the user's lockout end date in an isolated DI scope.
-        /// </summary>
-        public Task<IdentityResult> SetLockoutEndDateAsync(TUser user, DateTimeOffset? lockoutEnd)
-            => WithUserManagerAsync(user, (userManager, scopedUser) =>
-                userManager.SetLockoutEndDateAsync(scopedUser, lockoutEnd));
 
         /// <summary>
         /// Runs a UserManager operation in a fresh DI scope against a freshly loaded user,
@@ -554,9 +791,12 @@ namespace CheapHelpers.EF.Repositories
                     return false;
                 }
 
+                // Same changes as Identity's SetEmailAsync, plus the ConcurrencyStamp the EF store renews
                 trackedUser.Email = email;
-                trackedUser.NormalizedEmail = email.ToUpperInvariant();
+                trackedUser.NormalizedEmail = normalizer.NormalizeEmail(email);
                 trackedUser.EmailConfirmed = false;
+                trackedUser.SecurityStamp = NewSecurityStamp();
+                trackedUser.ConcurrencyStamp = Guid.NewGuid().ToString();
 
                 await context.SaveChangesAsync(token);
                 return true;
@@ -598,7 +838,16 @@ namespace CheapHelpers.EF.Repositories
         }
 
         /// <summary>
-        /// Gets user by email address
+        /// Gets user by id. Null when missing.
+        /// </summary>
+        public async Task<TUser?> GetUserByIdAsync(string id, CancellationToken token = default)
+        {
+            using var context = _factory.CreateDbContext();
+            return await context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id, token);
+        }
+
+        /// <summary>
+        /// Gets user by email address, on NormalizedEmail like Identity's FindByEmailAsync
         /// </summary>
         public async Task<TUser?> GetUserByEmailAsync(string email, CancellationToken token = default)
         {
@@ -607,8 +856,9 @@ namespace CheapHelpers.EF.Repositories
             try
             {
                 using var context = _factory.CreateDbContext();
+                var normalizedEmail = normalizer.NormalizeEmail(email);
                 return await context.Users.AsNoTracking()
-                    .FirstOrDefaultAsync(u => u.Email == email, token);
+                    .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, token);
             }
             catch (Exception ex)
             {
@@ -618,7 +868,7 @@ namespace CheapHelpers.EF.Repositories
         }
 
         /// <summary>
-        /// Gets user by username
+        /// Gets user by username, on NormalizedUserName like Identity's FindByNameAsync
         /// </summary>
         public async Task<TUser?> GetUserByUsernameAsync(string username, CancellationToken token = default)
         {
@@ -627,8 +877,9 @@ namespace CheapHelpers.EF.Repositories
             try
             {
                 using var context = _factory.CreateDbContext();
+                var normalizedName = normalizer.NormalizeName(username);
                 return await context.Users.AsNoTracking()
-                    .FirstOrDefaultAsync(u => u.UserName == username, token);
+                    .FirstOrDefaultAsync(u => u.NormalizedUserName == normalizedName, token);
             }
             catch (Exception ex)
             {
@@ -778,10 +1029,4 @@ namespace CheapHelpers.EF.Repositories
 
         #endregion
     }
-
-    /// <summary>
-    /// Backward-compatible UserRepo hardcoded to CheapUser.
-    /// New consumers should use <see cref="UserRepo{TUser}"/> with their concrete user type.
-    /// </summary>
-    public class UserRepo(IDbContextFactory<CheapContext<CheapUser>> factory, IServiceScopeFactory scopeFactory) : UserRepo<CheapUser, CheapContext<CheapUser>>(factory, scopeFactory);
 }

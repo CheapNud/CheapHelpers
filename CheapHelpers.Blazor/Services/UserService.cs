@@ -18,7 +18,14 @@ namespace CheapHelpers.Blazor.Services
     /// Also implements <see cref="IUserService"/>, the non-generic seam the shared Account pages inject.
     /// </summary>
     /// <typeparam name="TUser">Concrete user type extending CheapUser</typeparam>
-    public class UserService<TUser, TContext>(IDbContextFactory<TContext> factory, IServiceScopeFactory scopeFactory) : UserRepo<TUser, TContext>(factory, scopeFactory), IUserService
+    public class UserService<TUser, TContext>(
+        IDbContextFactory<TContext> factory,
+        IPasswordHasher<TUser> passwordHasher,
+        ILookupNormalizer normalizer,
+        IOptions<IdentityOptions> identityOptions,
+        IdentityErrorDescriber errors,
+        IServiceScopeFactory scopeFactory)
+        : UserRepo<TUser, TContext>(factory, passwordHasher, normalizer, identityOptions, errors, scopeFactory), IUserService
         where TUser : CheapUser
         where TContext : CheapContext<TUser>
     {

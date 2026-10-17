@@ -279,24 +279,29 @@ namespace CheapHelpers.EF.Repositories
                 }
             }
 
-            if (options.RequireUniqueEmail)
+            if (options.RequireUniqueEmail && await ValidateEmailAsync(context, user.Id, user.Email, token) is { } emailError)
             {
-                var email = user.Email;
-                if (string.IsNullOrWhiteSpace(email) || !new EmailAddressAttribute().IsValid(email))
-                {
-                    userErrors.Add(errors.InvalidEmail(email));
-                }
-                else
-                {
-                    var normalizedEmail = normalizer.NormalizeEmail(email);
-                    if (await context.Users.AnyAsync(u => u.NormalizedEmail == normalizedEmail && u.Id != user.Id, token))
-                    {
-                        userErrors.Add(errors.DuplicateEmail(email));
-                    }
-                }
+                userErrors.Add(emailError);
             }
 
             return userErrors.Count > 0 ? IdentityResult.Failed([.. userErrors]) : IdentityResult.Success;
+        }
+
+        /// <summary>
+        /// The email half of Identity's UserValidator, used when <see cref="UserOptions.RequireUniqueEmail"/> is on:
+        /// InvalidEmail, or DuplicateEmail when another user holds the normalized email. Null when the email is fine.
+        /// </summary>
+        private async Task<IdentityError?> ValidateEmailAsync(TContext context, string userId, string? email, CancellationToken token)
+        {
+            if (string.IsNullOrWhiteSpace(email) || !new EmailAddressAttribute().IsValid(email))
+            {
+                return errors.InvalidEmail(email);
+            }
+
+            var normalizedEmail = normalizer.NormalizeEmail(email);
+            return await context.Users.AnyAsync(u => u.NormalizedEmail == normalizedEmail && u.Id != userId, token)
+                ? errors.DuplicateEmail(email)
+                : null;
         }
 
         // Opaque value: Identity only compares it and feeds it to the token providers
@@ -736,9 +741,11 @@ namespace CheapHelpers.EF.Repositories
         }
 
         /// <summary>
-        /// Sets user email and normalizes it properly
+        /// Sets user email and normalizes it properly. With <see cref="UserOptions.RequireUniqueEmail"/> on it
+        /// gives InvalidEmail or DuplicateEmail like Identity's SetEmailAsync.
         /// </summary>
-        public async Task<bool> SetEmailAsync(TUser user, string email, CancellationToken token = default)
+        /// <exception cref="InvalidOperationException">The user doesn't exist.</exception>
+        public async Task<IdentityResult> SetEmailAsync(TUser user, string email, CancellationToken token = default)
         {
             ArgumentNullException.ThrowIfNull(user);
             ArgumentException.ThrowIfNullOrWhiteSpace(email);
@@ -746,12 +753,12 @@ namespace CheapHelpers.EF.Repositories
             try
             {
                 using var context = _factory.CreateDbContext();
-                var trackedUser = await context.Users.FirstOrDefaultAsync(x => x.Id == user.Id, token);
+                var trackedUser = await context.Users.FirstOrDefaultAsync(x => x.Id == user.Id, token)
+                    ?? throw new InvalidOperationException($"User '{user.Id}' not found");
 
-                if (trackedUser == null)
+                if (IdentityOptions.User.RequireUniqueEmail && await ValidateEmailAsync(context, trackedUser.Id, email, token) is { } emailError)
                 {
-                    Debug.WriteLine($"User with ID {user.Id} not found");
-                    return false;
+                    return IdentityResult.Failed(emailError);
                 }
 
                 // Same changes as Identity's SetEmailAsync, plus the ConcurrencyStamp the EF store renews
@@ -762,7 +769,7 @@ namespace CheapHelpers.EF.Repositories
                 trackedUser.ConcurrencyStamp = Guid.NewGuid().ToString();
 
                 await context.SaveChangesAsync(token);
-                return true;
+                return IdentityResult.Success;
             }
             catch (Exception ex)
             {

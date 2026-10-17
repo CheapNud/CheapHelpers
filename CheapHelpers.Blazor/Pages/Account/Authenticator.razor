@@ -65,9 +65,9 @@ else
     [CascadingParameter]
     private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
 
-    // IAccountIdentityService keeps this page free of user-typed services so it
+    // IUserService keeps this page free of user-typed services so it
     // resolves for consumers with derived TUser
-    [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
+    [Inject] protected IUserService UserService { get; set; } = default!;
     [Inject] protected AccountRouteOptions Routes { get; set; } = default!;
     [Inject] protected NavigationManager Nav { get; set; } = default!;
     [Inject] protected ISnackbar ToastService { get; set; } = default!;
@@ -88,7 +88,7 @@ else
 
         try
         {
-            var keyInfo = await AccountIdentity.GetOrCreateAuthenticatorKeyAsync(_userId);
+            var keyInfo = await UserService.GetOrCreateAuthenticatorKeyAsync(_userId);
             if (keyInfo is null)
             {
                 ToastService.Add(Loc["ErrorMessage"], Severity.Error);
@@ -120,7 +120,7 @@ else
         _verifying = true;
         try
         {
-            var result = await AccountIdentity.EnableAuthenticatorAsync(_userId, VerificationCode);
+            var result = await UserService.EnableAuthenticatorAsync(_userId, VerificationCode);
             if (!result.Succeeded)
             {
                 ToastService.Add(Loc["ErrorMessage"], Severity.Error);

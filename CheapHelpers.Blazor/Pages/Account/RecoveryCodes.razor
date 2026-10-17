@@ -89,7 +89,7 @@ else
 </style>
 
 @code {
-    [Inject] private IAccountIdentityService AccountIdentity { get; set; } = default!;
+    [Inject] private IUserService UserService { get; set; } = default!;
     [Inject] private ISnackbar ToastService { get; set; } = default!;
     [Inject] private IStringLocalizer Loc { get; set; } = default!;
     [Inject] private ClipboardService ClipboardService { get; set; } = default!;
@@ -112,7 +112,7 @@ else
             var userId = await GetCurrentUserIdAsync();
             if (userId == null) return;
 
-            var codesCount = (await AccountIdentity.GetTwoFactorStatusAsync(userId))?.RecoveryCodesCount ?? 0;
+            var codesCount = (await UserService.GetTwoFactorStatusAsync(userId))?.RecoveryCodesCount ?? 0;
             if (codesCount == 0)
             {
                 // No codes exist, show message
@@ -157,7 +157,7 @@ else
             var userId = await GetCurrentUserIdAsync();
             if (userId == null) return;
 
-            var codes = await AccountIdentity.GenerateRecoveryCodesAsync(userId);
+            var codes = await UserService.GenerateRecoveryCodesAsync(userId);
             if (codes == null) return;
 
             recoveryCodes = codes;

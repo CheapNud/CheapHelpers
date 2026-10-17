@@ -65,7 +65,7 @@
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;
     [Inject] protected IEmailService? Mailer { get; set; }
     [Inject] protected IAuthorizationService AuthorizationService { get; set; } = default!;
-    [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
+    [Inject] protected IUserService UserService { get; set; } = default!;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -175,7 +175,7 @@
             {
                 var hasher = new PasswordHasher<IdentityUser>();
                 CurrentUser.PinCodeHash = hasher.HashPassword(CurrentUser, _newPin);
-                var updateResult = await AccountIdentity.UpdateUserAsync(CurrentUser);
+                var updateResult = await UserService.UpdateUserAsync(CurrentUser);
                 if (!updateResult.Succeeded)
                 {
                     throw new InvalidOperationException(string.Join(", ", updateResult.Errors.Select(e => e.Description)));

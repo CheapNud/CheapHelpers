@@ -23,7 +23,7 @@
 
     private string Message = "";
 
-    [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
+    [Inject] protected IUserService UserService { get; set; } = default!;
     [Inject] protected ISnackbar ToastService { get; set; } = default!;
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;
     [Inject] protected NavigationManager Nav { get; set; } = default!;
@@ -38,7 +38,7 @@
                 return;
             }
 
-            var user = await AccountIdentity.FindByIdAsync(UserId);
+            var user = await UserService.FindByIdAsync(UserId);
             if (user is null)
             {
                 Debug.WriteLine($"Unable to load user with ID '{UserId}'.");
@@ -49,7 +49,7 @@
 
             var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
             // Also moves the username along when it was the old email
-            var changeResult = await AccountIdentity.ChangeEmailAsync(user.Id, Email, code);
+            var changeResult = await UserService.ChangeEmailAsync(user.Id, Email, code);
 
             if (!changeResult.Succeeded)
             {

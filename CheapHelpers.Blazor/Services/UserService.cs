@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
 using System.Security.Claims;
 
@@ -14,12 +15,18 @@ namespace CheapHelpers.Blazor.Services
     /// <summary>
     /// Generic Blazor user service replacing UserManager/RoleManager.
     /// All auth-state methods validate authentication before proceeding.
+    /// Also implements <see cref="IUserService"/>, the non-generic seam the shared Account pages inject.
     /// </summary>
     /// <typeparam name="TUser">Concrete user type extending CheapUser</typeparam>
-    public class UserService<TUser, TContext>(IDbContextFactory<TContext> factory, IServiceScopeFactory scopeFactory) : UserRepo<TUser, TContext>(factory, scopeFactory)
+    public class UserService<TUser, TContext>(IDbContextFactory<TContext> factory, IServiceScopeFactory scopeFactory) : UserRepo<TUser, TContext>(factory, scopeFactory), IUserService
         where TUser : CheapUser
         where TContext : CheapContext<TUser>
     {
+        private const int RecoveryCodesCount = 10;
+
+        // Field initializer rather than a captured parameter: the parameter also goes to the base constructor (CS9107)
+        private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
+
         #region Navigation State Management
 
         public async Task<bool> UpdateNavigationStateAsync(Task<AuthenticationState> authState, string navigationKey, bool expanded, CancellationToken token = default)
@@ -215,5 +222,298 @@ namespace CheapHelpers.Blazor.Services
         {
             return IsAuthenticated(auth.User);
         }
+
+        #region Account pages (IUserService)
+
+        // The token operations below (authenticator, two-factor, recovery codes, email tokens, external
+        // logins) need UserManager machinery that UserRepo doesn't offer. They resolve UserManager from a
+        // fresh DI scope per call, same pattern as UserRepo's identity helpers, so they are safe from
+        // Blazor Server circuits. Everything else goes through UserRepo.
+
+        private static IdentityResult UserNotFound(string userId) =>
+            IdentityResult.Failed(new IdentityError { Code = "UserNotFound", Description = $"User '{userId}' not found." });
+
+        public async Task<AuthenticatorKeyInfo?> GetOrCreateAuthenticatorKeyAsync(string userId)
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+
+            var user = await userManager.FindByIdAsync(userId);
+            if (user is null)
+            {
+                return null;
+            }
+
+            var sharedKey = await userManager.GetAuthenticatorKeyAsync(user);
+            if (string.IsNullOrEmpty(sharedKey))
+            {
+                await userManager.ResetAuthenticatorKeyAsync(user);
+                sharedKey = await userManager.GetAuthenticatorKeyAsync(user);
+            }
+
+            if (string.IsNullOrEmpty(sharedKey))
+            {
+                return null;
+            }
+
+            return new AuthenticatorKeyInfo(sharedKey, await userManager.GetEmailAsync(user));
+        }
+
+        public async Task<EnableAuthenticatorResult> EnableAuthenticatorAsync(string userId, string? code)
+        {
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                return new EnableAuthenticatorResult(false, null);
+            }
+
+            using var scope = _scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+
+            var user = await userManager.FindByIdAsync(userId);
+            if (user is null)
+            {
+                return new EnableAuthenticatorResult(false, null);
+            }
+
+            var verificationCode = code.Replace(" ", string.Empty).Replace("-", string.Empty);
+            var isTokenValid = await userManager.VerifyTwoFactorTokenAsync(
+                user,
+                userManager.Options.Tokens.AuthenticatorTokenProvider,
+                verificationCode);
+
+            if (!isTokenValid)
+            {
+                return new EnableAuthenticatorResult(false, null);
+            }
+
+            await userManager.SetTwoFactorEnabledAsync(user, true);
+
+            // Generate recovery codes if none exist
+            if (await userManager.CountRecoveryCodesAsync(user) == 0)
+            {
+                var recoveryCodes = await userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodesCount);
+                return new EnableAuthenticatorResult(true, recoveryCodes?.ToArray());
+            }
+
+            return new EnableAuthenticatorResult(true, null);
+        }
+
+        public async Task<ExternalLoginsInfo?> GetExternalLoginsAsync(string userId)
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+            var signInManager = scope.ServiceProvider.GetRequiredService<SignInManager<TUser>>();
+
+            var user = await userManager.FindByIdAsync(userId);
+            if (user is null)
+            {
+                return null;
+            }
+
+            var currentLogins = await userManager.GetLoginsAsync(user);
+            var availableSchemes = await signInManager.GetExternalAuthenticationSchemesAsync();
+            var otherLogins = availableSchemes
+                .Where(auth => currentLogins.All(ul => auth.Name != ul.LoginProvider))
+                .ToList();
+
+            return new ExternalLoginsInfo(currentLogins, otherLogins);
+        }
+
+        public async Task<Dictionary<string, string>?> GetPersonalDataAsync(string userId)
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+
+            var user = await userManager.FindByIdAsync(userId);
+            if (user is null)
+            {
+                return null;
+            }
+
+            // Properties marked with PersonalDataAttribute
+            var personalData = typeof(TUser)
+                .GetProperties()
+                .Where(prop => Attribute.IsDefined(prop, typeof(PersonalDataAttribute)))
+                .ToDictionary(prop => prop.Name, prop => prop.GetValue(user)?.ToString() ?? "null");
+
+            // External login information
+            var logins = await userManager.GetLoginsAsync(user);
+            foreach (var login in logins)
+            {
+                personalData.Add($"{login.LoginProvider} external login provider key", login.ProviderKey);
+            }
+
+            return personalData;
+        }
+
+        public async Task<TwoFactorStatus?> GetTwoFactorStatusAsync(string userId)
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+
+            var user = await userManager.FindByIdAsync(userId);
+            if (user is null)
+            {
+                return null;
+            }
+
+            return new TwoFactorStatus(
+                await userManager.GetTwoFactorEnabledAsync(user),
+                await userManager.CountRecoveryCodesAsync(user),
+                !string.IsNullOrEmpty(await userManager.GetAuthenticatorKeyAsync(user)));
+        }
+
+        public async Task<string[]?> GenerateRecoveryCodesAsync(string userId)
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+
+            var user = await userManager.FindByIdAsync(userId);
+            if (user is null)
+            {
+                return null;
+            }
+
+            var recoveryCodes = await userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, RecoveryCodesCount);
+            return recoveryCodes?.ToArray();
+        }
+
+        // Explicit: the public GetUserAsync(principal) above returns TUser and throws for anonymous
+        // principals, while the pages want null. Reads the id from the claim type Identity is configured with
+        async Task<CheapUser?> IUserService.GetUserAsync(ClaimsPrincipal principal)
+        {
+            var userId = principal.FindFirstValue(GetIdentityOptions().ClaimsIdentity.UserIdClaimType);
+            return userId is null ? null : await FindUserByIdAsync(userId);
+        }
+
+        public async Task<CheapUser?> FindByIdAsync(string userId) => await FindUserByIdAsync(userId);
+
+        public async Task<CheapUser?> FindByEmailAsync(string email) => await FindUserByEmailAsync(email);
+
+        // UserRepo's profile updater rather than UserManager.UpdateAsync: the pages hold detached,
+        // possibly stale users, and UpdateAsync would write their stale Identity columns back or
+        // fail on the concurrency stamp. Explicit because UserRepo.UpdateUserAsync(TUser) returns bool
+        async Task<IdentityResult> IUserService.UpdateUserAsync(CheapUser user, CancellationToken token)
+            => await UpdateUserAsync(AsTUser(user), token)
+                ? IdentityResult.Success
+                : UserNotFound(user.Id);
+
+        // Explicit so it doesn't compete with UserRepo.CreateUserAsync(TUser, string?) on this type
+        Task<IdentityResult> IUserService.CreateUserAsync(CheapUser user, string password)
+            => CreateUserAsync(AsTUser(user), password);
+
+        public async Task<string> GenerateEmailConfirmationTokenAsync(string userId)
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+            return await userManager.GenerateEmailConfirmationTokenAsync(await RequireUserAsync(userManager, userId));
+        }
+
+        // UserRepo.ConfirmEmailAsync only sets the flag, so the code is checked first with UserRepo's token verifier
+        public async Task<IdentityResult> ConfirmEmailAsync(string userId, string code)
+        {
+            var user = await FindUserByIdAsync(userId);
+            if (user is null)
+            {
+                return UserNotFound(userId);
+            }
+
+            var tokenProvider = GetIdentityOptions().Tokens.EmailConfirmationTokenProvider;
+            if (!await VerifyUserTokenAsync(user, tokenProvider, UserManager<TUser>.ConfirmEmailTokenPurpose, code))
+            {
+                return IdentityResult.Failed(new IdentityError { Code = "InvalidToken", Description = "Invalid token." });
+            }
+
+            return await ConfirmEmailAsync(user) ? IdentityResult.Success : UserNotFound(userId);
+        }
+
+        public async Task<IdentityResult> ChangeEmailAsync(string userId, string newEmail, string code)
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+
+            var user = await userManager.FindByIdAsync(userId);
+            if (user is null)
+            {
+                return UserNotFound(userId);
+            }
+
+            // Compare before the change: afterwards user.Email already holds the new address
+            var userNameWasEmail = string.Equals(
+                await userManager.GetUserNameAsync(user),
+                await userManager.GetEmailAsync(user),
+                StringComparison.OrdinalIgnoreCase);
+
+            var changeResult = await userManager.ChangeEmailAsync(user, newEmail, code);
+            if (!changeResult.Succeeded || !userNameWasEmail)
+            {
+                return changeResult;
+            }
+
+            return await userManager.SetUserNameAsync(user, newEmail);
+        }
+
+        public async Task<bool> IsEmailConfirmedAsync(string userId)
+            => (await FindUserByIdAsync(userId))?.EmailConfirmed == true;
+
+        public async Task<string> GeneratePasswordResetTokenAsync(string userId)
+            => await GeneratePasswordResetTokenAsync(await FindUserByIdAsync(userId)
+                ?? throw new InvalidOperationException($"User '{userId}' not found."));
+
+        public async Task<IdentityResult> ResetPasswordAsync(string userId, string code, string newPassword)
+        {
+            var user = await FindUserByIdAsync(userId);
+            return user is null ? UserNotFound(userId) : await ResetPasswordAsync(user, code, newPassword);
+        }
+
+        // Same rule as UserManager.IsLockedOutAsync: locked out while lockout is enabled and the end date has not passed
+        public async Task<LockoutInfo?> GetLockoutAsync(string email)
+        {
+            var user = await FindUserByEmailAsync(email);
+            return user is null
+                ? null
+                : new LockoutInfo(user.LockoutEnd, user.LockoutEnabled && user.LockoutEnd >= DateTimeOffset.UtcNow);
+        }
+
+        public async Task<bool> HasPasswordAsync(string userId)
+            => (await FindUserByIdAsync(userId))?.PasswordHash is not null;
+
+        private async Task<TUser?> FindUserByIdAsync(string userId)
+        {
+            using var context = _factory.CreateDbContext();
+            return await context.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId);
+        }
+
+        // On NormalizedEmail with Identity's normalizer, like UserManager.FindByEmailAsync, so the lookup
+        // ignores casing on case-sensitive databases too (UserRepo.GetUserByEmailAsync compares the raw Email column)
+        private async Task<TUser?> FindUserByEmailAsync(string email)
+        {
+            string? normalizedEmail;
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                normalizedEmail = scope.ServiceProvider.GetRequiredService<ILookupNormalizer>().NormalizeEmail(email);
+            }
+
+            using var context = _factory.CreateDbContext();
+            return await context.Users.AsNoTracking().FirstOrDefaultAsync(x => x.NormalizedEmail == normalizedEmail);
+        }
+
+        // IdentityOptions is a singleton, so the value outlives the scope it was resolved from
+        private IdentityOptions GetIdentityOptions()
+        {
+            using var scope = _scopeFactory.CreateScope();
+            return scope.ServiceProvider.GetRequiredService<IOptions<IdentityOptions>>().Value;
+        }
+
+        private static async Task<TUser> RequireUserAsync(UserManager<TUser> userManager, string userId) =>
+            await userManager.FindByIdAsync(userId)
+                ?? throw new InvalidOperationException($"User '{userId}' not found.");
+
+        private static TUser AsTUser(CheapUser user) =>
+            user as TUser ?? throw new InvalidCastException(
+                $"The account pages got a {user.GetType().Name}, but the app's user type is {typeof(TUser).Name}. " +
+                $"Make {nameof(Configuration.CheapHelpersBlazorOptions)}.{nameof(Configuration.CheapHelpersBlazorOptions.CreateUser)} return {typeof(TUser).Name} instances.");
+
+        #endregion
     }
 }

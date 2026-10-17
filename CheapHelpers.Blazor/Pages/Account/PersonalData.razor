@@ -55,7 +55,7 @@
 </MudPaper>
 
 @code {
-    [Inject] private IAccountIdentityService AccountIdentity { get; set; } = default!;
+    [Inject] private IUserService UserService { get; set; } = default!;
     [Inject] private ISnackbar ToastService { get; set; } = default!;
     [Inject] private IStringLocalizer Loc { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
@@ -78,7 +78,7 @@
             var userId = await GetCurrentUserIdAsync();
             if (userId == null) return;
 
-            personalData = await AccountIdentity.GetPersonalDataAsync(userId);
+            personalData = await UserService.GetPersonalDataAsync(userId);
             personalDataItems = personalData?.ToList();
             StateHasChanged();
         }

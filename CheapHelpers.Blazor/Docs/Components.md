@@ -293,6 +293,8 @@ Base class for pages that need user preferences.
 
 Service for user management and authentication state.
 
+`UserService<TUser, TContext>` also implements the non-generic `IUserService`, which the shared Account pages and layout bases inject so they work with any user type. `AddCheapHelpersBlazor` registers both, scoped; inject `IUserService` in your own components when they don't need the generic type.
+
 **Methods:**
 - `IsAuthenticated(Task<AuthenticationState>)` - Check if user is authenticated
 - `GetUserAsync(Task<AuthenticationState>)` - Get current user

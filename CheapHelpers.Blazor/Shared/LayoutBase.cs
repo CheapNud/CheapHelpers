@@ -20,7 +20,7 @@ namespace CheapHelpers.Blazor.Shared
         protected Dictionary<string, bool> LocalNavigationState { get; set; } = new();
 
         [CascadingParameter] protected Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
-        [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
+        [Inject] protected IUserService UserService { get; set; } = default!;
 
         protected override async Task OnInitializedAsync()
         {
@@ -35,7 +35,7 @@ namespace CheapHelpers.Blazor.Shared
             try
             {
                 // Null when signed out
-                User = await AccountIdentity.GetUserAsync((await AuthenticationStateTask).User);
+                User = await UserService.GetUserAsync((await AuthenticationStateTask).User);
                 if (User != null)
                 {
                     DarkMode = User.IsDarkMode;
@@ -76,7 +76,7 @@ namespace CheapHelpers.Blazor.Shared
                 {
                     try
                     {
-                        await AccountIdentity.UpdateUserAsync(User);
+                        await UserService.UpdateUserAsync(User);
                         Debug.WriteLine($"LayoutBase: Dark mode preference saved");
                     }
                     catch (Exception ex)
@@ -121,7 +121,7 @@ namespace CheapHelpers.Blazor.Shared
                 {
                     try
                     {
-                        await AccountIdentity.UpdateNavigationStatesAsync(User.Id, new() { [key] = expanded });
+                        await UserService.UpdateNavigationStatesAsync(User.Id, new() { [key] = expanded });
                     }
                     catch (Exception ex)
                     {
@@ -144,7 +144,7 @@ namespace CheapHelpers.Blazor.Shared
                 {
                     try
                     {
-                        await AccountIdentity.UpdateNavigationStatesAsync(User.Id, LocalNavigationState);
+                        await UserService.UpdateNavigationStatesAsync(User.Id, LocalNavigationState);
                         Debug.WriteLine($"LayoutBase: Batch saved {LocalNavigationState.Count} navigation states on dispose");
                     }
                     catch (Exception ex)

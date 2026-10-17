@@ -134,7 +134,7 @@
 @code {
     [Inject] private NavigationManager Nav { get; set; } = default!;
     [Inject] private IStringLocalizer Loc { get; set; } = default!;
-    [Inject] private IAccountIdentityService AccountIdentity { get; set; } = default!;
+    [Inject] private IUserService UserService { get; set; } = default!;
     [Inject] private ISnackbar ToastService { get; set; } = default!;
 
     [SupplyParameterFromQuery] private string? Email { get; set; }
@@ -156,7 +156,7 @@
             // Null for unknown emails: the page then shows only the generic message
             if (!string.IsNullOrEmpty(Email))
             {
-                lockoutInfo = await AccountIdentity.GetLockoutAsync(Email);
+                lockoutInfo = await UserService.GetLockoutAsync(Email);
             }
 
             UpdateTimeRemaining();

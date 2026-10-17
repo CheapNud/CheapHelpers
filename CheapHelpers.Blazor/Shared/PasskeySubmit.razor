@@ -1,5 +1,5 @@
 @* Submit button that runs the browser's passkey dialog before the form posts. The <passkey-submit> element
-   comes from PasskeySubmit.razor.js, which the host page loads as a module script. The form must contain
+   comes from PasskeySubmit.razor.js, which CheapHelpers.Blazor.lib.module.js loads on every page. The form must contain
    <AntiforgeryToken />: the script sends it with the options request and the form post *@
 @using CheapHelpers.Blazor.Helpers
 @using CheapHelpers.Blazor.Pages.Account

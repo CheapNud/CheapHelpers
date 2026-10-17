@@ -240,6 +240,8 @@ Delete your `CheapAccountController<TUser, TContext>` subclass and its `[Route]`
 
 To force a password change, let `AfterSignIn` return `routes.ChangePasswordRoute + "?forced=true"` when your own check says the user needs a new password. The change-password page then shows a warning that a new password is required. Keeping the user on that page until the password is changed stays in your app, for example in middleware that redirects other requests.
 
+Passkeys appear on the login page and in the Security tab of the account page once the app sets `Stores.SchemaVersion = IdentitySchemaVersions.Version3` in its Identity options. Add one EF migration for the new `AspNetUserPasskeys` table. Nothing else is needed, because the package loads its passkey script on every page itself.
+
 ### Entity Framework
 ```csharp
 // Generic context with Identity

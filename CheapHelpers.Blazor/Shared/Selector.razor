@@ -127,7 +127,7 @@
                 {
                     throw new InvalidOperationException(
                         $"Selector<{typeof(C).Name}>: No Items provided and no IDbContextFactory<DbContext> registered. " +
-                        "Either pass Items or register CheapContext in DI.");
+                        "Either pass Items or call AddCheapHelpersBlazor<TUser, TContext>, which registers it.");
                 }
 
                 using (var context = Factory.CreateDbContext())

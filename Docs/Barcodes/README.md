@@ -50,7 +50,7 @@ var read = barcodes.ReadBarcode(File.ReadAllBytes("label.jpg"));
 
 ### Scan events
 
-`OnScanAsync(barcode)` raises `BarcodeScanned` for every subscriber, for example when a hardware scanner or a JS scanner reports a code.
+`OnScanAsync(barcode)` raises `BarcodeScanned` for every subscriber, for example when a hardware scanner or a JS scanner reports a code. The service is a singleton, so the event is app-wide. In a multi-user host such as Blazor Server, every circuit sees every scan, so filter per user and unsubscribe when the component is disposed.
 
 ## Dependencies
 

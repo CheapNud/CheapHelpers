@@ -57,8 +57,7 @@ public class NtfyNotificationChannel(
             if (!string.IsNullOrEmpty(ntfyOptions.Token))
                 ntfyRequest.Headers.Add("Authorization", $"Bearer {ntfyOptions.Token}");
 
-            // Fresh client per publish: notifications are rare, and a long-lived handler
-            // would pin stale DNS after the ntfy container is recreated.
+            // Factory clients are cheap and alerts are rare, so there is no reason to hold one.
             using var ntfyResponse = await httpClientFactory.CreateClient(NtfyHttpClientName)
                 .SendAsync(ntfyRequest, cancellationToken);
             if (!ntfyResponse.IsSuccessStatusCode)

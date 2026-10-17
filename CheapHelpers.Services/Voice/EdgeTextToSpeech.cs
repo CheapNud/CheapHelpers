@@ -50,6 +50,11 @@ public sealed class EdgeTextToSpeech(IOptions<EdgeTtsOptions> options, ILogger<E
         var voice = ttsOptions?.Voice ?? edgeOptions.Voice;
         var language = ttsOptions?.Language ?? DefaultLanguage;
 
+        // One budget for the whole synthesis, the skew retry included, so a stalled stream
+        // cannot hang a caller that passed no token.
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(edgeOptions.Timeout);
+
         // Upstream communicate.py stream(): on a 403 handshake it corrects the clock skew
         // from the server's Date header and retries exactly once.
         for (var attempt = 0; ; attempt++)
@@ -121,7 +126,7 @@ public sealed class EdgeTextToSpeech(IOptions<EdgeTtsOptions> options, ILogger<E
                     "EdgeTTS Sec-MS-GEC prefix={Prefix} version={Version}",
                     secMsGec[..16], EdgeTtsSecurity.SecMsGecVersion);
 
-                await webSocket.ConnectAsync(wsUri, cancellationToken);
+                await webSocket.ConnectAsync(wsUri, timeoutCts.Token);
                 logger.LogDebug("EdgeTTS connected (voice {Voice})", voice);
 
                 // Send configuration. Upstream rany2/edge-tts adds an X-Timestamp header to
@@ -134,7 +139,7 @@ public sealed class EdgeTextToSpeech(IOptions<EdgeTtsOptions> options, ILogger<E
                 var configJson = "{\"context\":{\"synthesis\":{\"audio\":{\"metadataoptions\":{\"sentenceBoundaryEnabled\":\"false\",\"wordBoundaryEnabled\":\"false\"},\"outputFormat\":\"audio-24khz-96kbitrate-mono-mp3\"}}}}";
                 var configMessage = $"X-Timestamp:{timestamp}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{configJson}";
 
-                await SendTextAsync(webSocket, configMessage, cancellationToken);
+                await SendTextAsync(webSocket, configMessage, timeoutCts.Token);
 
                 // Send SSML synthesis request. Upstream order is: X-RequestId, Content-Type,
                 // X-Timestamp, Path (and the timestamp gets a trailing 'Z' here — verified
@@ -146,7 +151,7 @@ public sealed class EdgeTextToSpeech(IOptions<EdgeTtsOptions> options, ILogger<E
                     $"<prosody pitch='{SecurityElement.Escape(edgeOptions.Pitch)}' rate='{SecurityElement.Escape(edgeOptions.Rate)}' volume='{SecurityElement.Escape(edgeOptions.Volume)}'>" +
                     $"{SecurityElement.Escape(text)}</prosody></voice></speak>";
 
-                await SendTextAsync(webSocket, ssmlMessage, cancellationToken);
+                await SendTextAsync(webSocket, ssmlMessage, timeoutCts.Token);
 
                 // Receive audio data. A message can span several receives, so frames are
                 // reassembled until EndOfMessage before the header is parsed.
@@ -156,7 +161,7 @@ public sealed class EdgeTextToSpeech(IOptions<EdgeTtsOptions> options, ILogger<E
 
                 while (true)
                 {
-                    var wsResult = await webSocket.ReceiveAsync(receiveBuffer, cancellationToken);
+                    var wsResult = await webSocket.ReceiveAsync(receiveBuffer, timeoutCts.Token);
 
                     if (wsResult.MessageType == WebSocketMessageType.Close)
                         break;
@@ -201,7 +206,7 @@ public sealed class EdgeTextToSpeech(IOptions<EdgeTtsOptions> options, ILogger<E
                 {
                     try
                     {
-                        using var closeTimeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                        using var closeTimeoutCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token);
                         closeTimeoutCts.CancelAfter(TimeSpan.FromSeconds(1));
                         await webSocket.CloseOutputAsync(
                             WebSocketCloseStatus.NormalClosure,
@@ -228,6 +233,13 @@ public sealed class EdgeTextToSpeech(IOptions<EdgeTtsOptions> options, ILogger<E
             // The caller's cancellation propagates; everything else returns empty audio.
             catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
+                // Our own timeout fired (the caller's cancellation is filtered out above).
+                if (timeoutCts.IsCancellationRequested)
+                {
+                    logger.LogWarning("EdgeTTS synthesis timed out after {Timeout} (voice {Voice})", edgeOptions.Timeout, voice);
+                    return ReadOnlyMemory<byte>.Empty;
+                }
+
                 // Edge's websocket can fail for any reason (rate limited, throttled, blocked).
                 // Returning empty audio keeps the pipeline alive; the consumer logs and moves on.
                 // When the handshake itself failed (typical "HTTP 400/403 instead of 101"),

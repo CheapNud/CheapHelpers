@@ -17,4 +17,7 @@ public class EdgeTtsOptions
 
     /// <summary>Relative volume, e.g. "-20%".</summary>
     public string Volume { get; set; } = "+0%";
+
+    /// <summary>Time limit for the whole synthesis, including the one clock-skew retry. On expiry the call returns empty audio.</summary>
+    public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
 }

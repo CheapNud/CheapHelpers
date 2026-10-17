@@ -40,7 +40,7 @@ public static class VoiceServiceExtensions
     {
         services.Configure(configure ?? (_ => { }));
         services.TryAddSingleton(TimeProvider.System);
-        services.AddSingleton<EdgeTextToSpeech>();
+        services.TryAddSingleton<EdgeTextToSpeech>();
         // A typed client (AddHttpClient<T>) is transient, which would drop the catalog's cache on every resolve,
         // so the catalog is a singleton that creates its named client per fetch.
         services.AddHttpClient(nameof(EdgeTtsVoiceCatalog));

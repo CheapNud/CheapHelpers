@@ -16,6 +16,17 @@ public class NotificationDispatcher(
     private readonly Dictionary<string, INotificationChannel> _channelMap =
         channels.ToDictionary(c => c.ChannelName, StringComparer.OrdinalIgnoreCase);
 
+    // ntfy publishes to a topic and desktop shows on this machine, so neither is per user.
+    // They go out once per dispatch with the original notification, not once per recipient.
+    // This is deliberate even when no recipients resolve: an ops alert to a topic has no user recipients.
+    private static readonly NotificationChannelFlags BroadcastChannels =
+        NotificationChannelFlags.Ntfy | NotificationChannelFlags.Desktop;
+
+    // Single channel flags in value order; their lower-case names match the registered ChannelName values
+    private static readonly NotificationChannelFlags[] SingleChannelFlags =
+        [.. Enum.GetValues<NotificationChannelFlags>()
+            .Where(flag => flag is not NotificationChannelFlags.None and not NotificationChannelFlags.All)];
+
     /// <summary>
     /// Sends a notification across multiple channels based on resolved user subscriptions
     /// </summary>
@@ -38,14 +49,19 @@ public class NotificationDispatcher(
         int totalSent = 0;
         int totalFailed = 0;
 
+        // Send broadcast channels once with the original notification
+        MergeResult(await SendToChannelsAsync(notification, notification.Channels & BroadcastChannels, ct));
+
         // Send to each resolved recipient
         foreach (UnifiedNotification resolvedNotification in resolvedNotifications)
         {
-            NotificationDispatchResult recipientResult =
-                await SendToResolvedRecipientAsync(resolvedNotification, ct);
+            MergeResult(await SendToChannelsAsync(resolvedNotification, resolvedNotification.Channels & ~BroadcastChannels, ct));
+        }
 
+        void MergeResult(NotificationDispatchResult dispatchResult)
+        {
             // Merge channel results
-            foreach (KeyValuePair<string, NotificationChannelResult> channelResult in recipientResult.ChannelResults)
+            foreach (KeyValuePair<string, NotificationChannelResult> channelResult in dispatchResult.ChannelResults)
             {
                 string key = channelResult.Key;
                 if (allChannelResults.TryGetValue(key, out NotificationChannelResult? existingResult))
@@ -62,8 +78,8 @@ public class NotificationDispatcher(
                 }
             }
 
-            totalSent += recipientResult.TotalSentCount;
-            totalFailed += recipientResult.TotalFailedCount;
+            totalSent += dispatchResult.TotalSentCount;
+            totalFailed += dispatchResult.TotalFailedCount;
         }
 
         // Determine overall success
@@ -80,43 +96,20 @@ public class NotificationDispatcher(
     }
 
     /// <summary>
-    /// Sends a resolved notification to a single recipient across their enabled channels
+    /// Sends a notification across the given channel flags
     /// </summary>
-    private async Task<NotificationDispatchResult> SendToResolvedRecipientAsync(
+    private async Task<NotificationDispatchResult> SendToChannelsAsync(
         UnifiedNotification resolvedNotification,
+        NotificationChannelFlags channelFlags,
         CancellationToken ct)
     {
         Dictionary<string, NotificationChannelResult> channelResults = [];
         List<Task<(string ChannelName, NotificationChannelResult Result)>> tasks = [];
 
         // Add tasks for each enabled channel flag
-        if (resolvedNotification.Channels.HasFlag(NotificationChannelFlags.InApp))
+        foreach (NotificationChannelFlags flag in SingleChannelFlags.Where(flag => channelFlags.HasFlag(flag)))
         {
-            if (_channelMap.TryGetValue("inapp", out INotificationChannel? channel))
-            {
-                tasks.Add(SendToChannelAsync(channel, resolvedNotification, ct));
-            }
-        }
-
-        if (resolvedNotification.Channels.HasFlag(NotificationChannelFlags.Email))
-        {
-            if (_channelMap.TryGetValue("email", out INotificationChannel? channel))
-            {
-                tasks.Add(SendToChannelAsync(channel, resolvedNotification, ct));
-            }
-        }
-
-        if (resolvedNotification.Channels.HasFlag(NotificationChannelFlags.Sms))
-        {
-            if (_channelMap.TryGetValue("sms", out INotificationChannel? channel))
-            {
-                tasks.Add(SendToChannelAsync(channel, resolvedNotification, ct));
-            }
-        }
-
-        if (resolvedNotification.Channels.HasFlag(NotificationChannelFlags.Push))
-        {
-            if (_channelMap.TryGetValue("push", out INotificationChannel? channel))
+            if (_channelMap.TryGetValue(flag.ToString().ToLowerInvariant(), out INotificationChannel? channel))
             {
                 tasks.Add(SendToChannelAsync(channel, resolvedNotification, ct));
             }

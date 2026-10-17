@@ -38,62 +38,32 @@ public class DesktopNotificationChannel(
         UnifiedNotification notification,
         CancellationToken cancellationToken)
     {
-        logger.LogDebug(
-            "Sending desktop notification to {RecipientCount} users: {Title}",
-            notification.RecipientUserIds.Count,
-            notification.Title);
-
-        var successCount = 0;
-        var failedUsers = new List<string>();
+        logger.LogDebug("Sending desktop notification: {Title}", notification.Title);
 
         // Desktop notifications are shown to the current user of the desktop application
         // Note: Unlike server-side channels (Email, SMS), desktop notifications are client-side
-        // and show immediately to whoever is using the app, regardless of RecipientUserIds
-        foreach (var userId in notification.RecipientUserIds)
+        // and show immediately to whoever is using the app, regardless of RecipientUserIds.
+        // The dispatcher sends this channel once per dispatch, so it shows exactly once.
+        try
         {
-            try
-            {
-                await desktopInterop.ShowNotificationAsync(
-                    notification.Title,
-                    notification.Body ?? string.Empty);
+            await desktopInterop.ShowNotificationAsync(
+                notification.Title,
+                notification.Body ?? string.Empty);
 
-                successCount++;
+            logger.LogTrace("Desktop notification shown successfully");
 
-                logger.LogTrace(
-                    "Desktop notification shown successfully for user {UserId}",
-                    userId);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(
-                    ex,
-                    "Failed to show desktop notification for user {UserId}: {Error}",
-                    userId,
-                    ex.Message);
-
-                failedUsers.Add(userId);
-            }
+            return NotificationChannelResult.Success(ChannelName);
         }
-
-        logger.LogInformation(
-            "Desktop notification delivery complete: {SuccessCount}/{TotalCount} succeeded",
-            successCount,
-            notification.RecipientUserIds.Count);
-
-        if (failedUsers.Count == 0)
+        catch (Exception ex)
         {
-            return NotificationChannelResult.Success(ChannelName, successCount);
-        }
-        else if (successCount == 0)
-        {
+            logger.LogError(
+                ex,
+                "Failed to show desktop notification: {Error}",
+                ex.Message);
+
             return NotificationChannelResult.Failure(
                 ChannelName,
-                $"All {failedUsers.Count} desktop notification(s) failed to display",
-                failedUsers.Count);
-        }
-        else
-        {
-            return NotificationChannelResult.Partial(ChannelName, successCount, failedUsers.Count);
+                "Desktop notification failed to display");
         }
     }
 }

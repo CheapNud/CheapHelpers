@@ -56,4 +56,9 @@ public class NotificationOptions
     /// Notification channels that are enabled globally (default: all channels)
     /// </summary>
     public NotificationChannelFlags EnabledChannels { get; set; } = NotificationChannelFlags.All;
+
+    /// <summary>
+    /// Settings for the ntfy channel (topic URL and optional token)
+    /// </summary>
+    public NtfyOptions Ntfy { get; set; } = new();
 }

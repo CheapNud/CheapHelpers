@@ -37,7 +37,12 @@ public enum NotificationChannelFlags
     Desktop = 1 << 4,
 
     /// <summary>
+    /// ntfy push topic, see https://docs.ntfy.sh/publish/
+    /// </summary>
+    Ntfy = 1 << 5,
+
+    /// <summary>
     /// All available notification channels
     /// </summary>
-    All = InApp | Email | Sms | Push | Desktop
+    All = InApp | Email | Sms | Push | Desktop | Ntfy
 }

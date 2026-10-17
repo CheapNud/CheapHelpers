@@ -26,7 +26,8 @@ public static class AccountEndpointExtensions
     /// <summary>
     /// Maps the account endpoints under <see cref="AccountRouteOptions.BaseRoute"/> (default <c>/Account</c>):
     /// <c>SignIn</c>, <c>SignInWith2fa</c>, <c>SignInWithRecoveryCode</c>, <c>SignOut</c>, <c>Refresh</c>,
-    /// <c>ClearExternalCookie</c>, <c>ResetAuthenticator</c> and <c>RemoveLogin</c>. All of them are POST
+    /// <c>ClearExternalCookie</c>, <c>ResetAuthenticator</c>, <c>RemoveLogin</c>, <c>ChangePassword</c> and
+    /// <c>SetPassword</c>. All of them are POST
     /// and demand an antiforgery token, so <c>app.UseAntiforgery()</c> must run before this call.
     /// </summary>
     /// <param name="endpoints">The app's endpoint route builder.</param>
@@ -217,6 +218,53 @@ public static class AccountEndpointExtensions
             return Results.Redirect(routes.HomeRoute);
         }).RequireAuthorization();
 
+        // Password changes rotate the security stamp, so the cookie must be refreshed in a full request
+        group.MapPost("ChangePassword", async (HttpContext httpContext, IFormCollection fc,
+            SignInManager<TUser> signInManager, UserManager<TUser> userManager) =>
+        {
+            var user = await userManager.GetUserAsync(httpContext.User);
+            if (user is null)
+            {
+                return Results.Redirect(routes.LoginRoute);
+            }
+
+            var newPassword = (string?)fc["NewPassword"] ?? string.Empty;
+            var result = ConfirmationMatches(fc, newPassword)
+                ? await userManager.ChangePasswordAsync(user, (string?)fc["OldPassword"] ?? string.Empty, newPassword)
+                : ConfirmationMismatch;
+
+            return await PasswordResultAsync(result, user, signInManager, routes.ChangePasswordRoute);
+        }).RequireAuthorization();
+
+        group.MapPost("SetPassword", async (HttpContext httpContext, IFormCollection fc,
+            SignInManager<TUser> signInManager, UserManager<TUser> userManager) =>
+        {
+            var user = await userManager.GetUserAsync(httpContext.User);
+            if (user is null)
+            {
+                return Results.Redirect(routes.LoginRoute);
+            }
+
+            var newPassword = (string?)fc["NewPassword"] ?? string.Empty;
+            var result = ConfirmationMatches(fc, newPassword)
+                ? await userManager.AddPasswordAsync(user, newPassword)
+                : ConfirmationMismatch;
+
+            return await PasswordResultAsync(result, user, signInManager, routes.SetPasswordRoute);
+        }).RequireAuthorization();
+
+        async Task<IResult> PasswordResultAsync(IdentityResult result, TUser user, SignInManager<TUser> signInManager, string failureRoute)
+        {
+            if (!result.Succeeded)
+            {
+                var code = result.Errors.FirstOrDefault()?.Code ?? "unknown";
+                return Results.Redirect($"{failureRoute}?failed={Uri.EscapeDataString(code)}");
+            }
+
+            await signInManager.RefreshSignInAsync(user);
+            return Results.Redirect(routes.HomeRoute);
+        }
+
         return endpoints;
     }
 
@@ -232,6 +280,13 @@ public static class AccountEndpointExtensions
                 filterContext.HttpContext.Features.Get<IAntiforgeryValidationFeature>()?.IsValid == true
                     ? await next(filterContext)
                     : Results.BadRequest());
+
+    private static readonly IdentityResult ConfirmationMismatch = IdentityResult.Failed(
+        new IdentityError { Code = "ConfirmationMismatch", Description = "The password and its confirmation do not match." });
+
+    // The confirmation field is optional so a form without one still posts
+    private static bool ConfirmationMatches(IFormCollection fc, string newPassword) =>
+        !fc.ContainsKey("ConfirmPassword") || (string?)fc["ConfirmPassword"] == newPassword;
 
     private static string CleanCode(string? code) =>
         (code ?? string.Empty).Replace(" ", string.Empty).Replace("-", string.Empty);

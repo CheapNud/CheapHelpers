@@ -112,10 +112,13 @@ namespace CheapHelpers.EF.Repositories
 
         /// <summary>
         /// Sets the password without checking the current one. Only for flows that verified the user
-        /// another way first, such as a password reset token.
+        /// another way first, such as a password reset token. Gives ConcurrencyFailure when the stored
+        /// user changed since <paramref name="user"/> was loaded, so a check made on that copy cannot be reused.
         /// </summary>
         public Task<IdentityResult> SetPasswordAsync(TUser user, string newPassword, CancellationToken token = default)
-            => UpdateStoredUserAsync(user, storedUser => SetPasswordHash(storedUser, newPassword), token);
+            => UpdateStoredUserAsync(user, storedUser => storedUser.ConcurrencyStamp != user.ConcurrencyStamp
+                ? IdentityResult.Failed(errors.ConcurrencyFailure())
+                : SetPasswordHash(storedUser, newPassword), token);
 
         /// <summary>
         /// Whether the stored user has a password.

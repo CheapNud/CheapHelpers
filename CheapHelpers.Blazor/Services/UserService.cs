@@ -505,6 +505,7 @@ namespace CheapHelpers.Blazor.Services
         /// <summary>
         /// Resets the password with a reset token: the token is checked with <see cref="VerifyUserTokenAsync"/>
         /// (InvalidToken when it fails, like UserManager.ResetPasswordAsync), then UserRepo sets the password.
+        /// That gives ConcurrencyFailure when the user changed after <paramref name="user"/> was loaded.
         /// </summary>
         public async Task<IdentityResult> ResetPasswordAsync(TUser user, string resetToken, string newPassword)
             => await VerifyUserTokenAsync(user, IdentityOptions.Tokens.PasswordResetTokenProvider, UserManager<TUser>.ResetPasswordTokenPurpose, resetToken)

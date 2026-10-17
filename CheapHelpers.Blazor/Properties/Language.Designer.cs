@@ -619,6 +619,15 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to External sign-in failed. Please try again..
+        /// </summary>
+        internal static string ExternalSignInFailed {
+            get {
+                return ResourceManager.GetString("ExternalSignInFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Filename cannot be null or empty.
         /// </summary>
         internal static string FilenameNullOrEmpty {

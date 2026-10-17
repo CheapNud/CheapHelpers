@@ -44,7 +44,7 @@ public class PlexAuthOptions
     /// <summary>
     /// Path to redirect unauthenticated users to (with optional ?error= query parameter).
     /// </summary>
-    public string LoginPath { get; set; } = "/login";
+    public string LoginPath { get; set; } = "/Account/Login";
 
     /// <summary>
     /// Path to redirect to after successful authentication.

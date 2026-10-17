@@ -236,7 +236,7 @@ app.MapCheapCultureEndpoint();
 ```
 
 #### Migrating from the account controller
-Delete your `CheapAccountController<TUser, TContext>` subclass and its `[Route]` attribute. Call `app.MapCheapAccountEndpoints<TUser>()` and `app.MapCheapCultureEndpoint()` after `app.UseAntiforgery()`. Sign-out is now POST only, so replace any sign-out link with a `<form method="post">` that contains `<AntiforgeryToken />`. A forced redirect after sign-in, such as a password change, goes in the `AfterSignIn` option instead of an overridden action. `OAuthProviderOptions.LoginPath` now defaults to `/Account/Login`, so an app that relied on the old `/login` default must set it explicitly.
+Delete your `CheapAccountController<TUser, TContext>` subclass and its `[Route]` attribute. Call `app.MapCheapAccountEndpoints<TUser>()` and `app.MapCheapCultureEndpoint()` after `app.UseAntiforgery()`. Sign-out is now POST only, so replace any sign-out link with a `<form method="post">` that contains `<AntiforgeryToken />`. A forced redirect after sign-in, such as a password change, goes in the `AfterSignIn` option instead of an overridden action. `OAuthProviderOptions.LoginPath` and `PlexAuthOptions.LoginPath` now default to `/Account/Login`, so an app that relied on the old `/login` default must set them explicitly.
 
 To force a password change, let `AfterSignIn` return `routes.ChangePasswordRoute + "?forced=true"` when your own check says the user needs a new password. The change-password page then shows a warning that a new password is required. Keeping the user on that page until the password is changed stays in your app, for example in middleware that redirects other requests.
 

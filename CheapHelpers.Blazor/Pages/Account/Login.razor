@@ -63,10 +63,14 @@
 
     [SupplyParameterFromQuery(Name = "failed")] private string? Failed { get; set; }
 
+    // Set by the external sign-in callbacks; only its presence counts, so a crafted link cannot put its own text on the page
+    [SupplyParameterFromQuery(Name = "error")] private string? Error { get; set; }
+
     private string? FailedMessage => Failed switch
     {
         "credentials" => Loc["InvalidCredentials"],
         "notallowed" => Loc["AccountNotAllowed"],
+        _ when Error is not null => Loc["ExternalSignInFailed"],
         _ => null,
     };
 

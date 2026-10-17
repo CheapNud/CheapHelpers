@@ -318,6 +318,9 @@
   <data name="ErrorMessage" xml:space="preserve">
     <value>Something went wrong. Please try again.</value>
   </data>
+  <data name="ExternalSignInFailed" xml:space="preserve">
+    <value>External sign-in failed. Please try again.</value>
+  </data>
   <data name="FinalWarning" xml:space="preserve">
     <value>Are you sure? This cannot be undone, and two-factor authentication stays off until you set up your app again.</value>
   </data>

@@ -17,8 +17,8 @@
     <Product>CheapHelpers</Product>
     <Description>Core utilities, extension methods, and helpers for .NET development including encryption, file operations, and process execution</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
+    <PackageProjectUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>utilities;helpers;extensions;encryption;dotnet;csharp</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

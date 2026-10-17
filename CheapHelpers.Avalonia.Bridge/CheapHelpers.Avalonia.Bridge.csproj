@@ -14,8 +14,8 @@
     <Product>CheapHelpers</Product>
     <Description>Bridge package integrating CheapAvaloniaBlazor desktop notifications with CheapHelpers notification system. Provides DesktopNotificationChannel adapter allowing desktop OS notifications to participate in the unified notification system.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
+    <PackageProjectUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>cheaphelpers;avalonia;photino;webview;notifications;bridge;desktop;adapter</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

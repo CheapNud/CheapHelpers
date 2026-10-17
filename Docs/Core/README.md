@@ -284,7 +284,7 @@ public IQueryable<T> ApplySort<T>(IQueryable<T> query, string column, bool ascen
 
 ## Support and Contributing
 
-- **Repository**: [github.com/CheapNud/CheapHelpers](https://github.com/CheapNud/CheapHelpers)
+- **Repository**: [git.cheapludes.be/cheapnud/CheapHelpers](https://git.cheapludes.be/cheapnud/CheapHelpers)
 - **Issues**: Report bugs and feature requests on GitHub
 - **License**: MIT
 

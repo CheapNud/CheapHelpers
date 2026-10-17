@@ -349,7 +349,7 @@ CheapHelpers.Avalonia.Bridge/      Desktop notification adapter
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 ```bash
-git clone https://github.com/CheapNud/CheapHelpers.git
+git clone https://git.cheapludes.be/cheapnud/CheapHelpers.git
 cd CheapHelpers
 dotnet restore
 dotnet build

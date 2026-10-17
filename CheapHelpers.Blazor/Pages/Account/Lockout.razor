@@ -1,4 +1,5 @@
 ﻿@page "/Account/Lockout"
+@using CheapHelpers.Blazor.Configuration
 @using CheapHelpers.Blazor.Services
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
@@ -124,10 +125,13 @@
 
         <MudDivider Class="my-4"/>
 
-        <MudText Typo="Typo.caption" Align="Align.Center" Class="text-muted">
-            @Loc["NeedHelp"] 
-            <MudLink Href="mailto:support@yourapp.com">support@yourapp.com</MudLink>
-        </MudText>
+        @if (BlazorOptions.SupportEmail is not null)
+        {
+            <MudText Typo="Typo.caption" Align="Align.Center" Class="text-muted">
+                @Loc["NeedHelp"]
+                <MudLink Href="@($"mailto:{BlazorOptions.SupportEmail}")">@BlazorOptions.SupportEmail</MudLink>
+            </MudText>
+        }
     </MudPaper>
 </MudContainer>
 
@@ -136,6 +140,7 @@
     [Inject] private IStringLocalizer Loc { get; set; } = default!;
     [Inject] private IUserService UserService { get; set; } = default!;
     [Inject] private ISnackbar ToastService { get; set; } = default!;
+    [Inject] private CheapHelpersBlazorOptions BlazorOptions { get; set; } = default!;
 
     [SupplyParameterFromQuery] private string? Email { get; set; }
     

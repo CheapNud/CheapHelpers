@@ -168,4 +168,550 @@
   <data name="Remove" xml:space="preserve">
     <value>Remove</value>
   </data>
+  <data name="AccountLocked" xml:space="preserve">
+    <value>Account locked</value>
+  </data>
+  <data name="AccountLockedSubtitle" xml:space="preserve">
+    <value>Your account has been temporarily locked</value>
+  </data>
+  <data name="AccountNotAllowed" xml:space="preserve">
+    <value>This account cannot sign in yet. Please confirm your email address first.</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="AllMarkedAsRead" xml:space="preserve">
+    <value>All notifications marked as read</value>
+  </data>
+  <data name="Archive" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <data name="AuthenticatorCode" xml:space="preserve">
+    <value>Authenticator code</value>
+  </data>
+  <data name="AuthenticatorCodePrompt" xml:space="preserve">
+    <value>Your sign-in is protected with an authenticator app. Enter the code from the app below.</value>
+  </data>
+  <data name="AuthenticatorInstructions" xml:space="preserve">
+    <value>To use an authenticator app, follow these steps:</value>
+  </data>
+  <data name="AuthenticatorKeyReset" xml:space="preserve">
+    <value>Your authenticator key is replaced by a new one</value>
+  </data>
+  <data name="BackToAuthenticator" xml:space="preserve">
+    <value>Back to the authenticator code</value>
+  </data>
+  <data name="BackToHome" xml:space="preserve">
+    <value>Back to home</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ChangePassword" xml:space="preserve">
+    <value>Change password</value>
+  </data>
+  <data name="CodeCopied" xml:space="preserve">
+    <value>Code copied to the clipboard</value>
+  </data>
+  <data name="ConfirmDeleteTitle" xml:space="preserve">
+    <value>Delete image</value>
+  </data>
+  <data name="ConfirmError" xml:space="preserve">
+    <value>Your email address could not be confirmed. The link may be invalid or expired.</value>
+  </data>
+  <data name="ConfirmPassword" xml:space="preserve">
+    <value>Confirm password</value>
+  </data>
+  <data name="ConfirmReset" xml:space="preserve">
+    <value>Yes, reset my authenticator</value>
+  </data>
+  <data name="ConfirmSuccess" xml:space="preserve">
+    <value>Thank you for confirming your email address.</value>
+  </data>
+  <data name="ConfirmationEmailSent" xml:space="preserve">
+    <value>Confirmation email sent. Please check your inbox.</value>
+  </data>
+  <data name="ContactSupport" xml:space="preserve">
+    <value>Contact support if you think this is a mistake</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Continue</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="CurrentStatus" xml:space="preserve">
+    <value>Current status</value>
+  </data>
+  <data name="DarkTheme" xml:space="preserve">
+    <value>Dark theme</value>
+  </data>
+  <data name="DataDownloaded" xml:space="preserve">
+    <value>Your data has been downloaded</value>
+  </data>
+  <data name="DataRefreshed" xml:space="preserve">
+    <value>Data refreshed</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="DeleteErrorMessage" xml:space="preserve">
+    <value>The image could not be deleted</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="DontHaveAccess" xml:space="preserve">
+    <value>No access to your authenticator app?</value>
+  </data>
+  <data name="DownloadAuthenticatorApp" xml:space="preserve">
+    <value>Download an authenticator app for</value>
+  </data>
+  <data name="DownloadData" xml:space="preserve">
+    <value>Download my data</value>
+  </data>
+  <data name="Downloading" xml:space="preserve">
+    <value>Downloading...</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="EmailChangeConfirmed" xml:space="preserve">
+    <value>Thank you for confirming your new email address.</value>
+  </data>
+  <data name="EmailPlaceholder" xml:space="preserve">
+    <value>example@domain.com</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Enabled</value>
+  </data>
+  <data name="EnterCodeFromApp" xml:space="preserve">
+    <value>Enter the 6-digit code from your authenticator app</value>
+  </data>
+  <data name="EnterRecoveryCodeHelp" xml:space="preserve">
+    <value>Enter one of your recovery codes</value>
+  </data>
+  <data name="EnterVerificationCode" xml:space="preserve">
+    <value>After you scan the QR code or enter the key, your app shows a unique code. Enter that code below.</value>
+  </data>
+  <data name="ErrorCopying" xml:space="preserve">
+    <value>Could not copy to the clipboard</value>
+  </data>
+  <data name="ErrorDownloadingData" xml:space="preserve">
+    <value>Your data could not be downloaded</value>
+  </data>
+  <data name="ErrorGeneratingCodes" xml:space="preserve">
+    <value>New recovery codes could not be generated</value>
+  </data>
+  <data name="ErrorLoadingCodes" xml:space="preserve">
+    <value>Your recovery codes could not be loaded</value>
+  </data>
+  <data name="ErrorLoadingData" xml:space="preserve">
+    <value>Your data could not be loaded</value>
+  </data>
+  <data name="ErrorLoadingStatus" xml:space="preserve">
+    <value>The two-factor status could not be loaded</value>
+  </data>
+  <data name="ErrorMessage" xml:space="preserve">
+    <value>Something went wrong. Please try again.</value>
+  </data>
+  <data name="FinalWarning" xml:space="preserve">
+    <value>Are you sure? This cannot be undone, and two-factor authentication stays off until you set up your app again.</value>
+  </data>
+  <data name="FirstName" xml:space="preserve">
+    <value>First name</value>
+  </data>
+  <data name="ForgotPassword" xml:space="preserve">
+    <value>Forgot your password?</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="Generate" xml:space="preserve">
+    <value>Generate</value>
+  </data>
+  <data name="GenerateNewCodes" xml:space="preserve">
+    <value>Generate new recovery codes</value>
+  </data>
+  <data name="GenerateNewCodesConfirmation" xml:space="preserve">
+    <value>Your current recovery codes will stop working. Do you want to generate new ones?</value>
+  </data>
+  <data name="Important" xml:space="preserve">
+    <value>Important</value>
+  </data>
+  <data name="ImportantWarning" xml:space="preserve">
+    <value>Important</value>
+  </data>
+  <data name="InApp" xml:space="preserve">
+    <value>In app</value>
+  </data>
+  <data name="IncorrectPassword" xml:space="preserve">
+    <value>The current password is incorrect.</value>
+  </data>
+  <data name="InvalidAuthenticatorCode" xml:space="preserve">
+    <value>The authenticator code is invalid.</value>
+  </data>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>Invalid email or password.</value>
+  </data>
+  <data name="InvalidRecoveryCode" xml:space="preserve">
+    <value>The recovery code is invalid.</value>
+  </data>
+  <data name="LastName" xml:space="preserve">
+    <value>Last name</value>
+  </data>
+  <data name="LockoutDetails" xml:space="preserve">
+    <value>Lockout details</value>
+  </data>
+  <data name="LockoutExpired" xml:space="preserve">
+    <value>The lockout has expired. You can log in again.</value>
+  </data>
+  <data name="LockoutMessage" xml:space="preserve">
+    <value>Your account has been locked after too many failed sign-in attempts.</value>
+  </data>
+  <data name="LockoutUntil" xml:space="preserve">
+    <value>Locked until</value>
+  </data>
+  <data name="LogIn" xml:space="preserve">
+    <value>Log in</value>
+  </data>
+  <data name="LogOut" xml:space="preserve">
+    <value>Log out</value>
+  </data>
+  <data name="ManageRecoveryCodes" xml:space="preserve">
+    <value>Manage recovery codes</value>
+  </data>
+  <data name="MarkAllRead" xml:space="preserve">
+    <value>Mark all as read</value>
+  </data>
+  <data name="MarkAsRead" xml:space="preserve">
+    <value>Mark as read</value>
+  </data>
+  <data name="Message" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="Messages" xml:space="preserve">
+    <value>messages</value>
+  </data>
+  <data name="MoreInfo" xml:space="preserve">
+    <value>More information</value>
+  </data>
+  <data name="NeedHelp" xml:space="preserve">
+    <value>Need help? Contact</value>
+  </data>
+  <data name="NewCodesGenerated" xml:space="preserve">
+    <value>New recovery codes generated</value>
+  </data>
+  <data name="NewPassword" xml:space="preserve">
+    <value>New password</value>
+  </data>
+  <data name="NewRecoveryCodesNeeded" xml:space="preserve">
+    <value>You will need new recovery codes</value>
+  </data>
+  <data name="NoDataToDownload" xml:space="preserve">
+    <value>There is no data to download</value>
+  </data>
+  <data name="NoDevicesFound" xml:space="preserve">
+    <value>No cameras found</value>
+  </data>
+  <data name="NoImagesFound" xml:space="preserve">
+    <value>No images found</value>
+  </data>
+  <data name="NoNotificationTypesConfigured" xml:space="preserve">
+    <value>No notification types are configured.</value>
+  </data>
+  <data name="NoNotifications" xml:space="preserve">
+    <value>You have no notifications.</value>
+  </data>
+  <data name="NoRecoveryCodes" xml:space="preserve">
+    <value>You have no recovery codes.</value>
+  </data>
+  <data name="NotificationType" xml:space="preserve">
+    <value>Notification type</value>
+  </data>
+  <data name="Notifications" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
+  <data name="Or" xml:space="preserve">
+    <value>or</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="PasswordExample" xml:space="preserve">
+    <value>Your password</value>
+  </data>
+  <data name="PasswordNotChanged" xml:space="preserve">
+    <value>Your password could not be changed.</value>
+  </data>
+  <data name="PasswordNotSet" xml:space="preserve">
+    <value>Your password could not be set.</value>
+  </data>
+  <data name="PasswordRequirementsNotMet" xml:space="preserve">
+    <value>The new password does not meet the requirements.</value>
+  </data>
+  <data name="PasswordRules" xml:space="preserve">
+    <value>Use at least 8 characters, with an uppercase letter, a lowercase letter and a digit.</value>
+  </data>
+  <data name="PasswordsDoNotMatch" xml:space="preserve">
+    <value>The passwords do not match.</value>
+  </data>
+  <data name="PermanentLockout" xml:space="preserve">
+    <value>Your account stays locked until an administrator unlocks it.</value>
+  </data>
+  <data name="PersonalData" xml:space="preserve">
+    <value>Personal data</value>
+  </data>
+  <data name="PersonalDataDescription" xml:space="preserve">
+    <value>Your account holds the personal data below. You can download a copy.</value>
+  </data>
+  <data name="PersonalDataWarning" xml:space="preserve">
+    <value>This page shows the data stored about you. Keep any download in a safe place.</value>
+  </data>
+  <data name="Preferences" xml:space="preserve">
+    <value>Preferences</value>
+  </data>
+  <data name="Processing" xml:space="preserve">
+    <value>Processing...</value>
+  </data>
+  <data name="Profile" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="Property" xml:space="preserve">
+    <value>Field</value>
+  </data>
+  <data name="Push" xml:space="preserve">
+    <value>Push</value>
+  </data>
+  <data name="Read" xml:space="preserve">
+    <value>Read</value>
+  </data>
+  <data name="ReconfigureAuthenticatorApp" xml:space="preserve">
+    <value>You need to set up your authenticator app again</value>
+  </data>
+  <data name="RecoveryCode" xml:space="preserve">
+    <value>Recovery code</value>
+  </data>
+  <data name="RecoveryCodeDescription" xml:space="preserve">
+    <value>Enter one of your recovery codes to sign in without your authenticator app.</value>
+  </data>
+  <data name="RecoveryCodeLogin" xml:space="preserve">
+    <value>Sign in with a recovery code</value>
+  </data>
+  <data name="RecoveryCodeWarning" xml:space="preserve">
+    <value>Each recovery code works only once.</value>
+  </data>
+  <data name="RecoveryCodes" xml:space="preserve">
+    <value>Recovery codes</value>
+  </data>
+  <data name="RecoveryCodesCount" xml:space="preserve">
+    <value>Recovery codes left</value>
+  </data>
+  <data name="RecoveryCodesDescription" xml:space="preserve">
+    <value>Recovery codes let you sign in when you cannot use your authenticator app.</value>
+  </data>
+  <data name="RecoveryCodesInfo" xml:space="preserve">
+    <value>About recovery codes</value>
+  </data>
+  <data name="RecoveryCodesInfoContent" xml:space="preserve">
+    <value>Each code signs you in once without your authenticator app. Keep them in a safe place. When you generate new codes, the old ones stop working.</value>
+  </data>
+  <data name="RecoveryCodesWarning" xml:space="preserve">
+    <value>Store these codes in a safe place. If you lose your device and your recovery codes, you lose access to your account.</value>
+  </data>
+  <data name="RefreshData" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="RefreshStatus" xml:space="preserve">
+    <value>Refresh status</value>
+  </data>
+  <data name="RememberThisMachine" xml:space="preserve">
+    <value>Remember this device</value>
+  </data>
+  <data name="RequiredError" xml:space="preserve">
+    <value>This field is required</value>
+  </data>
+  <data name="ResetAction" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="ResetAuthenticator" xml:space="preserve">
+    <value>Reset authenticator</value>
+  </data>
+  <data name="ResetAuthenticatorDescription" xml:space="preserve">
+    <value>A reset replaces your authenticator key and turns off two-factor authentication.</value>
+  </data>
+  <data name="ResetAuthenticatorWarning" xml:space="preserve">
+    <value>Your current authenticator app stops working for this account until you set it up again.</value>
+  </data>
+  <data name="ResetPasswordOption" xml:space="preserve">
+    <value>Reset your password</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Saved" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="ScanQROrEnterKey" xml:space="preserve">
+    <value>Scan the QR code or enter this key in your authenticator app:</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Security" xml:space="preserve">
+    <value>Security</value>
+  </data>
+  <data name="SecurityMeasure" xml:space="preserve">
+    <value>This protects your account against password guessing</value>
+  </data>
+  <data name="SendConfirmationEmail" xml:space="preserve">
+    <value>Send confirmation email</value>
+  </data>
+  <data name="SendMail" xml:space="preserve">
+    <value>We sent you an email with a link to reset your password.</value>
+  </data>
+  <data name="SetPassword" xml:space="preserve">
+    <value>Set password</value>
+  </data>
+  <data name="SetPasswordDescription" xml:space="preserve">
+    <value>Your account has no password yet. Set one so you can also sign in with your email address.</value>
+  </data>
+  <data name="SignIn" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="SignInWithRecoveryCode" xml:space="preserve">
+    <value>Sign in with recovery code</value>
+  </data>
+  <data name="Sms" xml:space="preserve">
+    <value>SMS</value>
+  </data>
+  <data name="StatusRefreshed" xml:space="preserve">
+    <value>Status refreshed</value>
+  </data>
+  <data name="TemporaryRestriction" xml:space="preserve">
+    <value>The lockout is temporary</value>
+  </data>
+  <data name="TimeRemaining" xml:space="preserve">
+    <value>Time remaining</value>
+  </data>
+  <data name="Title" xml:space="preserve">
+    <value>Title</value>
+  </data>
+  <data name="TooManyFailedAttempts" xml:space="preserve">
+    <value>Too many failed sign-in attempts</value>
+  </data>
+  <data name="TryLoginAgain" xml:space="preserve">
+    <value>Try to log in again</value>
+  </data>
+  <data name="TwoFactorAuthentication" xml:space="preserve">
+    <value>Two-factor authentication</value>
+  </data>
+  <data name="TwoFactorDisabled" xml:space="preserve">
+    <value>Two-factor authentication is turned off</value>
+  </data>
+  <data name="Understood" xml:space="preserve">
+    <value>Got it</value>
+  </data>
+  <data name="Unread" xml:space="preserve">
+    <value>Unread</value>
+  </data>
+  <data name="UpdateErrorMessage" xml:space="preserve">
+    <value>The image could not be updated</value>
+  </data>
+  <data name="UploadFiles" xml:space="preserve">
+    <value>Upload files</value>
+  </data>
+  <data name="UseRecoveryCode" xml:space="preserve">
+    <value>Use a recovery code</value>
+  </data>
+  <data name="Value" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="VerificationCode" xml:space="preserve">
+    <value>Verification code</value>
+  </data>
+  <data name="Verify" xml:space="preserve">
+    <value>Verify</value>
+  </data>
+  <data name="WaitForExpiry" xml:space="preserve">
+    <value>Wait until the lockout expires</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="WhatCanYouDo" xml:space="preserve">
+    <value>What can you do?</value>
+  </data>
+  <data name="WhatHappensWhenReset" xml:space="preserve">
+    <value>What happens when you reset</value>
+  </data>
+  <data name="WhyLocked" xml:space="preserve">
+    <value>Why is my account locked?</value>
+  </data>
+  <data name="YourPersonalData" xml:space="preserve">
+    <value>Your personal data</value>
+  </data>
+  <data name="YourRecoveryCodes" xml:space="preserve">
+    <value>Your recovery codes</value>
+  </data>
+  <data name="OldPassword" xml:space="preserve">
+    <value>Current password</value>
+  </data>
+  <data name="ForgotPasswordTitle" xml:space="preserve">
+    <value>Forgot password</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="ResetPassword" xml:space="preserve">
+    <value>Reset password</value>
+  </data>
+  <data name="SetPin" xml:space="preserve">
+    <value>Set your PIN</value>
+  </data>
+  <data name="NewPin" xml:space="preserve">
+    <value>New PIN (4 digits)</value>
+  </data>
+  <data name="NewPinHelp" xml:space="preserve">
+    <value>Enter your new 4-digit PIN</value>
+  </data>
+  <data name="ConfirmPin" xml:space="preserve">
+    <value>Confirm PIN (4 digits)</value>
+  </data>
+  <data name="ConfirmPinHelp" xml:space="preserve">
+    <value>Enter your PIN again to confirm</value>
+  </data>
+  <data name="PinMustBeFourDigits" xml:space="preserve">
+    <value>The new PIN must be 4 digits.</value>
+  </data>
+  <data name="ConfirmPinFourDigits" xml:space="preserve">
+    <value>Please confirm your PIN with 4 digits.</value>
+  </data>
+  <data name="PinDigitsOnly" xml:space="preserve">
+    <value>The PIN may contain only numbers.</value>
+  </data>
+  <data name="ConfirmPinDigitsOnly" xml:space="preserve">
+    <value>The PIN confirmation may contain only numbers.</value>
+  </data>
+  <data name="PinsDoNotMatch" xml:space="preserve">
+    <value>The PINs do not match.</value>
+  </data>
+  <data name="PinSet" xml:space="preserve">
+    <value>Your PIN has been set.</value>
+  </data>
+  <data name="PinSetError" xml:space="preserve">
+    <value>An error occurred while setting your PIN.</value>
+  </data>
+  <data name="PinNotSet" xml:space="preserve">
+    <value>Your PIN could not be set</value>
+  </data>
+  <data name="ShowPassword" xml:space="preserve">
+    <value>Show password</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>An error occurred.</value>
+  </data>
 </root>

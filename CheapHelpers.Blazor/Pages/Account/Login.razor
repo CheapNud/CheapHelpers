@@ -12,7 +12,7 @@
         <AntiforgeryToken />
         <MudGrid>
             <MudItem xxl="12" xl="12" md="12" xs="12">
-                <MudText Typo="Typo.h4">Log in</MudText>
+                <MudText Typo="Typo.h4">@Loc["LogIn"]</MudText>
             </MudItem>
             <MudItem xxl="12" xl="12" md="12" xs="12">
                 <MudDivider />
@@ -24,13 +24,13 @@
                 </MudItem>
             }
             <MudItem xxl="12" xl="12" md="12" xs="12">
-                <MudTextField @bind-Value=UserName name="UserName" Clearable=true Placeholder="example@domain.com" Label="Email" InputMode=InputMode.email InputType=InputType.Email Variant="Variant.Outlined"></MudTextField>
+                <MudTextField @bind-Value=UserName name="UserName" Clearable=true Placeholder="@Loc["EmailPlaceholder"]" Label="@Loc["Email"]" InputMode=InputMode.email InputType=InputType.Email Variant="Variant.Outlined"></MudTextField>
             </MudItem>
             <MudItem xxl="12" xl="12" md="12" xs="12">
                 <PasswordTextField name="Password" @onkeypress="KeySend" @bind-Value="@Password"></PasswordTextField>
             </MudItem>
             <MudItem xxl="12" xl="12" md="12" xs="12">
-                <MudButton Variant="Variant.Filled" FullWidth=true Color=Color.Primary ButtonType="ButtonType.Submit">Login</MudButton>
+                <MudButton Variant="Variant.Filled" FullWidth=true Color=Color.Primary ButtonType="ButtonType.Submit">@Loc["LogIn"]</MudButton>
             </MudItem>
             <MudItem xxl="12" xl="12" md="12" xs="12">
                 <MudLink Href="Account/ForgotPassword">@Loc["ForgotPassword"]</MudLink>

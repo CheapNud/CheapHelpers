@@ -657,4 +657,61 @@
   <data name="YourRecoveryCodes" xml:space="preserve">
     <value>Your recovery codes</value>
   </data>
+  <data name="OldPassword" xml:space="preserve">
+    <value>Current password</value>
+  </data>
+  <data name="ForgotPasswordTitle" xml:space="preserve">
+    <value>Forgot password</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="ResetPassword" xml:space="preserve">
+    <value>Reset password</value>
+  </data>
+  <data name="SetPin" xml:space="preserve">
+    <value>Set your PIN</value>
+  </data>
+  <data name="NewPin" xml:space="preserve">
+    <value>New PIN (4 digits)</value>
+  </data>
+  <data name="NewPinHelp" xml:space="preserve">
+    <value>Enter your new 4-digit PIN</value>
+  </data>
+  <data name="ConfirmPin" xml:space="preserve">
+    <value>Confirm PIN (4 digits)</value>
+  </data>
+  <data name="ConfirmPinHelp" xml:space="preserve">
+    <value>Enter your PIN again to confirm</value>
+  </data>
+  <data name="PinMustBeFourDigits" xml:space="preserve">
+    <value>The new PIN must be 4 digits.</value>
+  </data>
+  <data name="ConfirmPinFourDigits" xml:space="preserve">
+    <value>Please confirm your PIN with 4 digits.</value>
+  </data>
+  <data name="PinDigitsOnly" xml:space="preserve">
+    <value>The PIN may contain only numbers.</value>
+  </data>
+  <data name="ConfirmPinDigitsOnly" xml:space="preserve">
+    <value>The PIN confirmation may contain only numbers.</value>
+  </data>
+  <data name="PinsDoNotMatch" xml:space="preserve">
+    <value>The PINs do not match.</value>
+  </data>
+  <data name="PinSet" xml:space="preserve">
+    <value>Your PIN has been set.</value>
+  </data>
+  <data name="PinSetError" xml:space="preserve">
+    <value>An error occurred while setting your PIN.</value>
+  </data>
+  <data name="PinNotSet" xml:space="preserve">
+    <value>Your PIN could not be set</value>
+  </data>
+  <data name="ShowPassword" xml:space="preserve">
+    <value>Show password</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>An error occurred.</value>
+  </data>
 </root>

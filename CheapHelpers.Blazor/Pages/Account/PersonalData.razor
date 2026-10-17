@@ -23,8 +23,8 @@
                 <MudTh>@Loc["Value"]</MudTh>
             </HeaderContent>
             <RowTemplate>
-                <MudTd DataLabel="Property">@context.Key</MudTd>
-                <MudTd DataLabel="Value">
+                <MudTd DataLabel="@Loc["Property"]">@context.Key</MudTd>
+                <MudTd DataLabel="@Loc["Value"]">
                     <MudTextField Value="@context.Value" ReadOnly="true" Variant="Variant.Text"
                                   Margin="Margin.None" Class="mud-input-text-readonly" />
                 </MudTd>

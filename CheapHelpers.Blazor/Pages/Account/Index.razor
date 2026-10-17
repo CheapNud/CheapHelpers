@@ -36,7 +36,7 @@
                         
                         @if (ShowEmailSection)
                         {
-                            <MudTextField Class="mt-3" Label="Email" Value="@CurrentUser.Email" 
+                            <MudTextField Class="mt-3" Label="@Loc["Email"]" Value="@CurrentUser.Email" 
                                         Disabled="true" Variant="Variant.Outlined" />
                             @if (!CurrentUser.EmailConfirmed)
                             {

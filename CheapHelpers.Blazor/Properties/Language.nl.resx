@@ -657,4 +657,61 @@
   <data name="YourRecoveryCodes" xml:space="preserve">
     <value>Uw herstelcodes</value>
   </data>
+  <data name="OldPassword" xml:space="preserve">
+    <value>Huidig wachtwoord</value>
+  </data>
+  <data name="ForgotPasswordTitle" xml:space="preserve">
+    <value>Wachtwoord vergeten</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>Versturen</value>
+  </data>
+  <data name="ResetPassword" xml:space="preserve">
+    <value>Wachtwoord opnieuw instellen</value>
+  </data>
+  <data name="SetPin" xml:space="preserve">
+    <value>Stel uw pincode in</value>
+  </data>
+  <data name="NewPin" xml:space="preserve">
+    <value>Nieuwe pincode (4 cijfers)</value>
+  </data>
+  <data name="NewPinHelp" xml:space="preserve">
+    <value>Vul uw nieuwe pincode van 4 cijfers in</value>
+  </data>
+  <data name="ConfirmPin" xml:space="preserve">
+    <value>Pincode bevestigen (4 cijfers)</value>
+  </data>
+  <data name="ConfirmPinHelp" xml:space="preserve">
+    <value>Vul uw pincode opnieuw in ter bevestiging</value>
+  </data>
+  <data name="PinMustBeFourDigits" xml:space="preserve">
+    <value>De nieuwe pincode moet uit 4 cijfers bestaan.</value>
+  </data>
+  <data name="ConfirmPinFourDigits" xml:space="preserve">
+    <value>Bevestig uw pincode met 4 cijfers.</value>
+  </data>
+  <data name="PinDigitsOnly" xml:space="preserve">
+    <value>De pincode mag alleen cijfers bevatten.</value>
+  </data>
+  <data name="ConfirmPinDigitsOnly" xml:space="preserve">
+    <value>De bevestiging van de pincode mag alleen cijfers bevatten.</value>
+  </data>
+  <data name="PinsDoNotMatch" xml:space="preserve">
+    <value>De pincodes komen niet overeen.</value>
+  </data>
+  <data name="PinSet" xml:space="preserve">
+    <value>Uw pincode is ingesteld.</value>
+  </data>
+  <data name="PinSetError" xml:space="preserve">
+    <value>Er is een fout opgetreden bij het instellen van uw pincode.</value>
+  </data>
+  <data name="PinNotSet" xml:space="preserve">
+    <value>Uw pincode kon niet worden ingesteld</value>
+  </data>
+  <data name="ShowPassword" xml:space="preserve">
+    <value>Wachtwoord tonen</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Er is een fout opgetreden.</value>
+  </data>
 </root>

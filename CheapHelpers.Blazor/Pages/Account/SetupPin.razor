@@ -6,7 +6,7 @@
 @using Microsoft.AspNetCore.Identity
 @using MudBlazor
 <MudPaper Class="pa-4 mx-auto mt-8" MaxWidth="650px">
-    <MudText Typo="Typo.h5" Class="mb-4">Set Your PIN</MudText>
+    <MudText Typo="Typo.h5" Class="mb-4">@Loc["SetPin"]</MudText>
 
     <MudStack AlignItems="AlignItems.Center" Spacing="4">
         <MudTextField @ref="_newPinField"
@@ -16,8 +16,8 @@
                       InputType="InputType.Password"
                       MaxLength="4"
                       Placeholder="••••"
-                      Label="New PIN (4 digits)"
-                      HelperText="Enter your new 4-digit PIN" />
+                      Label="@Loc["NewPin"]"
+                      HelperText="@Loc["NewPinHelp"]" />
 
         <MudTextField @ref="_confirmPinField"
                       @bind-Value="_confirmPin"
@@ -26,8 +26,8 @@
                       InputType="InputType.Password"
                       MaxLength="4"
                       Placeholder="••••"
-                      Label="Confirm PIN (4 digits)"
-                      HelperText="Re-enter your PIN to confirm"
+                      Label="@Loc["ConfirmPin"]"
+                      HelperText="@Loc["ConfirmPinHelp"]"
                       Disabled="@(_newPin.Length != 4)" />
     </MudStack>
 
@@ -133,21 +133,21 @@
         if (_newPin.Length != 4)
         {
             //too much constant text here
-            _pinSetupError = "New PIN must be 4 digits.";
+            _pinSetupError = Loc["PinMustBeFourDigits"];
             await _newPinField.FocusAsync();
             return;
         }
 
         if (_confirmPin.Length != 4)
         {
-            _pinSetupError = "Please confirm your PIN with 4 digits.";
+            _pinSetupError = Loc["ConfirmPinFourDigits"];
             await _confirmPinField.FocusAsync();
             return;
         }
 
         if (!_newPin.All(char.IsDigit))
         {
-            _pinSetupError = "PIN must contain only numbers.";
+            _pinSetupError = Loc["PinDigitsOnly"];
             _newPin = "";
             await _newPinField.FocusAsync();
             return;
@@ -155,7 +155,7 @@
 
         if (!_confirmPin.All(char.IsDigit))
         {
-            _pinSetupError = "PIN confirmation must contain only numbers.";
+            _pinSetupError = Loc["ConfirmPinDigitsOnly"];
             _confirmPin = "";
             await _confirmPinField.FocusAsync();
             return;
@@ -163,7 +163,7 @@
 
         if (_newPin != _confirmPin)
         {
-            _pinSetupError = "PINs do not match.";
+            _pinSetupError = Loc["PinsDoNotMatch"];
             _confirmPin = "";
             await _confirmPinField.FocusAsync();
             return;
@@ -184,8 +184,8 @@
                 _newPin = "";
                 _confirmPin = "";
 
-                _successMessage = "PIN has been set successfully!";
-                ToastService.Add("PIN has been set successfully!", Severity.Success);
+                _successMessage = Loc["PinSet"];
+                ToastService.Add(Loc["PinSet"], Severity.Success);
 
                 await OnPinSet.InvokeAsync();
                 StateHasChanged();
@@ -194,8 +194,8 @@
         catch (Exception ex)
         {
             Debug.WriteLine(ex.Message);
-            _pinSetupError = "An error occurred while setting your PIN.";
-            ToastService.Add("Error setting PIN", Severity.Error);
+            _pinSetupError = Loc["PinSetError"];
+            ToastService.Add(Loc["PinNotSet"], Severity.Error);
         }
     }
 }

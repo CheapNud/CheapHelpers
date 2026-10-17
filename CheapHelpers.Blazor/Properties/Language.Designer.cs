@@ -250,6 +250,42 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Confirm PIN (4 digits).
+        /// </summary>
+        internal static string ConfirmPin {
+            get {
+                return ResourceManager.GetString("ConfirmPin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The PIN confirmation may contain only numbers..
+        /// </summary>
+        internal static string ConfirmPinDigitsOnly {
+            get {
+                return ResourceManager.GetString("ConfirmPinDigitsOnly", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Please confirm your PIN with 4 digits..
+        /// </summary>
+        internal static string ConfirmPinFourDigits {
+            get {
+                return ResourceManager.GetString("ConfirmPinFourDigits", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Enter your PIN again to confirm.
+        /// </summary>
+        internal static string ConfirmPinHelp {
+            get {
+                return ResourceManager.GetString("ConfirmPinHelp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Yes, reset my authenticator.
         /// </summary>
         internal static string ConfirmReset {
@@ -502,6 +538,15 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to An error occurred..
+        /// </summary>
+        internal static string Error {
+            get {
+                return ResourceManager.GetString("Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Could not copy to the clipboard.
         /// </summary>
         internal static string ErrorCopying {
@@ -615,6 +660,15 @@ namespace CheapHelpers.Blazor.Properties {
         internal static string ForgotPassword {
             get {
                 return ResourceManager.GetString("ForgotPassword", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Forgot password.
+        /// </summary>
+        internal static string ForgotPasswordTitle {
+            get {
+                return ResourceManager.GetString("ForgotPasswordTitle", resourceCulture);
             }
         }
         
@@ -862,6 +916,24 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to New PIN (4 digits).
+        /// </summary>
+        internal static string NewPin {
+            get {
+                return ResourceManager.GetString("NewPin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Enter your new 4-digit PIN.
+        /// </summary>
+        internal static string NewPinHelp {
+            get {
+                return ResourceManager.GetString("NewPinHelp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to You will need new recovery codes.
         /// </summary>
         internal static string NewRecoveryCodesNeeded {
@@ -966,6 +1038,15 @@ namespace CheapHelpers.Blazor.Properties {
         internal static string NoUploadPath {
             get {
                 return ResourceManager.GetString("NoUploadPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Current password.
+        /// </summary>
+        internal static string OldPassword {
+            get {
+                return ResourceManager.GetString("OldPassword", resourceCulture);
             }
         }
         
@@ -1083,6 +1164,60 @@ namespace CheapHelpers.Blazor.Properties {
         internal static string PersonalDataWarning {
             get {
                 return ResourceManager.GetString("PersonalDataWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The PIN may contain only numbers..
+        /// </summary>
+        internal static string PinDigitsOnly {
+            get {
+                return ResourceManager.GetString("PinDigitsOnly", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The new PIN must be 4 digits..
+        /// </summary>
+        internal static string PinMustBeFourDigits {
+            get {
+                return ResourceManager.GetString("PinMustBeFourDigits", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your PIN could not be set.
+        /// </summary>
+        internal static string PinNotSet {
+            get {
+                return ResourceManager.GetString("PinNotSet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The PINs do not match..
+        /// </summary>
+        internal static string PinsDoNotMatch {
+            get {
+                return ResourceManager.GetString("PinsDoNotMatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your PIN has been set..
+        /// </summary>
+        internal static string PinSet {
+            get {
+                return ResourceManager.GetString("PinSet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to An error occurred while setting your PIN..
+        /// </summary>
+        internal static string PinSetError {
+            get {
+                return ResourceManager.GetString("PinSetError", resourceCulture);
             }
         }
         
@@ -1321,6 +1456,15 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Reset password.
+        /// </summary>
+        internal static string ResetPassword {
+            get {
+                return ResourceManager.GetString("ResetPassword", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Reset your password.
         /// </summary>
         internal static string ResetPasswordOption {
@@ -1384,6 +1528,15 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Send.
+        /// </summary>
+        internal static string Send {
+            get {
+                return ResourceManager.GetString("Send", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Send confirmation email.
         /// </summary>
         internal static string SendConfirmationEmail {
@@ -1416,6 +1569,24 @@ namespace CheapHelpers.Blazor.Properties {
         internal static string SetPasswordDescription {
             get {
                 return ResourceManager.GetString("SetPasswordDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Set your PIN.
+        /// </summary>
+        internal static string SetPin {
+            get {
+                return ResourceManager.GetString("SetPin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Show password.
+        /// </summary>
+        internal static string ShowPassword {
+            get {
+                return ResourceManager.GetString("ShowPassword", resourceCulture);
             }
         }
         

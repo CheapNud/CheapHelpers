@@ -74,6 +74,11 @@ namespace CheapHelpers.Blazor.Configuration
         public string[] SupportedCultures { get; set; } = ["en-US", "nl-BE"];
 
         /// <summary>
+        /// Support address shown on the lockout page. Null hides the help line.
+        /// </summary>
+        public string? SupportEmail { get; set; }
+
+        /// <summary>
         /// Custom CSS classes for MudBlazor theme overrides
         /// </summary>
         public string? CustomThemeClass { get; set; }

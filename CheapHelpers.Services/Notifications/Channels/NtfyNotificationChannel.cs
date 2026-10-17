@@ -34,6 +34,7 @@ public class NtfyNotificationChannel(
         CancellationToken cancellationToken = default)
     {
         var ntfyOptions = options.Value.Ntfy;
+        // Defensive only: AddCheapNotifications does not register this channel without a topic URL
         if (string.IsNullOrEmpty(ntfyOptions.TopicUrl))
             return NotificationChannelResult.Failure(ChannelName, "ntfy topic URL not configured", failedCount: 0);
 

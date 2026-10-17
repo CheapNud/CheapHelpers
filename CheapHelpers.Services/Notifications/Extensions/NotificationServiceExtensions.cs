@@ -30,7 +30,7 @@ public static class NotificationServiceExtensions
     /// <item><description>Email channel requires IEmailService to be registered</description></item>
     /// <item><description>SMS channel requires ISmsService to be registered</description></item>
     /// <item><description>Push channel requires IPushNotificationBackend to be registered</description></item>
-    /// <item><description>ntfy channel requires Notifications:Ntfy:TopicUrl to be set</description></item>
+    /// <item><description>ntfy channel is only registered when Notifications:Ntfy:TopicUrl is set</description></item>
     /// </list>
     /// <para>
     /// If these dependencies are not registered, the respective channels will fail at runtime
@@ -87,7 +87,7 @@ public static class NotificationServiceExtensions
             services.AddScoped<INotificationChannel, SmsNotificationChannel>();
         }
 
-        if (options.EnabledChannels.HasFlag(NotificationChannelFlags.Ntfy))
+        if (options.EnabledChannels.HasFlag(NotificationChannelFlags.Ntfy) && !string.IsNullOrEmpty(options.Ntfy.TopicUrl))
         {
             services.AddHttpClient(NtfyNotificationChannel.NtfyHttpClientName, client => client.Timeout = TimeSpan.FromSeconds(10));
             services.AddScoped<INotificationChannel, NtfyNotificationChannel>();

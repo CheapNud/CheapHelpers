@@ -89,6 +89,21 @@ Azure Cognitive Services integration for Translation and Vision.
 - `TranslatorService` - Azure Translator API
 - `AzureVisionService` - Computer Vision API
 
+### Voice Services
+Speech-to-text behind `ISpeechToText`. Providers never throw for network or auth errors: they log and return an empty result. Cancellation still propagates.
+
+| Call | Registers | Config section |
+|---|---|---|
+| `AddWhisperSpeechToText()` | `WhisperSpeechToText` (typed HttpClient), `ISpeechToText` if not yet registered | `Voice:Whisper`: `BaseUrl`, `ApiKey`, `Model`, `Language`, `Timeout` |
+| `AddAzureSpeechToText()` | `AzureSpeechToText` (typed HttpClient), `ISpeechToText` if not yet registered | `Voice:Azure`: `Region`, `SubscriptionKey`, `Language` |
+
+The first provider added becomes the interface default; inject the concrete type to pick another. Whisper works against any OpenAI-compatible server (set `BaseUrl` to a local whisper.cpp). Azure speech-to-text takes 16 kHz mono PCM WAV of at most 60 seconds. Each call takes optional `SttOptions` to override language or model.
+
+```csharp
+builder.Services.Configure<WhisperSttOptions>(builder.Configuration.GetSection(WhisperSttOptions.SectionName));
+builder.Services.AddWhisperSpeechToText();
+```
+
 ## Quick Start
 
 ### Installation

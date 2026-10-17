@@ -1,12 +1,12 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
 
 namespace CheapHelpers.Services.Voice.Extensions;
 
 /// <summary>
 /// Registers the speech-to-text and text-to-speech providers. The first provider added for an interface becomes its default;
-/// the concrete types stay injectable so a consumer can route between providers.
+/// the concrete types stay injectable so a consumer can route between providers. Interface forwards to HttpClient-based
+/// providers are transient, matching their typed clients, so a handler is never held for the app's lifetime.
 /// </summary>
 public static class VoiceServiceExtensions
 {
@@ -17,7 +17,7 @@ public static class VoiceServiceExtensions
     {
         services.Configure(configure ?? (_ => { }));
         services.AddHttpClient<WhisperSpeechToText>();
-        services.TryAddSingleton<ISpeechToText>(sp => sp.GetRequiredService<WhisperSpeechToText>());
+        services.TryAddTransient<ISpeechToText>(sp => sp.GetRequiredService<WhisperSpeechToText>());
         return services;
     }
 
@@ -28,7 +28,7 @@ public static class VoiceServiceExtensions
     {
         services.Configure(configure ?? (_ => { }));
         services.AddHttpClient<AzureSpeechToText>();
-        services.TryAddSingleton<ISpeechToText>(sp => sp.GetRequiredService<AzureSpeechToText>());
+        services.TryAddTransient<ISpeechToText>(sp => sp.GetRequiredService<AzureSpeechToText>());
         return services;
     }
 
@@ -42,11 +42,9 @@ public static class VoiceServiceExtensions
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<EdgeTextToSpeech>();
         // A typed client (AddHttpClient<T>) is transient, which would drop the catalog's cache on every resolve,
-        // so the catalog is a singleton fed from a named client instead.
+        // so the catalog is a singleton that creates its named client per fetch.
         services.AddHttpClient(nameof(EdgeTtsVoiceCatalog));
-        services.TryAddSingleton(sp => new EdgeTtsVoiceCatalog(
-            sp.GetRequiredService<IHttpClientFactory>().CreateClient(nameof(EdgeTtsVoiceCatalog)),
-            sp.GetRequiredService<ILogger<EdgeTtsVoiceCatalog>>()));
+        services.TryAddSingleton<EdgeTtsVoiceCatalog>();
         services.TryAddSingleton<ITextToSpeech>(sp => sp.GetRequiredService<EdgeTextToSpeech>());
         return services;
     }
@@ -58,7 +56,7 @@ public static class VoiceServiceExtensions
     {
         services.Configure(configure ?? (_ => { }));
         services.AddHttpClient<AzureTextToSpeech>();
-        services.TryAddSingleton<ITextToSpeech>(sp => sp.GetRequiredService<AzureTextToSpeech>());
+        services.TryAddTransient<ITextToSpeech>(sp => sp.GetRequiredService<AzureTextToSpeech>());
         return services;
     }
 }

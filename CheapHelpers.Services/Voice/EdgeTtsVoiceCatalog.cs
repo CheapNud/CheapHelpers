@@ -16,7 +16,7 @@ namespace CheapHelpers.Services.Voice;
 /// without a way to change voice. Register as a singleton so the cache survives across
 /// pages.
 /// </remarks>
-public sealed class EdgeTtsVoiceCatalog(HttpClient httpClient, ILogger<EdgeTtsVoiceCatalog> logger)
+public sealed class EdgeTtsVoiceCatalog(IHttpClientFactory httpClientFactory, ILogger<EdgeTtsVoiceCatalog> logger)
 {
     private const string VoicesListUrl =
         "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=" + EdgeTextToSpeech.TrustedClientToken;
@@ -62,6 +62,8 @@ public sealed class EdgeTtsVoiceCatalog(HttpClient httpClient, ILogger<EdgeTtsVo
             // surprises if Microsoft tightens validation later.
             request.Headers.UserAgent.ParseAdd(EdgeTextToSpeech.EdgeUserAgent);
 
+            // Created per fetch from the factory so this singleton never pins one handler.
+            var httpClient = httpClientFactory.CreateClient(nameof(EdgeTtsVoiceCatalog));
             using var response = await httpClient.SendAsync(request, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {

@@ -25,14 +25,11 @@ namespace CheapHelpers.Blazor.Services
         IOptions<IdentityOptions> identityOptions,
         IdentityErrorDescriber errors,
         IServiceScopeFactory scopeFactory)
-        : UserRepo<TUser, TContext>(factory, passwordHasher, normalizer, identityOptions, errors, scopeFactory), IUserService
+        : UserRepo<TUser, TContext>(factory, passwordHasher, normalizer, identityOptions, errors), IUserService
         where TUser : CheapUser
         where TContext : CheapContext<TUser>
     {
         private const int RecoveryCodesCount = 10;
-
-        // Field initializer rather than a captured parameter: the parameter also goes to the base constructor (CS9107)
-        private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
 
         #region Navigation State Management
 
@@ -187,14 +184,17 @@ namespace CheapHelpers.Blazor.Services
             return principal.IsInRole(role);
         }
 
-        public static string GetUserId(ClaimsPrincipal principal)
+        /// <summary>
+        /// Reads the user id from the claim type Identity is configured with.
+        /// </summary>
+        public string GetUserId(ClaimsPrincipal principal)
         {
             if (!IsAuthenticated(principal))
             {
                 throw new InvalidOperationException(Constants.Authentication.UserNotAuthenticatedMessage);
             }
 
-            return principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            return principal.FindFirstValue(IdentityOptions.ClaimsIdentity.UserIdClaimType);
         }
 
         public static string GetUserName(ClaimsPrincipal principal)
@@ -232,17 +232,17 @@ namespace CheapHelpers.Blazor.Services
 
         #region Account pages (IUserService)
 
-        // The token operations below (authenticator, two-factor, recovery codes, email tokens, external
-        // logins) need UserManager machinery that UserRepo doesn't offer. They resolve UserManager from a
-        // fresh DI scope per call, same pattern as UserRepo's identity helpers, so they are safe from
-        // Blazor Server circuits. Everything else goes through UserRepo.
+        // The token operations below (password reset, authenticator, two-factor, recovery codes, email tokens,
+        // external logins) need Identity's token providers, which only UserManager offers. They resolve
+        // UserManager from a fresh DI scope per call, so they are safe from Blazor Server circuits.
+        // Everything else goes through UserRepo, which has no UserManager.
 
         private static IdentityResult UserNotFound(string userId) =>
             IdentityResult.Failed(new IdentityError { Code = "UserNotFound", Description = $"User '{userId}' not found." });
 
         public async Task<AuthenticatorKeyInfo?> GetOrCreateAuthenticatorKeyAsync(string userId)
         {
-            using var scope = _scopeFactory.CreateScope();
+            using var scope = scopeFactory.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
 
             var user = await userManager.FindByIdAsync(userId);
@@ -273,7 +273,7 @@ namespace CheapHelpers.Blazor.Services
                 return new EnableAuthenticatorResult(false, null);
             }
 
-            using var scope = _scopeFactory.CreateScope();
+            using var scope = scopeFactory.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
 
             var user = await userManager.FindByIdAsync(userId);
@@ -307,7 +307,7 @@ namespace CheapHelpers.Blazor.Services
 
         public async Task<ExternalLoginsInfo?> GetExternalLoginsAsync(string userId)
         {
-            using var scope = _scopeFactory.CreateScope();
+            using var scope = scopeFactory.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
             var signInManager = scope.ServiceProvider.GetRequiredService<SignInManager<TUser>>();
 
@@ -328,7 +328,7 @@ namespace CheapHelpers.Blazor.Services
 
         public async Task<Dictionary<string, string>?> GetPersonalDataAsync(string userId)
         {
-            using var scope = _scopeFactory.CreateScope();
+            using var scope = scopeFactory.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
 
             var user = await userManager.FindByIdAsync(userId);
@@ -355,7 +355,7 @@ namespace CheapHelpers.Blazor.Services
 
         public async Task<TwoFactorStatus?> GetTwoFactorStatusAsync(string userId)
         {
-            using var scope = _scopeFactory.CreateScope();
+            using var scope = scopeFactory.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
 
             var user = await userManager.FindByIdAsync(userId);
@@ -372,7 +372,7 @@ namespace CheapHelpers.Blazor.Services
 
         public async Task<string[]?> GenerateRecoveryCodesAsync(string userId)
         {
-            using var scope = _scopeFactory.CreateScope();
+            using var scope = scopeFactory.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
 
             var user = await userManager.FindByIdAsync(userId);
@@ -389,13 +389,13 @@ namespace CheapHelpers.Blazor.Services
         // principals, while the pages want null. Reads the id from the claim type Identity is configured with
         async Task<CheapUser?> IUserService.GetUserAsync(ClaimsPrincipal principal)
         {
-            var userId = principal.FindFirstValue(GetIdentityOptions().ClaimsIdentity.UserIdClaimType);
-            return userId is null ? null : await FindUserByIdAsync(userId);
+            var userId = principal.FindFirstValue(IdentityOptions.ClaimsIdentity.UserIdClaimType);
+            return userId is null ? null : await GetUserByIdAsync(userId);
         }
 
-        public async Task<CheapUser?> FindByIdAsync(string userId) => await FindUserByIdAsync(userId);
+        public async Task<CheapUser?> FindByIdAsync(string userId) => await GetUserByIdAsync(userId);
 
-        public async Task<CheapUser?> FindByEmailAsync(string email) => await FindUserByEmailAsync(email);
+        public async Task<CheapUser?> FindByEmailAsync(string email) => await GetUserByEmailAsync(email);
 
         // UserRepo's profile updater rather than UserManager.UpdateAsync: the pages hold detached,
         // possibly stale users, and UpdateAsync would write their stale Identity columns back or
@@ -411,21 +411,21 @@ namespace CheapHelpers.Blazor.Services
 
         public async Task<string> GenerateEmailConfirmationTokenAsync(string userId)
         {
-            using var scope = _scopeFactory.CreateScope();
+            using var scope = scopeFactory.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
             return await userManager.GenerateEmailConfirmationTokenAsync(await RequireUserAsync(userManager, userId));
         }
 
-        // UserRepo.ConfirmEmailAsync only sets the flag, so the code is checked first with UserRepo's token verifier
+        // UserRepo.ConfirmEmailAsync only sets the flag, so the code is checked first with VerifyUserTokenAsync
         public async Task<IdentityResult> ConfirmEmailAsync(string userId, string code)
         {
-            var user = await FindUserByIdAsync(userId);
+            var user = await GetUserByIdAsync(userId);
             if (user is null)
             {
                 return UserNotFound(userId);
             }
 
-            var tokenProvider = GetIdentityOptions().Tokens.EmailConfirmationTokenProvider;
+            var tokenProvider = IdentityOptions.Tokens.EmailConfirmationTokenProvider;
             if (!await VerifyUserTokenAsync(user, tokenProvider, UserManager<TUser>.ConfirmEmailTokenPurpose, code))
             {
                 return IdentityResult.Failed(new IdentityError { Code = "InvalidToken", Description = "Invalid token." });
@@ -436,7 +436,7 @@ namespace CheapHelpers.Blazor.Services
 
         public async Task<IdentityResult> ChangeEmailAsync(string userId, string newEmail, string code)
         {
-            using var scope = _scopeFactory.CreateScope();
+            using var scope = scopeFactory.CreateScope();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
 
             var user = await userManager.FindByIdAsync(userId);
@@ -461,56 +461,55 @@ namespace CheapHelpers.Blazor.Services
         }
 
         public async Task<bool> IsEmailConfirmedAsync(string userId)
-            => (await FindUserByIdAsync(userId))?.EmailConfirmed == true;
+            => (await GetUserByIdAsync(userId))?.EmailConfirmed == true;
 
         public async Task<string> GeneratePasswordResetTokenAsync(string userId)
-            => await GeneratePasswordResetTokenAsync(await FindUserByIdAsync(userId)
+            => await GeneratePasswordResetTokenAsync(await GetUserByIdAsync(userId)
                 ?? throw new InvalidOperationException($"User '{userId}' not found."));
 
         public async Task<IdentityResult> ResetPasswordAsync(string userId, string code, string newPassword)
         {
-            var user = await FindUserByIdAsync(userId);
+            var user = await GetUserByIdAsync(userId);
             return user is null ? UserNotFound(userId) : await ResetPasswordAsync(user, code, newPassword);
         }
 
-        // Same rule as UserManager.IsLockedOutAsync: locked out while lockout is enabled and the end date has not passed
         public async Task<LockoutInfo?> GetLockoutAsync(string email)
         {
-            var user = await FindUserByEmailAsync(email);
-            return user is null
-                ? null
-                : new LockoutInfo(user.LockoutEnd, user.LockoutEnabled && user.LockoutEnd >= DateTimeOffset.UtcNow);
+            var user = await GetUserByEmailAsync(email);
+            return user is null ? null : new LockoutInfo(user.LockoutEnd, await IsLockedOutAsync(user));
         }
 
         public async Task<bool> HasPasswordAsync(string userId)
-            => (await FindUserByIdAsync(userId))?.PasswordHash is not null;
+            => (await GetUserByIdAsync(userId))?.PasswordHash is not null;
 
-        private async Task<TUser?> FindUserByIdAsync(string userId)
+        /// <summary>
+        /// Generates a password reset token for the user in an isolated DI scope.
+        /// </summary>
+        public async Task<string> GeneratePasswordResetTokenAsync(TUser user)
         {
-            using var context = _factory.CreateDbContext();
-            return await context.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId);
+            using var scope = scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+            return await userManager.GeneratePasswordResetTokenAsync(await RequireUserAsync(userManager, user.Id));
         }
 
-        // On NormalizedEmail with Identity's normalizer, like UserManager.FindByEmailAsync, so the lookup
-        // ignores casing on case-sensitive databases too (UserRepo.GetUserByEmailAsync compares the raw Email column)
-        private async Task<TUser?> FindUserByEmailAsync(string email)
+        /// <summary>
+        /// Verifies a user token for the given provider and purpose in an isolated DI scope.
+        /// </summary>
+        public async Task<bool> VerifyUserTokenAsync(TUser user, string tokenProvider, string purpose, string verificationToken)
         {
-            string? normalizedEmail;
-            using (var scope = _scopeFactory.CreateScope())
-            {
-                normalizedEmail = scope.ServiceProvider.GetRequiredService<ILookupNormalizer>().NormalizeEmail(email);
-            }
-
-            using var context = _factory.CreateDbContext();
-            return await context.Users.AsNoTracking().FirstOrDefaultAsync(x => x.NormalizedEmail == normalizedEmail);
+            using var scope = scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+            return await userManager.VerifyUserTokenAsync(await RequireUserAsync(userManager, user.Id), tokenProvider, purpose, verificationToken);
         }
 
-        // IdentityOptions is a singleton, so the value outlives the scope it was resolved from
-        private IdentityOptions GetIdentityOptions()
-        {
-            using var scope = _scopeFactory.CreateScope();
-            return scope.ServiceProvider.GetRequiredService<IOptions<IdentityOptions>>().Value;
-        }
+        /// <summary>
+        /// Resets the password with a reset token: the token is checked with <see cref="VerifyUserTokenAsync"/>
+        /// (InvalidToken when it fails, like UserManager.ResetPasswordAsync), then UserRepo sets the password.
+        /// </summary>
+        public async Task<IdentityResult> ResetPasswordAsync(TUser user, string resetToken, string newPassword)
+            => await VerifyUserTokenAsync(user, IdentityOptions.Tokens.PasswordResetTokenProvider, UserManager<TUser>.ResetPasswordTokenPurpose, resetToken)
+                ? await SetPasswordAsync(user, newPassword)
+                : IdentityResult.Failed(ErrorDescriber.InvalidToken());
 
         private static async Task<TUser> RequireUserAsync(UserManager<TUser> userManager, string userId) =>
             await userManager.FindByIdAsync(userId)

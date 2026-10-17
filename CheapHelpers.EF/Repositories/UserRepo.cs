@@ -2,7 +2,6 @@
 using CheapHelpers.Models.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
@@ -19,8 +18,7 @@ namespace CheapHelpers.EF.Repositories
         IPasswordHasher<TUser> passwordHasher,
         ILookupNormalizer normalizer,
         IOptions<IdentityOptions> identityOptions,
-        IdentityErrorDescriber errors,
-        IServiceScopeFactory scopeFactory) : BaseRepo<TContext>(factory)
+        IdentityErrorDescriber errors) : BaseRepo<TContext>(factory)
         where TUser : CheapUser
         where TContext : CheapContext<TUser>
     {
@@ -300,44 +298,6 @@ namespace CheapHelpers.EF.Repositories
 
         // Opaque value: Identity only compares it and feeds it to the token providers
         private static string NewSecurityStamp() => Guid.NewGuid().ToString("N");
-
-        /// <summary>
-        /// Generates a password reset token for the user in an isolated DI scope.
-        /// </summary>
-        public Task<string> GeneratePasswordResetTokenAsync(TUser user)
-            => WithUserManagerAsync(user, static (userManager, scopedUser) =>
-                userManager.GeneratePasswordResetTokenAsync(scopedUser));
-
-        /// <summary>
-        /// Verifies a user token for the given provider and purpose in an isolated DI scope.
-        /// </summary>
-        public Task<bool> VerifyUserTokenAsync(TUser user, string tokenProvider, string purpose, string verificationToken)
-            => WithUserManagerAsync(user, (userManager, scopedUser) =>
-                userManager.VerifyUserTokenAsync(scopedUser, tokenProvider, purpose, verificationToken));
-
-        /// <summary>
-        /// Resets the user's password with a reset token in an isolated DI scope.
-        /// </summary>
-        public Task<IdentityResult> ResetPasswordAsync(TUser user, string resetToken, string newPassword)
-            => WithUserManagerAsync(user, (userManager, scopedUser) =>
-                userManager.ResetPasswordAsync(scopedUser, resetToken, newPassword));
-
-        /// <summary>
-        /// Runs a UserManager operation in a fresh DI scope against a freshly loaded user,
-        /// so detached entities from other contexts never leak into Identity's store.
-        /// </summary>
-        private async Task<TResult> WithUserManagerAsync<TResult>(TUser user, Func<UserManager<TUser>, TUser, Task<TResult>> operation)
-        {
-            ArgumentNullException.ThrowIfNull(user);
-
-            using var scope = scopeFactory.CreateScope();
-            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
-
-            var scopedUser = await userManager.FindByIdAsync(user.Id)
-                ?? throw new InvalidOperationException($"User '{user.Id}' not found");
-
-            return await operation(userManager, scopedUser);
-        }
 
         #endregion
 

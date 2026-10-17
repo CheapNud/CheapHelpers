@@ -8,7 +8,7 @@ Namespace: `CheapHelpers.Helpers.Files`
 
 - `BuildAsync(rootDirectory, include = null, cancellationToken)` hashes every file under `rootDirectory` (recursive). `include` receives the relative path and filters files; `null` means all files.
 - `BuildAsync(rootDirectory, relativePaths, cancellationToken)` hashes exactly the listed paths. A missing file throws `FileNotFoundException`, and a path outside the root throws `ArgumentException`.
-- `VerifyAsync(rootDirectory, recorded, include = null, cancellationToken)` hashes the files on disk and returns a `ManifestDrift` with `Changed`, `Missing` and `Extra` path lists plus `HasDrift`. Missing files are reported, not thrown. `include` limits which on-disk files count as `Extra`.
+- `VerifyAsync(rootDirectory, recorded, include = null, cancellationToken)` hashes the files on disk and returns a `ManifestDrift` with `Changed`, `Missing` and `Extra` path lists plus `HasDrift`. Missing files are reported, not thrown, including files removed while the verify runs and an absent root. `include` limits which on-disk files count as `Extra`.
 
 Files are hashed as streams, so large binaries are not loaded into memory.
 

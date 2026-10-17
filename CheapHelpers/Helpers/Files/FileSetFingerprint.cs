@@ -75,10 +75,7 @@ namespace CheapHelpers.Helpers.Files
         public static Task<FileManifest> BuildAsync(string rootDirectory, Func<string, bool>? include = null, CancellationToken cancellationToken = default)
         {
             var root = Path.GetFullPath(rootDirectory);
-            var relativePaths = Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
-                .Select(fullPath => ToRelative(root, fullPath))
-                .Where(relativePath => include?.Invoke(relativePath) ?? true);
-            return HashAsync(root, relativePaths, cancellationToken);
+            return HashAsync(root, EnumerateRelative(root, include), skipMissing: false, cancellationToken);
         }
 
         /// <summary>Hashes exactly these relative paths under <paramref name="rootDirectory"/>.</summary>
@@ -94,7 +91,7 @@ namespace CheapHelpers.Helpers.Files
                     ? throw new ArgumentException($"Path '{relativePath}' is outside the root directory.", nameof(relativePaths))
                     : cleaned;
             });
-            return HashAsync(root, normalised, cancellationToken);
+            return HashAsync(root, normalised, skipMissing: false, cancellationToken);
         }
 
         /// <summary>
@@ -105,10 +102,12 @@ namespace CheapHelpers.Helpers.Files
         {
             // Recorded files are always hashed, even when include would skip them, so they are never reported Missing by mistake.
             // An absent root is an empty install: every recorded file is Missing.
-            var current = Directory.Exists(rootDirectory)
-                ? await BuildAsync(
-                    rootDirectory,
-                    relativePath => recorded.Files.ContainsKey(relativePath) || (include?.Invoke(relativePath) ?? true),
+            var root = Path.GetFullPath(rootDirectory);
+            var current = Directory.Exists(root)
+                ? await HashAsync(
+                    root,
+                    EnumerateRelative(root, relativePath => recorded.Files.ContainsKey(relativePath) || (include?.Invoke(relativePath) ?? true)),
+                    skipMissing: true,
                     cancellationToken)
                 : new FileManifest([]);
 
@@ -122,18 +121,31 @@ namespace CheapHelpers.Helpers.Files
 
         private static string ToRelative(string root, string fullPath) => Path.GetRelativePath(root, fullPath).Replace(Path.DirectorySeparatorChar, '/');
 
-        private static async Task<FileManifest> HashAsync(string root, IEnumerable<string> relativePaths, CancellationToken cancellationToken)
+        private static IEnumerable<string> EnumerateRelative(string root, Func<string, bool>? include) =>
+            Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
+                .Select(fullPath => ToRelative(root, fullPath))
+                .Where(relativePath => include?.Invoke(relativePath) ?? true);
+
+        // skipMissing is true when verifying: a file removed after enumeration is left out (and so reported Missing) instead of throwing.
+        private static async Task<FileManifest> HashAsync(string root, IEnumerable<string> relativePaths, bool skipMissing, CancellationToken cancellationToken)
         {
             var files = new List<KeyValuePair<string, string>>();
             foreach (var relativePath in relativePaths.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var fullPath = Path.Combine(root, relativePath);
-                if (!File.Exists(fullPath))
+                if (!skipMissing && !File.Exists(fullPath))
                     throw new FileNotFoundException($"File '{relativePath}' does not exist under '{root}'.", fullPath);
 
-                await using var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, FileOptions.Asynchronous | FileOptions.SequentialScan);
-                files.Add(KeyValuePair.Create(relativePath, Convert.ToHexStringLower(await SHA256.HashDataAsync(stream, cancellationToken))));
+                try
+                {
+                    await using var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, FileOptions.Asynchronous | FileOptions.SequentialScan);
+                    files.Add(KeyValuePair.Create(relativePath, Convert.ToHexStringLower(await SHA256.HashDataAsync(stream, cancellationToken))));
+                }
+                catch (Exception ex) when (skipMissing && ex is FileNotFoundException or DirectoryNotFoundException)
+                {
+                    // Gone between enumeration and hashing; leaving it out of the current set is what reports it as Missing.
+                }
             }
             return new FileManifest(files);
         }

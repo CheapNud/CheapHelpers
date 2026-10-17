@@ -68,9 +68,9 @@
     <Company>CheapNud</Company>
     <Copyright>Copyright (c) 2025 CheapNud</Copyright>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
+    <RepositoryUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
+    <PackageProjectUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
@@ -113,8 +113,10 @@
   <!-- PACKAGE REFERENCES (Common to all projects)                      -->
   <!-- ================================================================ -->
   <ItemGroup Label="Source Link Package" Condition="'$(Configuration)' == 'Release'">
-    <!-- Source Link for GitHub repositories -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <!-- Source Link for the forge (Gitea-compatible raw URLs) -->
+    <PackageReference Include="Microsoft.SourceLink.Gitea" Version="8.0.0" PrivateAssets="All" />
+    <!-- Packs must come from a clone of the public URL for Source Link to resolve -->
+    <SourceLinkGiteaHost Include="git.cheapludes.be" />
   </ItemGroup>
 
 </Project>

@@ -728,7 +728,7 @@ Application.Current.RequestedThemeChanged += (s, e) =>
 
 ## Resources
 
-- [GitHub Repository](https://github.com/CheapNud/CheapHelpers)
+- [Repository](https://git.cheapludes.be/cheapnud/CheapHelpers)
 - [Android System Bars Documentation](AndroidSystemBars.md)
 - [Apple Human Interface Guidelines - Status Bars](https://developer.apple.com/design/human-interface-guidelines/status-bars)
 - [Android Edge-to-Edge Guidelines](https://developer.android.com/develop/ui/views/layout/edge-to-edge)

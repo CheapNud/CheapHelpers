@@ -343,7 +343,7 @@ Key NuGet packages used:
 
 ## Support & Documentation
 
-- **GitHub**: [CheapNud/CheapHelpers](https://github.com/CheapNud/CheapHelpers)
+- **Forge**: [cheapnud/CheapHelpers](https://git.cheapludes.be/cheapnud/CheapHelpers)
 - **NuGet**: [CheapHelpers.Services](https://www.nuget.org/packages/CheapHelpers.Services)
 - **License**: MIT
 

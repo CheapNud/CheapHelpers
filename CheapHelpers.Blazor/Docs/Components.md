@@ -604,7 +604,10 @@ services.AddCheapHelpersBlazorMinimal<ApplicationUser>();
 Complete setup: CheapContext + Blazor services.
 
 ```csharp
-services.AddCheapHelpersComplete<ApplicationUser>(
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+    : CheapContext<ApplicationUser>(options);
+
+services.AddCheapHelpersComplete<ApplicationUser, ApplicationDbContext>(
     options => options.UseSqlServer(connectionString));
 ```
 
@@ -613,7 +616,7 @@ services.AddCheapHelpersComplete<ApplicationUser>(
 Everything: CheapContext + Identity + Blazor.
 
 ```csharp
-services.AddCheapHelpersCompleteWithIdentity<ApplicationUser, IdentityRole>(
+services.AddCheapHelpersCompleteWithIdentity<ApplicationUser, ApplicationDbContext, IdentityRole>(
     options => options.UseSqlServer(connectionString),
     contextOptions: null,
     configureIdentity: identity =>
@@ -637,7 +640,7 @@ services.AddCheapHelpersCompleteWithIdentity<ApplicationUser, IdentityRole>(
 var builder = WebApplication.CreateBuilder(args);
 
 // Complete setup with Identity
-builder.Services.AddCheapHelpersCompleteWithIdentity<ApplicationUser, IdentityRole>(
+builder.Services.AddCheapHelpersCompleteWithIdentity<ApplicationUser, ApplicationDbContext, IdentityRole>(
     options => options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")),
     configureIdentity: identity =>

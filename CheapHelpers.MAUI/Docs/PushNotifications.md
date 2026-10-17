@@ -1014,7 +1014,7 @@ If you encounter issues not covered here:
    - Use default configurations
    - Test with Firebase/APNS test tools
 
-5. Review sample implementations in the [GitHub repository](https://github.com/CheapNud/CheapHelpers)
+5. Review sample implementations in the [repository](https://git.cheapludes.be/cheapnud/CheapHelpers)
 
 ## Next Steps
 

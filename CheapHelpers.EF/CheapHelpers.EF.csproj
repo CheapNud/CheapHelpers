@@ -13,8 +13,8 @@
     <Product>CheapHelpers</Product>
     <Description>Entity Framework Core repository pattern and database utilities with pagination and auditing support</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
+    <PackageProjectUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>entityframework;efcore;repository;database;pagination</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

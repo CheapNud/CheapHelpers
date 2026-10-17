@@ -142,7 +142,7 @@ namespace CheapHelpers.Blazor.Extensions
 
         /// <summary>
         /// Complete setup with derived context: registers context + Blazor services in one call.
-        /// <code>services.AddCheapHelpersComplete&lt;VoltiqUser, VoltiqDbContext&gt;(opts => opts.UseSqlServer(conn));</code>
+        /// <code>services.AddCheapHelpersComplete&lt;ApplicationUser, ApplicationDbContext&gt;(opts => opts.UseSqlServer(conn));</code>
         /// </summary>
         public static IServiceCollection AddCheapHelpersComplete<TUser, TContext>(
             this IServiceCollection services,
@@ -249,10 +249,10 @@ namespace CheapHelpers.Blazor.Extensions
     // Just Blazor services:
     // services.AddCheapHelpersBlazorMinimal<ApplicationUser>();
     // 
-    // Complete setup (Context + Blazor):
-    // services.AddCheapHelpersComplete<ApplicationUser>(options => options.UseSqlServer(connectionString));
-    // 
+    // Complete setup (Context + Blazor), with ApplicationDbContext : CheapContext<ApplicationUser>:
+    // services.AddCheapHelpersComplete<ApplicationUser, ApplicationDbContext>(options => options.UseSqlServer(connectionString));
+    //
     // Everything (Context + Identity + Blazor):
-    // services.AddCheapHelpersCompleteWithIdentity<ApplicationUser, IdentityRole>(
+    // services.AddCheapHelpersCompleteWithIdentity<ApplicationUser, ApplicationDbContext, IdentityRole>(
     //     options => options.UseSqlServer(connectionString));
 }

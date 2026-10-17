@@ -21,14 +21,14 @@ namespace CheapHelpers.Blazor.Shared
         protected bool IsInitialized { get; set; } = false;
 
         [CascadingParameter] protected Task<AuthenticationState> AuthenticationState { get; set; } = default!;
-        [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
+        [Inject] protected IUserService UserService { get; set; } = default!;
 
         protected override async Task OnInitializedAsync()
         {
             try
             {
                 // Null when signed out
-                User = await AccountIdentity.GetUserAsync((await AuthenticationState).User);
+                User = await UserService.GetUserAsync((await AuthenticationState).User);
                 if (User != null)
                 {
                     var allStates = User.GetAllExpandStates();
@@ -72,7 +72,7 @@ namespace CheapHelpers.Blazor.Shared
                 {
                     try
                     {
-                        await AccountIdentity.UpdateNavigationStatesAsync(User.Id, new() { [key] = expanded });
+                        await UserService.UpdateNavigationStatesAsync(User.Id, new() { [key] = expanded });
                         Debug.WriteLine($"NavigationStateBase: Navigation state saved to database: {key} = {expanded}");
                     }
                     catch (Exception ex)
@@ -97,7 +97,7 @@ namespace CheapHelpers.Blazor.Shared
                 {
                     try
                     {
-                        await AccountIdentity.UpdateNavigationStatesAsync(User.Id, LocalNavigationState);
+                        await UserService.UpdateNavigationStatesAsync(User.Id, LocalNavigationState);
                         Debug.WriteLine($"NavigationStateBase: Batch saved {LocalNavigationState.Count} navigation states on dispose");
                     }
                     catch (Exception ex)

@@ -18,7 +18,7 @@ namespace CheapHelpers.Blazor.Shared
         protected bool IsInitialized { get; set; } = false;
 
         [CascadingParameter] protected Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
-        [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
+        [Inject] protected IUserService UserService { get; set; } = default!;
 
         protected override async Task OnInitializedAsync()
         {
@@ -33,7 +33,7 @@ namespace CheapHelpers.Blazor.Shared
             try
             {
                 // Null when signed out
-                User = await AccountIdentity.GetUserAsync((await AuthenticationStateTask).User);
+                User = await UserService.GetUserAsync((await AuthenticationStateTask).User);
                 if (User != null)
                 {
                     DarkMode = User.IsDarkMode;
@@ -67,7 +67,7 @@ namespace CheapHelpers.Blazor.Shared
                 {
                     try
                     {
-                        await AccountIdentity.UpdateUserAsync(User);
+                        await UserService.UpdateUserAsync(User);
                         Debug.WriteLine($"UserPreferencesBase: Dark mode preference saved");
                     }
                     catch (Exception ex)
@@ -102,7 +102,7 @@ namespace CheapHelpers.Blazor.Shared
                 {
                     try
                     {
-                        await AccountIdentity.UpdateUserAsync(User);
+                        await UserService.UpdateUserAsync(User);
                         Debug.WriteLine($"UserPreferencesBase: Dark mode preference saved");
                     }
                     catch (Exception ex)

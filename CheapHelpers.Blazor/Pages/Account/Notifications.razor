@@ -123,7 +123,7 @@
     [CascadingParameter]
     private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
 
-    [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
+    [Inject] protected IUserService UserService { get; set; } = default!;
     [Inject] protected IInAppNotificationService NotificationService { get; set; } = default!;
     [Inject] protected ISnackbar ToastService { get; set; } = default!;
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;
@@ -138,7 +138,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var user = await AccountIdentity.GetUserAsync((await AuthenticationState).User);
+        var user = await UserService.GetUserAsync((await AuthenticationState).User);
         if (user is null) return;
 
         _userId = user.Id;

@@ -82,7 +82,7 @@
 </MudPaper>
 
 @code {
-    [Inject] private IAccountIdentityService AccountIdentity { get; set; } = default!;
+    [Inject] private IUserService UserService { get; set; } = default!;
     [Inject] private AccountRouteOptions Routes { get; set; } = default!;
     [Inject] private ISnackbar ToastService { get; set; } = default!;
     [Inject] private IStringLocalizer Loc { get; set; } = default!;
@@ -105,7 +105,7 @@
             var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (userId == null) return;
 
-            currentTwoFactorStatus = await AccountIdentity.GetTwoFactorStatusAsync(userId);
+            currentTwoFactorStatus = await UserService.GetTwoFactorStatusAsync(userId);
         }
         catch (Exception ex)
         {

@@ -39,7 +39,7 @@
     [Parameter]
     public EventCallback<CheapUser> OnUserRegistered { get; set; }
 
-    [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
+    [Inject] protected IUserService UserService { get; set; } = default!;
     [Inject] protected CheapHelpersBlazorOptions BlazorOptions { get; set; } = default!;
     [Inject] protected IEmailService? Mailer { get; set; }
     [Inject] protected ISnackbar ToastService { get; set; } = default!;
@@ -62,7 +62,7 @@
 
         try
         {
-            var code = await AccountIdentity.GenerateEmailConfirmationTokenAsync(user.Id);
+            var code = await UserService.GenerateEmailConfirmationTokenAsync(user.Id);
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
             var link = $"{Nav.BaseUri}Account/ConfirmEmail?userid={user.Id}&code={code}";
             await Mailer.SendEmailConfirmationAsync(user.Email, link);
@@ -91,7 +91,7 @@
             user.Email = _model.Email;
             user.UserName = _model.Email;
 
-            var identityResult = await AccountIdentity.CreateUserAsync(user, _model.Password);
+            var identityResult = await UserService.CreateUserAsync(user, _model.Password);
             if (identityResult.Succeeded)
             {
                 if (_sendMail)

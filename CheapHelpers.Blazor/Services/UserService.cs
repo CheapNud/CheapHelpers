@@ -473,12 +473,6 @@ namespace CheapHelpers.Blazor.Services
             return user is null ? UserNotFound(userId) : await ResetPasswordAsync(user, code, newPassword);
         }
 
-        public async Task<LockoutInfo?> GetLockoutAsync(string email)
-        {
-            var user = await GetUserByEmailAsync(email);
-            return user is null ? null : new LockoutInfo(user.LockoutEnd, await IsLockedOutAsync(user));
-        }
-
         public async Task<bool> HasPasswordAsync(string userId)
             => (await GetUserByIdAsync(userId))?.PasswordHash is not null;
 

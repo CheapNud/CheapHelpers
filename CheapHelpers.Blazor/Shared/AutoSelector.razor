@@ -118,7 +118,7 @@
     /// If your project does not use CheapContext, use Selector with pre-loaded Items instead.
     /// </summary>
     [Inject]
-    public IDbContextFactory<CheapContext<CheapUser>> Factory { get; set; }
+    public IDbContextFactory<DbContext> Factory { get; set; }
 
     #endregion
 

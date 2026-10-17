@@ -1,5 +1,6 @@
 ﻿@typeparam T where T : ISmsRecipient
 @using CheapHelpers.Blazor.Helpers
+@using CheapHelpers.Blazor.Services
 @using CheapHelpers.EF
 @using CheapHelpers.Services.Communication.Sms
 @using Microsoft.AspNetCore.Components.Authorization
@@ -221,7 +222,7 @@
 
     [Inject] private ISmsService SmsService { get; set; } = default!;
     [Inject] private ISnackbar ToastService { get; set; } = default!;
-    [Inject] private IDbContextFactory<CheapContext<CheapUser>> Factory { get; set; } = default!;
+    [Inject] private IUserService UserService { get; set; } = default!;
     [CascadingParameter] private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
 
@@ -374,9 +375,8 @@
     {
         try
         {
-            using var context = Factory.CreateDbContext();
             var auth = await AuthenticationStateTask;
-            var user = await context.Users.FirstAsync(x => x.UserName == auth.User.Identity.Name);
+            var user = await UserService.GetUserAsync(auth.User);
 
             var logDescription = new
             {
@@ -396,8 +396,6 @@
             //     LogTime = DateTime.Now,
             //     Success = success
             // });
-
-            await context.SaveChangesAsync();
         }
         catch (Exception ex)
         {

@@ -91,7 +91,7 @@
     /// When Items is provided, this is not needed and can be left unregistered.
     /// </summary>
     [Parameter]
-    public IDbContextFactory<CheapContext<CheapUser>>? Factory { get; set; }
+    public IDbContextFactory<DbContext>? Factory { get; set; }
 
     [Inject]
     private IServiceProvider ServiceProvider { get; set; } = default!;
@@ -121,13 +121,13 @@
         {
             if (Items == null)
             {
-                Factory ??= ServiceProvider.GetService<IDbContextFactory<CheapContext<CheapUser>>>();
+                Factory ??= ServiceProvider.GetService<IDbContextFactory<DbContext>>();
 
                 if (Factory is null)
                 {
                     throw new InvalidOperationException(
-                        $"Selector<{typeof(C).Name}>: No Items provided and no IDbContextFactory<CheapContext<CheapUser>> registered. " +
-                        "Either pass Items or register CheapContext in DI.");
+                        $"Selector<{typeof(C).Name}>: No Items provided and no IDbContextFactory<DbContext> registered. " +
+                        "Either pass Items or call AddCheapHelpersBlazor<TUser, TContext>, which registers it.");
                 }
 
                 using (var context = Factory.CreateDbContext())

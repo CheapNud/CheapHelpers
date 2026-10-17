@@ -103,6 +103,12 @@ namespace CheapHelpers.Blazor.Extensions
                 Debug.WriteLine($"Warning: IDbContextFactory<CheapContext<{typeof(TUser).Name}>> not found. Make sure to register it in your Program.cs");
             }
 
+            // The shared selectors only query Set<T>(), so they take a plain DbContext factory
+            // instead of one closed over a user type. Resolved lazily, so registration order doesn't matter.
+            services.TryAddSingleton<IDbContextFactory<DbContext>>(sp =>
+                new DbContextFactoryAdapter<DbContext, CheapContext<TUser>>(
+                    sp.GetRequiredService<IDbContextFactory<CheapContext<TUser>>>()));
+
             // Register additional services based on options
             if (options.EnableFileDownload)
             {
@@ -120,21 +126,9 @@ namespace CheapHelpers.Blazor.Extensions
         }
 
         /// <summary>
-        /// Register CheapHelpers Blazor with minimal configuration (for quick setup with CheapUser)
-        /// </summary>
-        public static IServiceCollection AddCheapHelpersBlazorMinimal(
-            this IServiceCollection services)
-        {
-            return services.AddCheapHelpersBlazor<CheapUser, CheapContext<CheapUser>>(options =>
-            {
-                options.EnableLocalization = false;
-                options.EnableFileDownload = false;
-            });
-        }
-
-        /// <summary>
         /// Register CheapHelpers Blazor with minimal configuration for custom user type
         /// </summary>
+        /// <typeparam name="TUser">A concrete class deriving from <see cref="CheapUser"/>; CheapUser itself is abstract.</typeparam>
         public static IServiceCollection AddCheapHelpersBlazorMinimal<TUser>(
             this IServiceCollection services)
             where TUser : CheapUser
@@ -233,20 +227,6 @@ namespace CheapHelpers.Blazor.Extensions
                         sp.GetRequiredService<IDbContextFactory<TContext>>()));
             }
         }
-
-        /// <summary>
-        /// Simple complete setup with CheapUser, CheapContext, and IdentityRole defaults.
-        /// </summary>
-        public static IServiceCollection AddCheapHelpersCompleteWithIdentity(
-            this IServiceCollection services,
-            Action<DbContextOptionsBuilder> configureContext,
-            CheapContextOptions? contextOptions = null,
-            Action<IdentityOptions>? configureIdentity = null,
-            Action<CheapHelpersBlazorOptions>? configureBlazor = null)
-        {
-            return services.AddCheapHelpersCompleteWithIdentity<CheapUser, CheapContext<CheapUser>, IdentityRole>(
-                configureContext, contextOptions, configureIdentity, configureBlazor);
-        }
     }
 
     /// <summary>
@@ -275,7 +255,4 @@ namespace CheapHelpers.Blazor.Extensions
     // Everything (Context + Identity + Blazor):
     // services.AddCheapHelpersCompleteWithIdentity<ApplicationUser, IdentityRole>(
     //     options => options.UseSqlServer(connectionString));
-    // 
-    // Simple everything with defaults:
-    // services.AddCheapHelpersCompleteWithIdentity(options => options.UseSqlServer(connectionString));
 }

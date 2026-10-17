@@ -88,6 +88,15 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Add a passkey.
+        /// </summary>
+        internal static string AddPasskey {
+            get {
+                return ResourceManager.GetString("AddPasskey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to All.
         /// </summary>
         internal static string All {
@@ -1015,6 +1024,15 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to No passkeys yet..
+        /// </summary>
+        internal static string NoPasskeys {
+            get {
+                return ResourceManager.GetString("NoPasskeys", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to You have no recovery codes..
         /// </summary>
         internal static string NoRecoveryCodes {
@@ -1065,6 +1083,114 @@ namespace CheapHelpers.Blazor.Properties {
         internal static string Or {
             get {
                 return ResourceManager.GetString("Or", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your passkey has been added..
+        /// </summary>
+        internal static string PasskeyAdded {
+            get {
+                return ResourceManager.GetString("PasskeyAdded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Created on {0}.
+        /// </summary>
+        internal static string PasskeyCreatedOn {
+            get {
+                return ResourceManager.GetString("PasskeyCreatedOn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You have reached the maximum number of passkeys. Remove one before you add another..
+        /// </summary>
+        internal static string PasskeyLimitReached {
+            get {
+                return ResourceManager.GetString("PasskeyLimitReached", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Passkey name.
+        /// </summary>
+        internal static string PasskeyName {
+            get {
+                return ResourceManager.GetString("PasskeyName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Enter a name of at most 200 characters..
+        /// </summary>
+        internal static string PasskeyNameRequired {
+            get {
+                return ResourceManager.GetString("PasskeyNameRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The passkey could not be added..
+        /// </summary>
+        internal static string PasskeyNotAdded {
+            get {
+                return ResourceManager.GetString("PasskeyNotAdded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The passkey could not be removed..
+        /// </summary>
+        internal static string PasskeyNotRemoved {
+            get {
+                return ResourceManager.GetString("PasskeyNotRemoved", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The passkey could not be renamed..
+        /// </summary>
+        internal static string PasskeyNotRenamed {
+            get {
+                return ResourceManager.GetString("PasskeyNotRenamed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Passkey removed..
+        /// </summary>
+        internal static string PasskeyRemoved {
+            get {
+                return ResourceManager.GetString("PasskeyRemoved", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Passkey renamed..
+        /// </summary>
+        internal static string PasskeyRenamed {
+            get {
+                return ResourceManager.GetString("PasskeyRenamed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Passkeys.
+        /// </summary>
+        internal static string Passkeys {
+            get {
+                return ResourceManager.GetString("Passkeys", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Signing in with a passkey failed. Please try again..
+        /// </summary>
+        internal static string PasskeySignInFailed {
+            get {
+                return ResourceManager.GetString("PasskeySignInFailed", resourceCulture);
             }
         }
         
@@ -1429,6 +1555,15 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Rename.
+        /// </summary>
+        internal static string Rename {
+            get {
+                return ResourceManager.GetString("Rename", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to This field is required.
         /// </summary>
         internal static string RequiredError {
@@ -1627,6 +1762,15 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Sign in with a passkey.
+        /// </summary>
+        internal static string SignInWithPasskey {
+            get {
+                return ResourceManager.GetString("SignInWithPasskey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Sign in with recovery code.
         /// </summary>
         internal static string SignInWithRecoveryCode {
@@ -1731,6 +1875,15 @@ namespace CheapHelpers.Blazor.Properties {
         internal static string Understood {
             get {
                 return ResourceManager.GetString("Understood", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unnamed passkey.
+        /// </summary>
+        internal static string UnnamedPasskey {
+            get {
+                return ResourceManager.GetString("UnnamedPasskey", resourceCulture);
             }
         }
         

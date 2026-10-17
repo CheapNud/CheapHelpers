@@ -723,4 +723,55 @@
   <data name="Error" xml:space="preserve">
     <value>Er is een fout opgetreden.</value>
   </data>
+  <data name="Passkeys" xml:space="preserve">
+    <value>Passkeys</value>
+  </data>
+  <data name="NoPasskeys" xml:space="preserve">
+    <value>Nog geen passkeys.</value>
+  </data>
+  <data name="AddPasskey" xml:space="preserve">
+    <value>Passkey toevoegen</value>
+  </data>
+  <data name="SignInWithPasskey" xml:space="preserve">
+    <value>Aanmelden met een passkey</value>
+  </data>
+  <data name="PasskeySignInFailed" xml:space="preserve">
+    <value>Aanmelden met een passkey is mislukt. Probeer het opnieuw.</value>
+  </data>
+  <data name="PasskeyAdded" xml:space="preserve">
+    <value>Uw passkey is toegevoegd.</value>
+  </data>
+  <data name="PasskeyNotAdded" xml:space="preserve">
+    <value>De passkey kon niet worden toegevoegd.</value>
+  </data>
+  <data name="PasskeyLimitReached" xml:space="preserve">
+    <value>U hebt het maximale aantal passkeys bereikt. Verwijder er eerst een voordat u een nieuwe toevoegt.</value>
+  </data>
+  <data name="PasskeyName" xml:space="preserve">
+    <value>Naam van de passkey</value>
+  </data>
+  <data name="PasskeyNameRequired" xml:space="preserve">
+    <value>Geef een naam van maximaal 200 tekens op.</value>
+  </data>
+  <data name="PasskeyRenamed" xml:space="preserve">
+    <value>Passkey hernoemd.</value>
+  </data>
+  <data name="PasskeyNotRenamed" xml:space="preserve">
+    <value>De passkey kon niet worden hernoemd.</value>
+  </data>
+  <data name="PasskeyRemoved" xml:space="preserve">
+    <value>Passkey verwijderd.</value>
+  </data>
+  <data name="PasskeyNotRemoved" xml:space="preserve">
+    <value>De passkey kon niet worden verwijderd.</value>
+  </data>
+  <data name="PasskeyCreatedOn" xml:space="preserve">
+    <value>Aangemaakt op {0}</value>
+  </data>
+  <data name="UnnamedPasskey" xml:space="preserve">
+    <value>Naamloze passkey</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>Hernoemen</value>
+  </data>
 </root>

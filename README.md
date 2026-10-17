@@ -225,9 +225,9 @@ services.AddCheapHelpersBlazor<MyUser>(options =>
     };
 });
 
-// Consumer creates their own controller (one line):
-[Route("Account/[action]")]
-public class AccountController : CheapAccountController<MyUser>;
+// Map the account and culture endpoints (after app.UseAntiforgery()):
+app.MapCheapAccountEndpoints<MyUser>();
+app.MapCheapCultureEndpoint();
 
 // Built-in pages: Login, Register, ForgotPassword, ResetPassword,
 // ConfirmEmail, ConfirmEmailChange, SetPassword, ChangePassword,

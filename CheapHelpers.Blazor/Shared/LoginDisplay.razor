@@ -38,12 +38,14 @@
                             </MudMenuItem>
                             <MudDivider />
                             <MudMenuItem>
-                                <MudForm method="post" action="/Account/SignOut">
+                                @* Plain form, not MudForm: MudForm renders a div and drops method/action *@
+                                <form method="post" action="/Account/SignOut">
+                                    <AntiforgeryToken />
                                     <MudButton ButtonType="ButtonType.Submit" IconSize="Size.Small"
                                                Color="Color.Secondary" Size="Size.Medium" Variant="Variant.Filled">
                                         @Loc["LogOut"]
                                     </MudButton>
-                                </MudForm>
+                                </form>
                             </MudMenuItem>
                         </ChildContent>
                     </MudMenu>

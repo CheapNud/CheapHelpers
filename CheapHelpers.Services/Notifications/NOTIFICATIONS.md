@@ -287,6 +287,7 @@ Each channel is an implementation of `INotificationChannel` that handles deliver
 2. **Email Channel**: Sends emails using registered `IEmailService`
 3. **SMS Channel**: Sends SMS using registered `ISmsService`
 4. **Push Channel**: Sends push notifications using registered `IPushNotificationBackend`
+5. **ntfy Channel**: Posts to the topic in `Notifications:Ntfy:TopicUrl`
 
 ### Channel Adapters
 

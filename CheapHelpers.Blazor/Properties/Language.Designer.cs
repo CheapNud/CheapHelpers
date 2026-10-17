@@ -1069,6 +1069,15 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to You must change your password before you continue..
+        /// </summary>
+        internal static string PasswordChangeRequired {
+            get {
+                return ResourceManager.GetString("PasswordChangeRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Your password.
         /// </summary>
         internal static string PasswordExample {

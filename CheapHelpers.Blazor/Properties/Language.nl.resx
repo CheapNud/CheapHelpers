@@ -441,6 +441,9 @@
   <data name="Password" xml:space="preserve">
     <value>Wachtwoord</value>
   </data>
+  <data name="PasswordChangeRequired" xml:space="preserve">
+    <value>U moet uw wachtwoord wijzigen voordat u verdergaat.</value>
+  </data>
   <data name="PasswordExample" xml:space="preserve">
     <value>Uw wachtwoord</value>
   </data>

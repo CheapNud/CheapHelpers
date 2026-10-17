@@ -5,8 +5,8 @@ Business services including email with templates, PDF generation, Azure integrat
 ## Package Information
 
 - **Package**: CheapHelpers.Services
-- **Version**: 1.1.3
-- **Target Framework**: .NET 10.0
+- **Version**: 3.9.0
+- **Target Framework**: .NET 11.0 (net11.0)
 - **NuGet**: [CheapHelpers.Services](https://www.nuget.org/packages/CheapHelpers.Services)
 
 ## Available Services
@@ -280,13 +280,16 @@ await db.Images.UpdateAsync(imageId, new {
 
 Key NuGet packages used:
 
-- **Geocoding**: GoogleApi (4.6.0) for Google Maps integration
-- **Email**: MailKit (4.14.1), Fluid.Core (2.30.0)
-- **PDF**: itext (9.3.0), itext.pdfoptimizer (4.1.0), ILove_PDF (1.6.2)
+- **Geocoding**: GoogleApi (5.8.18) for Google Maps integration
+- **Email**: MailKit (4.18.1), Fluid.Core (2.40.0), HtmlSanitizer (9.2.1039), SendGrid (9.29.3)
+- **PDF**: itext (9.8.0), itext.pdfoptimizer (4.1.5), ILove_PDF (1.6.4)
 - **XML**: Built-in System.Xml
-- **Azure**: Azure.AI.Translation.Document (2.0.0), Azure.AI.Vision.ImageAnalysis (1.0.0)
-- **Data Exchange**: ClosedXML (0.105.0), CsvHelper (33.1.0)
-- **Misc**: ImageSharp (3.1.12), ZXing.Net (0.16.11), Twilio (7.13.5)
+- **Azure**: Azure.AI.Translation.Document (3.0.0), Azure.AI.Vision.ImageAnalysis (1.0.0), Azure.Identity (1.21.0), Azure.Storage.Blobs (12.30.1)
+- **Data Exchange**: ClosedXML (0.105.1), CsvHelper (33.1.0), UblSharp (1.1.1)
+- **Misc**: ImageSharp (3.1.12), ZXing.Net (0.16.11), ZXing.Net.Bindings.ImageSharp.V3 (0.16.20), Twilio (8.1.0)
+- **Messaging and real-time**: RabbitMQ.Client (7.2.2), Microsoft.AspNetCore.SignalR.Client (10.0.13), Microsoft.AspNetCore.Http.Connections (1.2.13)
+- **Identity and Graph**: Duende.IdentityModel (8.1.0), Microsoft.Graph (6.8.0)
+- **Caching**: Microsoft.Extensions.Caching.Abstractions (10.0.13), Microsoft.Extensions.Caching.Memory (10.0.13)
 
 ## Configuration Examples
 

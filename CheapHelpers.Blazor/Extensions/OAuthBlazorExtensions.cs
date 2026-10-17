@@ -40,6 +40,7 @@ public static class OAuthBlazorExtensions
         configureOptions(googleOptions);
 
         services.AddSingleton(googleOptions);
+        services.AddSingleton<OAuthProviderOptions>(googleOptions);
         services.AddSingleton<IExternalAuthProvider>(new SimpleAuthProvider("Google"));
 
         EnsureExternalCookieScheme(services);
@@ -82,6 +83,7 @@ public static class OAuthBlazorExtensions
         configureOptions(microsoftOptions);
 
         services.AddSingleton(microsoftOptions);
+        services.AddSingleton<OAuthProviderOptions>(microsoftOptions);
         services.AddSingleton<IExternalAuthProvider>(new SimpleAuthProvider("Microsoft"));
 
         EnsureExternalCookieScheme(services);
@@ -118,6 +120,7 @@ public static class OAuthBlazorExtensions
         configureOptions(githubOptions);
 
         services.AddSingleton(githubOptions);
+        services.AddSingleton<OAuthProviderOptions>(githubOptions);
         services.AddSingleton<IExternalAuthProvider>(new SimpleAuthProvider("GitHub"));
 
         EnsureExternalCookieScheme(services);
@@ -164,6 +167,7 @@ public static class OAuthBlazorExtensions
         configureOptions(appleOptions);
 
         services.AddSingleton(appleOptions);
+        services.AddSingleton<OAuthProviderOptions>(appleOptions);
         services.AddSingleton<IExternalAuthProvider>(new SimpleAuthProvider("Apple"));
 
         EnsureExternalCookieScheme(services);
@@ -229,6 +233,7 @@ public static class OAuthBlazorExtensions
             throw new InvalidOperationException($"{nameof(OpenIdConnectAuthOptions)}.{nameof(oidcOptions.Authority)} is required");
 
         services.AddSingleton(oidcOptions);
+        services.AddSingleton<OAuthProviderOptions>(oidcOptions);
         services.AddSingleton<IExternalAuthProvider>(new SimpleAuthProvider(oidcOptions.ProviderName));
 
         EnsureExternalCookieScheme(services);

@@ -619,6 +619,15 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to External sign-in failed. Please try again..
+        /// </summary>
+        internal static string ExternalSignInFailed {
+            get {
+                return ResourceManager.GetString("ExternalSignInFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Filename cannot be null or empty.
         /// </summary>
         internal static string FilenameNullOrEmpty {
@@ -1065,6 +1074,15 @@ namespace CheapHelpers.Blazor.Properties {
         internal static string Password {
             get {
                 return ResourceManager.GetString("Password", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You must change your password before you continue..
+        /// </summary>
+        internal static string PasswordChangeRequired {
+            get {
+                return ResourceManager.GetString("PasswordChangeRequired", resourceCulture);
             }
         }
         
@@ -1596,6 +1614,15 @@ namespace CheapHelpers.Blazor.Properties {
         internal static string SignIn {
             get {
                 return ResourceManager.GetString("SignIn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sign in with {0}.
+        /// </summary>
+        internal static string SignInWith {
+            get {
+                return ResourceManager.GetString("SignInWith", resourceCulture);
             }
         }
         

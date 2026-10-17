@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.Extensions.Options;
 @using CheapHelpers.Blazor.Shared
+@using CheapHelpers.Services.Auth.OAuth
 
 <form @ref=form class="justify-center d-flex mt-6" method="post" action="/Account/SignIn" contextmenu="">
     <MudPaper Elevation=2 Class="pa-6" Style="max-width: 420px;">
@@ -35,6 +36,19 @@
             <MudItem xxl="12" xl="12" md="12" xs="12">
                 <MudLink Href="Account/ForgotPassword">@Loc["ForgotPassword"]</MudLink>
             </MudItem>
+            @if (Providers.Any())
+            {
+                <MudItem xxl="12" xl="12" md="12" xs="12">
+                    <MudDivider />
+                </MudItem>
+                @foreach (var provider in Providers)
+                {
+                    <MudItem xxl="12" xl="12" md="12" xs="12">
+                        @* Full page load: enhanced navigation would fetch the start endpoint and fail on the provider's cross-origin redirect *@
+                        <MudButton Variant="Variant.Outlined" FullWidth="true" Href="@provider.StartPath" StartIcon="@ProviderIcon(provider.ProviderName)" data-enhance-nav="false">@Loc["SignInWith", provider.ProviderName]</MudButton>
+                    </MudItem>
+                }
+            }
         </MudGrid>
     </MudPaper>
 </form>
@@ -45,18 +59,32 @@
     object form;
 
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] private IEnumerable<OAuthProviderOptions> Providers { get; set; } = default!;
 
     [SupplyParameterFromQuery(Name = "failed")] private string? Failed { get; set; }
+
+    // Set by the external sign-in callbacks; only its presence counts, so a crafted link cannot put its own text on the page
+    [SupplyParameterFromQuery(Name = "error")] private string? Error { get; set; }
 
     private string? FailedMessage => Failed switch
     {
         "credentials" => Loc["InvalidCredentials"],
         "notallowed" => Loc["AccountNotAllowed"],
+        _ when Error is not null => Loc["ExternalSignInFailed"],
         _ => null,
     };
 
     [Inject]
     private IJSRuntime Js { get; set; }
+
+    private static string ProviderIcon(string providerName) => providerName switch
+    {
+        "Google" => Icons.Custom.Brands.Google,
+        "Microsoft" => Icons.Custom.Brands.Microsoft,
+        "GitHub" => Icons.Custom.Brands.GitHub,
+        "Apple" => Icons.Custom.Brands.Apple,
+        _ => Icons.Material.Filled.Login,
+    };
 
     protected override void OnInitialized()
     {

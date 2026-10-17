@@ -71,7 +71,7 @@ namespace CheapHelpers.Blazor.Configuration
         /// <summary>
         /// Supported cultures for the application
         /// </summary>
-        public string[] SupportedCultures { get; set; } = ["en-US"];
+        public string[] SupportedCultures { get; set; } = ["en-US", "nl-BE"];
 
         /// <summary>
         /// Custom CSS classes for MudBlazor theme overrides

@@ -32,7 +32,8 @@ public static class CultureEndpointExtensions
         return endpoints;
     }
 
-    // Same rule LocalRedirect enforced: a single leading slash, not "//" or "/\" (protocol-relative)
+    // Same rule LocalRedirect enforced: a single leading slash, not "//" or "/\" (protocol-relative),
+    // and no control characters (browsers strip tabs, so "/<tab>/evil" would become "//evil")
     private static bool IsLocalPath(string? path) =>
-        path is ['/'] or ['/', not ('/' or '\\'), ..];
+        path is ['/'] or ['/', not ('/' or '\\'), ..] && !path.Any(char.IsControl);
 }

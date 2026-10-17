@@ -61,11 +61,155 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Account locked.
+        /// </summary>
+        internal static string AccountLocked {
+            get {
+                return ResourceManager.GetString("AccountLocked", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your account has been temporarily locked.
+        /// </summary>
+        internal static string AccountLockedSubtitle {
+            get {
+                return ResourceManager.GetString("AccountLockedSubtitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This account cannot sign in yet. Please confirm your email address first..
+        /// </summary>
+        internal static string AccountNotAllowed {
+            get {
+                return ResourceManager.GetString("AccountNotAllowed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to All.
+        /// </summary>
+        internal static string All {
+            get {
+                return ResourceManager.GetString("All", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to All notifications marked as read.
+        /// </summary>
+        internal static string AllMarkedAsRead {
+            get {
+                return ResourceManager.GetString("AllMarkedAsRead", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Archive.
+        /// </summary>
+        internal static string Archive {
+            get {
+                return ResourceManager.GetString("Archive", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Authenticator code.
+        /// </summary>
+        internal static string AuthenticatorCode {
+            get {
+                return ResourceManager.GetString("AuthenticatorCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your sign-in is protected with an authenticator app. Enter the code from the app below..
+        /// </summary>
+        internal static string AuthenticatorCodePrompt {
+            get {
+                return ResourceManager.GetString("AuthenticatorCodePrompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to To use an authenticator app, follow these steps:.
+        /// </summary>
+        internal static string AuthenticatorInstructions {
+            get {
+                return ResourceManager.GetString("AuthenticatorInstructions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your authenticator key is replaced by a new one.
+        /// </summary>
+        internal static string AuthenticatorKeyReset {
+            get {
+                return ResourceManager.GetString("AuthenticatorKeyReset", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Available providers.
         /// </summary>
         internal static string AvailableExternalLogins {
             get {
                 return ResourceManager.GetString("AvailableExternalLogins", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Back to the authenticator code.
+        /// </summary>
+        internal static string BackToAuthenticator {
+            get {
+                return ResourceManager.GetString("BackToAuthenticator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Back to home.
+        /// </summary>
+        internal static string BackToHome {
+            get {
+                return ResourceManager.GetString("BackToHome", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cancel.
+        /// </summary>
+        internal static string Cancel {
+            get {
+                return ResourceManager.GetString("Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Change password.
+        /// </summary>
+        internal static string ChangePassword {
+            get {
+                return ResourceManager.GetString("ChangePassword", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Code copied to the clipboard.
+        /// </summary>
+        internal static string CodeCopied {
+            get {
+                return ResourceManager.GetString("CodeCopied", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Confirmation email sent. Please check your inbox..
+        /// </summary>
+        internal static string ConfirmationEmailSent {
+            get {
+                return ResourceManager.GetString("ConfirmationEmailSent", resourceCulture);
             }
         }
         
@@ -79,11 +223,173 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Delete image.
+        /// </summary>
+        internal static string ConfirmDeleteTitle {
+            get {
+                return ResourceManager.GetString("ConfirmDeleteTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your email address could not be confirmed. The link may be invalid or expired..
+        /// </summary>
+        internal static string ConfirmError {
+            get {
+                return ResourceManager.GetString("ConfirmError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Confirm password.
+        /// </summary>
+        internal static string ConfirmPassword {
+            get {
+                return ResourceManager.GetString("ConfirmPassword", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Yes, reset my authenticator.
+        /// </summary>
+        internal static string ConfirmReset {
+            get {
+                return ResourceManager.GetString("ConfirmReset", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Thank you for confirming your email address..
+        /// </summary>
+        internal static string ConfirmSuccess {
+            get {
+                return ResourceManager.GetString("ConfirmSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Contact support if you think this is a mistake.
+        /// </summary>
+        internal static string ContactSupport {
+            get {
+                return ResourceManager.GetString("ContactSupport", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Continue.
+        /// </summary>
+        internal static string Continue {
+            get {
+                return ResourceManager.GetString("Continue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Copy.
+        /// </summary>
+        internal static string Copy {
+            get {
+                return ResourceManager.GetString("Copy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Create.
+        /// </summary>
+        internal static string Create {
+            get {
+                return ResourceManager.GetString("Create", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Current status.
+        /// </summary>
+        internal static string CurrentStatus {
+            get {
+                return ResourceManager.GetString("CurrentStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File extension &apos;{0}&apos; is not allowed for security reasons.
+        /// </summary>
+        internal static string DangerousExtension {
+            get {
+                return ResourceManager.GetString("DangerousExtension", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Dark theme.
+        /// </summary>
+        internal static string DarkTheme {
+            get {
+                return ResourceManager.GetString("DarkTheme", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your data has been downloaded.
+        /// </summary>
+        internal static string DataDownloaded {
+            get {
+                return ResourceManager.GetString("DataDownloaded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Data refreshed.
+        /// </summary>
+        internal static string DataRefreshed {
+            get {
+                return ResourceManager.GetString("DataRefreshed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Date.
+        /// </summary>
+        internal static string Date {
+            get {
+                return ResourceManager.GetString("Date", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Delete.
         /// </summary>
         internal static string Delete {
             get {
                 return ResourceManager.GetString("Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The image could not be deleted.
+        /// </summary>
+        internal static string DeleteErrorMessage {
+            get {
+                return ResourceManager.GetString("DeleteErrorMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Disabled.
+        /// </summary>
+        internal static string Disabled {
+            get {
+                return ResourceManager.GetString("Disabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File type &apos;{0}&apos; (MIME: {1}, Extension: .{2}) is not allowed. Only the following types are permitted: {3}.
+        /// </summary>
+        internal static string DisallowedFileType {
+            get {
+                return ResourceManager.GetString("DisallowedFileType", resourceCulture);
             }
         }
         
@@ -97,11 +403,497 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to No access to your authenticator app?.
+        /// </summary>
+        internal static string DontHaveAccess {
+            get {
+                return ResourceManager.GetString("DontHaveAccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Download an authenticator app for.
+        /// </summary>
+        internal static string DownloadAuthenticatorApp {
+            get {
+                return ResourceManager.GetString("DownloadAuthenticatorApp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Download my data.
+        /// </summary>
+        internal static string DownloadData {
+            get {
+                return ResourceManager.GetString("DownloadData", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Downloading....
+        /// </summary>
+        internal static string Downloading {
+            get {
+                return ResourceManager.GetString("Downloading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Email.
+        /// </summary>
+        internal static string Email {
+            get {
+                return ResourceManager.GetString("Email", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Thank you for confirming your new email address..
+        /// </summary>
+        internal static string EmailChangeConfirmed {
+            get {
+                return ResourceManager.GetString("EmailChangeConfirmed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to example@domain.com.
+        /// </summary>
+        internal static string EmailPlaceholder {
+            get {
+                return ResourceManager.GetString("EmailPlaceholder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Enabled.
+        /// </summary>
+        internal static string Enabled {
+            get {
+                return ResourceManager.GetString("Enabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Enter the 6-digit code from your authenticator app.
+        /// </summary>
+        internal static string EnterCodeFromApp {
+            get {
+                return ResourceManager.GetString("EnterCodeFromApp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Enter one of your recovery codes.
+        /// </summary>
+        internal static string EnterRecoveryCodeHelp {
+            get {
+                return ResourceManager.GetString("EnterRecoveryCodeHelp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to After you scan the QR code or enter the key, your app shows a unique code. Enter that code below..
+        /// </summary>
+        internal static string EnterVerificationCode {
+            get {
+                return ResourceManager.GetString("EnterVerificationCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not copy to the clipboard.
+        /// </summary>
+        internal static string ErrorCopying {
+            get {
+                return ResourceManager.GetString("ErrorCopying", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your data could not be downloaded.
+        /// </summary>
+        internal static string ErrorDownloadingData {
+            get {
+                return ResourceManager.GetString("ErrorDownloadingData", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to New recovery codes could not be generated.
+        /// </summary>
+        internal static string ErrorGeneratingCodes {
+            get {
+                return ResourceManager.GetString("ErrorGeneratingCodes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your recovery codes could not be loaded.
+        /// </summary>
+        internal static string ErrorLoadingCodes {
+            get {
+                return ResourceManager.GetString("ErrorLoadingCodes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your data could not be loaded.
+        /// </summary>
+        internal static string ErrorLoadingData {
+            get {
+                return ResourceManager.GetString("ErrorLoadingData", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The two-factor status could not be loaded.
+        /// </summary>
+        internal static string ErrorLoadingStatus {
+            get {
+                return ResourceManager.GetString("ErrorLoadingStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Something went wrong. Please try again..
+        /// </summary>
+        internal static string ErrorMessage {
+            get {
+                return ResourceManager.GetString("ErrorMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to External logins.
         /// </summary>
         internal static string ExternalLogins {
             get {
                 return ResourceManager.GetString("ExternalLogins", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Filename cannot be null or empty.
+        /// </summary>
+        internal static string FilenameNullOrEmpty {
+            get {
+                return ResourceManager.GetString("FilenameNullOrEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File too large.
+        /// </summary>
+        internal static string FileTooLarge {
+            get {
+                return ResourceManager.GetString("FileTooLarge", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Are you sure? This cannot be undone, and two-factor authentication stays off until you set up your app again..
+        /// </summary>
+        internal static string FinalWarning {
+            get {
+                return ResourceManager.GetString("FinalWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to First name.
+        /// </summary>
+        internal static string FirstName {
+            get {
+                return ResourceManager.GetString("FirstName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Forgot your password?.
+        /// </summary>
+        internal static string ForgotPassword {
+            get {
+                return ResourceManager.GetString("ForgotPassword", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to General.
+        /// </summary>
+        internal static string General {
+            get {
+                return ResourceManager.GetString("General", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Generate.
+        /// </summary>
+        internal static string Generate {
+            get {
+                return ResourceManager.GetString("Generate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Generate new recovery codes.
+        /// </summary>
+        internal static string GenerateNewCodes {
+            get {
+                return ResourceManager.GetString("GenerateNewCodes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your current recovery codes will stop working. Do you want to generate new ones?.
+        /// </summary>
+        internal static string GenerateNewCodesConfirmation {
+            get {
+                return ResourceManager.GetString("GenerateNewCodesConfirmation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Important.
+        /// </summary>
+        internal static string Important {
+            get {
+                return ResourceManager.GetString("Important", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Important.
+        /// </summary>
+        internal static string ImportantWarning {
+            get {
+                return ResourceManager.GetString("ImportantWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to In app.
+        /// </summary>
+        internal static string InApp {
+            get {
+                return ResourceManager.GetString("InApp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The current password is incorrect..
+        /// </summary>
+        internal static string IncorrectPassword {
+            get {
+                return ResourceManager.GetString("IncorrectPassword", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The authenticator code is invalid..
+        /// </summary>
+        internal static string InvalidAuthenticatorCode {
+            get {
+                return ResourceManager.GetString("InvalidAuthenticatorCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid email or password..
+        /// </summary>
+        internal static string InvalidCredentials {
+            get {
+                return ResourceManager.GetString("InvalidCredentials", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The recovery code is invalid..
+        /// </summary>
+        internal static string InvalidRecoveryCode {
+            get {
+                return ResourceManager.GetString("InvalidRecoveryCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Last name.
+        /// </summary>
+        internal static string LastName {
+            get {
+                return ResourceManager.GetString("LastName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Lockout details.
+        /// </summary>
+        internal static string LockoutDetails {
+            get {
+                return ResourceManager.GetString("LockoutDetails", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The lockout has expired. You can log in again..
+        /// </summary>
+        internal static string LockoutExpired {
+            get {
+                return ResourceManager.GetString("LockoutExpired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your account has been locked after too many failed sign-in attempts..
+        /// </summary>
+        internal static string LockoutMessage {
+            get {
+                return ResourceManager.GetString("LockoutMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Locked until.
+        /// </summary>
+        internal static string LockoutUntil {
+            get {
+                return ResourceManager.GetString("LockoutUntil", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Log in.
+        /// </summary>
+        internal static string LogIn {
+            get {
+                return ResourceManager.GetString("LogIn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Log out.
+        /// </summary>
+        internal static string LogOut {
+            get {
+                return ResourceManager.GetString("LogOut", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Manage recovery codes.
+        /// </summary>
+        internal static string ManageRecoveryCodes {
+            get {
+                return ResourceManager.GetString("ManageRecoveryCodes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Mark all as read.
+        /// </summary>
+        internal static string MarkAllRead {
+            get {
+                return ResourceManager.GetString("MarkAllRead", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Mark as read.
+        /// </summary>
+        internal static string MarkAsRead {
+            get {
+                return ResourceManager.GetString("MarkAsRead", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Message.
+        /// </summary>
+        internal static string Message {
+            get {
+                return ResourceManager.GetString("Message", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to messages.
+        /// </summary>
+        internal static string Messages {
+            get {
+                return ResourceManager.GetString("Messages", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to More information.
+        /// </summary>
+        internal static string MoreInfo {
+            get {
+                return ResourceManager.GetString("MoreInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Need help? Contact.
+        /// </summary>
+        internal static string NeedHelp {
+            get {
+                return ResourceManager.GetString("NeedHelp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to New recovery codes generated.
+        /// </summary>
+        internal static string NewCodesGenerated {
+            get {
+                return ResourceManager.GetString("NewCodesGenerated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to New password.
+        /// </summary>
+        internal static string NewPassword {
+            get {
+                return ResourceManager.GetString("NewPassword", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You will need new recovery codes.
+        /// </summary>
+        internal static string NewRecoveryCodesNeeded {
+            get {
+                return ResourceManager.GetString("NewRecoveryCodesNeeded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to There is no data to download.
+        /// </summary>
+        internal static string NoDataToDownload {
+            get {
+                return ResourceManager.GetString("NoDataToDownload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No cameras found.
+        /// </summary>
+        internal static string NoDevicesFound {
+            get {
+                return ResourceManager.GetString("NoDevicesFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Files without extensions are not allowed.
+        /// </summary>
+        internal static string NoExtension {
+            get {
+                return ResourceManager.GetString("NoExtension", resourceCulture);
             }
         }
         
@@ -115,6 +907,366 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to No images found.
+        /// </summary>
+        internal static string NoImagesFound {
+            get {
+                return ResourceManager.GetString("NoImagesFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You have no notifications..
+        /// </summary>
+        internal static string NoNotifications {
+            get {
+                return ResourceManager.GetString("NoNotifications", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No notification types are configured..
+        /// </summary>
+        internal static string NoNotificationTypesConfigured {
+            get {
+                return ResourceManager.GetString("NoNotificationTypesConfigured", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You have no recovery codes..
+        /// </summary>
+        internal static string NoRecoveryCodes {
+            get {
+                return ResourceManager.GetString("NoRecoveryCodes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Notifications.
+        /// </summary>
+        internal static string Notifications {
+            get {
+                return ResourceManager.GetString("Notifications", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Notification type.
+        /// </summary>
+        internal static string NotificationType {
+            get {
+                return ResourceManager.GetString("NotificationType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No upload path set.
+        /// </summary>
+        internal static string NoUploadPath {
+            get {
+                return ResourceManager.GetString("NoUploadPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to or.
+        /// </summary>
+        internal static string Or {
+            get {
+                return ResourceManager.GetString("Or", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Password.
+        /// </summary>
+        internal static string Password {
+            get {
+                return ResourceManager.GetString("Password", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your password.
+        /// </summary>
+        internal static string PasswordExample {
+            get {
+                return ResourceManager.GetString("PasswordExample", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your password could not be changed..
+        /// </summary>
+        internal static string PasswordNotChanged {
+            get {
+                return ResourceManager.GetString("PasswordNotChanged", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your password could not be set..
+        /// </summary>
+        internal static string PasswordNotSet {
+            get {
+                return ResourceManager.GetString("PasswordNotSet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The new password does not meet the requirements..
+        /// </summary>
+        internal static string PasswordRequirementsNotMet {
+            get {
+                return ResourceManager.GetString("PasswordRequirementsNotMet", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use at least 8 characters, with an uppercase letter, a lowercase letter and a digit..
+        /// </summary>
+        internal static string PasswordRules {
+            get {
+                return ResourceManager.GetString("PasswordRules", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The passwords do not match..
+        /// </summary>
+        internal static string PasswordsDoNotMatch {
+            get {
+                return ResourceManager.GetString("PasswordsDoNotMatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Path traversal detected: attempting to write outside upload directory.
+        /// </summary>
+        internal static string PathTraversal {
+            get {
+                return ResourceManager.GetString("PathTraversal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your account stays locked until an administrator unlocks it..
+        /// </summary>
+        internal static string PermanentLockout {
+            get {
+                return ResourceManager.GetString("PermanentLockout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Personal data.
+        /// </summary>
+        internal static string PersonalData {
+            get {
+                return ResourceManager.GetString("PersonalData", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your account holds the personal data below. You can download a copy..
+        /// </summary>
+        internal static string PersonalDataDescription {
+            get {
+                return ResourceManager.GetString("PersonalDataDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This page shows the data stored about you. Keep any download in a safe place..
+        /// </summary>
+        internal static string PersonalDataWarning {
+            get {
+                return ResourceManager.GetString("PersonalDataWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Preferences.
+        /// </summary>
+        internal static string Preferences {
+            get {
+                return ResourceManager.GetString("Preferences", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Processing....
+        /// </summary>
+        internal static string Processing {
+            get {
+                return ResourceManager.GetString("Processing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Profile.
+        /// </summary>
+        internal static string Profile {
+            get {
+                return ResourceManager.GetString("Profile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Field.
+        /// </summary>
+        internal static string Property {
+            get {
+                return ResourceManager.GetString("Property", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Push.
+        /// </summary>
+        internal static string Push {
+            get {
+                return ResourceManager.GetString("Push", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Read.
+        /// </summary>
+        internal static string Read {
+            get {
+                return ResourceManager.GetString("Read", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to You need to set up your authenticator app again.
+        /// </summary>
+        internal static string ReconfigureAuthenticatorApp {
+            get {
+                return ResourceManager.GetString("ReconfigureAuthenticatorApp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Recovery code.
+        /// </summary>
+        internal static string RecoveryCode {
+            get {
+                return ResourceManager.GetString("RecoveryCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Enter one of your recovery codes to sign in without your authenticator app..
+        /// </summary>
+        internal static string RecoveryCodeDescription {
+            get {
+                return ResourceManager.GetString("RecoveryCodeDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sign in with a recovery code.
+        /// </summary>
+        internal static string RecoveryCodeLogin {
+            get {
+                return ResourceManager.GetString("RecoveryCodeLogin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Recovery codes.
+        /// </summary>
+        internal static string RecoveryCodes {
+            get {
+                return ResourceManager.GetString("RecoveryCodes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Recovery codes left.
+        /// </summary>
+        internal static string RecoveryCodesCount {
+            get {
+                return ResourceManager.GetString("RecoveryCodesCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Recovery codes let you sign in when you cannot use your authenticator app..
+        /// </summary>
+        internal static string RecoveryCodesDescription {
+            get {
+                return ResourceManager.GetString("RecoveryCodesDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to About recovery codes.
+        /// </summary>
+        internal static string RecoveryCodesInfo {
+            get {
+                return ResourceManager.GetString("RecoveryCodesInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Each code signs you in once without your authenticator app. Keep them in a safe place. When you generate new codes, the old ones stop working..
+        /// </summary>
+        internal static string RecoveryCodesInfoContent {
+            get {
+                return ResourceManager.GetString("RecoveryCodesInfoContent", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Store these codes in a safe place. If you lose your device and your recovery codes, you lose access to your account..
+        /// </summary>
+        internal static string RecoveryCodesWarning {
+            get {
+                return ResourceManager.GetString("RecoveryCodesWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Each recovery code works only once..
+        /// </summary>
+        internal static string RecoveryCodeWarning {
+            get {
+                return ResourceManager.GetString("RecoveryCodeWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Refresh.
+        /// </summary>
+        internal static string RefreshData {
+            get {
+                return ResourceManager.GetString("RefreshData", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Refresh status.
+        /// </summary>
+        internal static string RefreshStatus {
+            get {
+                return ResourceManager.GetString("RefreshStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Remember this device.
+        /// </summary>
+        internal static string RememberThisMachine {
+            get {
+                return ResourceManager.GetString("RememberThisMachine", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Remove.
         /// </summary>
         internal static string Remove {
@@ -124,11 +1276,407 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to This field is required.
+        /// </summary>
+        internal static string RequiredError {
+            get {
+                return ResourceManager.GetString("RequiredError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Reset.
+        /// </summary>
+        internal static string ResetAction {
+            get {
+                return ResourceManager.GetString("ResetAction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Reset authenticator.
+        /// </summary>
+        internal static string ResetAuthenticator {
+            get {
+                return ResourceManager.GetString("ResetAuthenticator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A reset replaces your authenticator key and turns off two-factor authentication..
+        /// </summary>
+        internal static string ResetAuthenticatorDescription {
+            get {
+                return ResourceManager.GetString("ResetAuthenticatorDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your current authenticator app stops working for this account until you set it up again..
+        /// </summary>
+        internal static string ResetAuthenticatorWarning {
+            get {
+                return ResourceManager.GetString("ResetAuthenticatorWarning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Reset your password.
+        /// </summary>
+        internal static string ResetPasswordOption {
+            get {
+                return ResourceManager.GetString("ResetPasswordOption", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Save.
+        /// </summary>
+        internal static string Save {
+            get {
+                return ResourceManager.GetString("Save", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Saved.
+        /// </summary>
+        internal static string Saved {
+            get {
+                return ResourceManager.GetString("Saved", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Scan the QR code or enter this key in your authenticator app:.
+        /// </summary>
+        internal static string ScanQROrEnterKey {
+            get {
+                return ResourceManager.GetString("ScanQROrEnterKey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Search.
+        /// </summary>
+        internal static string Search {
+            get {
+                return ResourceManager.GetString("Search", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Security.
+        /// </summary>
+        internal static string Security {
+            get {
+                return ResourceManager.GetString("Security", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to This protects your account against password guessing.
+        /// </summary>
+        internal static string SecurityMeasure {
+            get {
+                return ResourceManager.GetString("SecurityMeasure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Send confirmation email.
+        /// </summary>
+        internal static string SendConfirmationEmail {
+            get {
+                return ResourceManager.GetString("SendConfirmationEmail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to We sent you an email with a link to reset your password..
+        /// </summary>
+        internal static string SendMail {
+            get {
+                return ResourceManager.GetString("SendMail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Set password.
+        /// </summary>
+        internal static string SetPassword {
+            get {
+                return ResourceManager.GetString("SetPassword", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your account has no password yet. Set one so you can also sign in with your email address..
+        /// </summary>
+        internal static string SetPasswordDescription {
+            get {
+                return ResourceManager.GetString("SetPasswordDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sign in.
+        /// </summary>
+        internal static string SignIn {
+            get {
+                return ResourceManager.GetString("SignIn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sign in with recovery code.
+        /// </summary>
+        internal static string SignInWithRecoveryCode {
+            get {
+                return ResourceManager.GetString("SignInWithRecoveryCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to SMS.
+        /// </summary>
+        internal static string Sms {
+            get {
+                return ResourceManager.GetString("Sms", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Status refreshed.
+        /// </summary>
+        internal static string StatusRefreshed {
+            get {
+                return ResourceManager.GetString("StatusRefreshed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Symbolic links are not allowed in upload paths.
+        /// </summary>
+        internal static string SymbolicLinkNotAllowed {
+            get {
+                return ResourceManager.GetString("SymbolicLinkNotAllowed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The lockout is temporary.
+        /// </summary>
+        internal static string TemporaryRestriction {
+            get {
+                return ResourceManager.GetString("TemporaryRestriction", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Time remaining.
+        /// </summary>
+        internal static string TimeRemaining {
+            get {
+                return ResourceManager.GetString("TimeRemaining", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Title.
+        /// </summary>
+        internal static string Title {
+            get {
+                return ResourceManager.GetString("Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Too many failed sign-in attempts.
+        /// </summary>
+        internal static string TooManyFailedAttempts {
+            get {
+                return ResourceManager.GetString("TooManyFailedAttempts", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Try to log in again.
+        /// </summary>
+        internal static string TryLoginAgain {
+            get {
+                return ResourceManager.GetString("TryLoginAgain", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Two-factor authentication.
+        /// </summary>
+        internal static string TwoFactorAuthentication {
+            get {
+                return ResourceManager.GetString("TwoFactorAuthentication", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Two-factor authentication is turned off.
+        /// </summary>
+        internal static string TwoFactorDisabled {
+            get {
+                return ResourceManager.GetString("TwoFactorDisabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Got it.
+        /// </summary>
+        internal static string Understood {
+            get {
+                return ResourceManager.GetString("Understood", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unread.
+        /// </summary>
+        internal static string Unread {
+            get {
+                return ResourceManager.GetString("Unread", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unable to determine file type for &apos;{0}&apos;. The file may be corrupted, empty, or of an unsupported format..
+        /// </summary>
+        internal static string UnrecognizableFileType {
+            get {
+                return ResourceManager.GetString("UnrecognizableFileType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The image could not be updated.
+        /// </summary>
+        internal static string UpdateErrorMessage {
+            get {
+                return ResourceManager.GetString("UpdateErrorMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Upload files.
+        /// </summary>
+        internal static string UploadFiles {
+            get {
+                return ResourceManager.GetString("UploadFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use a recovery code.
+        /// </summary>
+        internal static string UseRecoveryCode {
+            get {
+                return ResourceManager.GetString("UseRecoveryCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Value.
+        /// </summary>
+        internal static string Value {
+            get {
+                return ResourceManager.GetString("Value", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Verification code.
+        /// </summary>
+        internal static string VerificationCode {
+            get {
+                return ResourceManager.GetString("VerificationCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Verify.
+        /// </summary>
+        internal static string Verify {
+            get {
+                return ResourceManager.GetString("Verify", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Visible.
         /// </summary>
         internal static string Visible {
             get {
                 return ResourceManager.GetString("Visible", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Wait until the lockout expires.
+        /// </summary>
+        internal static string WaitForExpiry {
+            get {
+                return ResourceManager.GetString("WaitForExpiry", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Warning.
+        /// </summary>
+        internal static string Warning {
+            get {
+                return ResourceManager.GetString("Warning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to What can you do?.
+        /// </summary>
+        internal static string WhatCanYouDo {
+            get {
+                return ResourceManager.GetString("WhatCanYouDo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to What happens when you reset.
+        /// </summary>
+        internal static string WhatHappensWhenReset {
+            get {
+                return ResourceManager.GetString("WhatHappensWhenReset", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Why is my account locked?.
+        /// </summary>
+        internal static string WhyLocked {
+            get {
+                return ResourceManager.GetString("WhyLocked", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your personal data.
+        /// </summary>
+        internal static string YourPersonalData {
+            get {
+                return ResourceManager.GetString("YourPersonalData", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Your recovery codes.
+        /// </summary>
+        internal static string YourRecoveryCodes {
+            get {
+                return ResourceManager.GetString("YourRecoveryCodes", resourceCulture);
             }
         }
     }

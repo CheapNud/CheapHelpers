@@ -18,7 +18,7 @@ namespace CheapHelpers.Blazor.Shared
         protected bool IsInitialized { get; set; } = false;
 
         [CascadingParameter] protected Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
-        [Inject] protected UserService UserService { get; set; } = default!;
+        [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
 
         protected override async Task OnInitializedAsync()
         {
@@ -32,14 +32,12 @@ namespace CheapHelpers.Blazor.Shared
         {
             try
             {
-                if (await UserService.IsAuthenticated(AuthenticationStateTask))
+                // Null when signed out
+                User = await AccountIdentity.GetUserAsync((await AuthenticationStateTask).User);
+                if (User != null)
                 {
-                    User = await UserService.GetUserAsync(AuthenticationStateTask);
-                    if (User != null)
-                    {
-                        DarkMode = User.IsDarkMode;
-                        Debug.WriteLine($"UserPreferencesBase: Loaded preferences for user {User.UserName} - DarkMode: {DarkMode}");
-                    }
+                    DarkMode = User.IsDarkMode;
+                    Debug.WriteLine($"UserPreferencesBase: Loaded preferences for user {User.UserName} - DarkMode: {DarkMode}");
                 }
                 IsInitialized = true;
             }
@@ -69,7 +67,7 @@ namespace CheapHelpers.Blazor.Shared
                 {
                     try
                     {
-                        await UserService.UpdateUserAsync(User);
+                        await AccountIdentity.UpdateUserAsync(User);
                         Debug.WriteLine($"UserPreferencesBase: Dark mode preference saved");
                     }
                     catch (Exception ex)
@@ -104,7 +102,7 @@ namespace CheapHelpers.Blazor.Shared
                 {
                     try
                     {
-                        await UserService.UpdateUserAsync(User);
+                        await AccountIdentity.UpdateUserAsync(User);
                         Debug.WriteLine($"UserPreferencesBase: Dark mode preference saved");
                     }
                     catch (Exception ex)

@@ -40,7 +40,7 @@
     [CascadingParameter]
     private Task<AuthenticationState> AuthenticationState { get; set; }
 
-    [Inject] protected UserService UserService { get; set; } = default!;
+    [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -88,7 +88,7 @@
             return;
         }
 
-        var user = await UserService.GetUserAsync(AuthenticationState);
+        var user = await AccountIdentity.GetUserAsync((await AuthenticationState).User);
 
         if (user is not null && ValidatePinAsync(user, _pin))
         {

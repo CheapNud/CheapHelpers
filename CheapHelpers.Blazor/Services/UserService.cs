@@ -216,10 +216,4 @@ namespace CheapHelpers.Blazor.Services
             return IsAuthenticated(auth.User);
         }
     }
-
-    /// <summary>
-    /// Backward-compatible UserService hardcoded to CheapUser.
-    /// New consumers should use <see cref="UserService{TUser}"/> with their concrete user type.
-    /// </summary>
-    public class UserService(IDbContextFactory<CheapContext<CheapUser>> factory, IServiceScopeFactory scopeFactory) : UserService<CheapUser, CheapContext<CheapUser>>(factory, scopeFactory);
 }

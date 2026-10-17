@@ -1,14 +1,11 @@
 ﻿using CheapHelpers.Blazor.Helpers;
-using CheapHelpers.EF;
-using CheapHelpers.Models.Entities;
 using FluentValidation;
-using Microsoft.EntityFrameworkCore;
 
 namespace CheapHelpers.Blazor.Pages.Account.Validators
 {
     public class ResetPasswordValidator : BaseValidator<ResetPassword.ResetPasswordViewModel>
     {
-        public ResetPasswordValidator(IDbContextFactory<CheapContext<CheapUser>> f)
+        public ResetPasswordValidator()
         {
             RuleFor(x => x.NewPassword)
                 .NotEmpty()
@@ -19,10 +16,10 @@ namespace CheapHelpers.Blazor.Pages.Account.Validators
             RuleFor(x => x.ConfirmPassword)
                 .NotEmpty()
                 .WithMessage("Password is empty!")
-                .Must((a, b) => CheckEqual(a, b, f))
+                .Must((a, b) => CheckEqual(a, b))
                 .WithMessage("The password and confirmation password do not match");
         }
-        public bool CheckEqual(ResetPassword.ResetPasswordViewModel a, string pw, IDbContextFactory<CheapContext<CheapUser>> f)
+        public bool CheckEqual(ResetPassword.ResetPasswordViewModel a, string pw)
         {
             if (a.NewPassword == pw)
             {

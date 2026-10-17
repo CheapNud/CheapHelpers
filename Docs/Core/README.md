@@ -69,6 +69,8 @@ CheapHelpers Core provides fundamental utilities for everyday .NET development i
 - Custom date format support
 - Temporary file management
 
+**[FileSetFingerprint.md](FileSetFingerprint.md)** - SHA-256 manifests of a directory tree for deploy and install integrity checks
+
 ### Process Execution
 **[ProcessExecution.md](ProcessExecution.md)** - External process wrapper
 - Progress tracking with regex patterns

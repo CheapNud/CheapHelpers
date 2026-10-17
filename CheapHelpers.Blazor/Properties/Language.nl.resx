@@ -366,17 +366,8 @@
   <data name="LastName" xml:space="preserve">
     <value>Familienaam</value>
   </data>
-  <data name="LockoutDetails" xml:space="preserve">
-    <value>Details van de blokkering</value>
-  </data>
-  <data name="LockoutExpired" xml:space="preserve">
-    <value>De blokkering is verlopen. U kunt zich opnieuw aanmelden.</value>
-  </data>
   <data name="LockoutMessage" xml:space="preserve">
     <value>Uw account is geblokkeerd na te veel mislukte aanmeldpogingen.</value>
-  </data>
-  <data name="LockoutUntil" xml:space="preserve">
-    <value>Geblokkeerd tot</value>
   </data>
   <data name="LogIn" xml:space="preserve">
     <value>Aanmelden</value>
@@ -465,9 +456,6 @@
   <data name="PasswordsDoNotMatch" xml:space="preserve">
     <value>De wachtwoorden komen niet overeen.</value>
   </data>
-  <data name="PermanentLockout" xml:space="preserve">
-    <value>Uw account blijft geblokkeerd tot een beheerder het vrijgeeft.</value>
-  </data>
   <data name="PersonalData" xml:space="preserve">
     <value>Persoonsgegevens</value>
   </data>
@@ -530,9 +518,6 @@
   </data>
   <data name="RefreshData" xml:space="preserve">
     <value>Vernieuwen</value>
-  </data>
-  <data name="RefreshStatus" xml:space="preserve">
-    <value>Status vernieuwen</value>
   </data>
   <data name="RememberThisMachine" xml:space="preserve">
     <value>Dit toestel onthouden</value>
@@ -597,14 +582,8 @@
   <data name="Sms" xml:space="preserve">
     <value>Sms</value>
   </data>
-  <data name="StatusRefreshed" xml:space="preserve">
-    <value>Status vernieuwd</value>
-  </data>
   <data name="TemporaryRestriction" xml:space="preserve">
     <value>De blokkering is tijdelijk</value>
-  </data>
-  <data name="TimeRemaining" xml:space="preserve">
-    <value>Resterende tijd</value>
   </data>
   <data name="Title" xml:space="preserve">
     <value>Titel</value>

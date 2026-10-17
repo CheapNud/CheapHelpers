@@ -366,17 +366,8 @@
   <data name="LastName" xml:space="preserve">
     <value>Last name</value>
   </data>
-  <data name="LockoutDetails" xml:space="preserve">
-    <value>Lockout details</value>
-  </data>
-  <data name="LockoutExpired" xml:space="preserve">
-    <value>The lockout has expired. You can log in again.</value>
-  </data>
   <data name="LockoutMessage" xml:space="preserve">
     <value>Your account has been locked after too many failed sign-in attempts.</value>
-  </data>
-  <data name="LockoutUntil" xml:space="preserve">
-    <value>Locked until</value>
   </data>
   <data name="LogIn" xml:space="preserve">
     <value>Log in</value>
@@ -465,9 +456,6 @@
   <data name="PasswordsDoNotMatch" xml:space="preserve">
     <value>The passwords do not match.</value>
   </data>
-  <data name="PermanentLockout" xml:space="preserve">
-    <value>Your account stays locked until an administrator unlocks it.</value>
-  </data>
   <data name="PersonalData" xml:space="preserve">
     <value>Personal data</value>
   </data>
@@ -530,9 +518,6 @@
   </data>
   <data name="RefreshData" xml:space="preserve">
     <value>Refresh</value>
-  </data>
-  <data name="RefreshStatus" xml:space="preserve">
-    <value>Refresh status</value>
   </data>
   <data name="RememberThisMachine" xml:space="preserve">
     <value>Remember this device</value>
@@ -597,14 +582,8 @@
   <data name="Sms" xml:space="preserve">
     <value>SMS</value>
   </data>
-  <data name="StatusRefreshed" xml:space="preserve">
-    <value>Status refreshed</value>
-  </data>
   <data name="TemporaryRestriction" xml:space="preserve">
     <value>The lockout is temporary</value>
-  </data>
-  <data name="TimeRemaining" xml:space="preserve">
-    <value>Time remaining</value>
   </data>
   <data name="Title" xml:space="preserve">
     <value>Title</value>

@@ -799,38 +799,11 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Lockout details.
-        /// </summary>
-        internal static string LockoutDetails {
-            get {
-                return ResourceManager.GetString("LockoutDetails", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The lockout has expired. You can log in again..
-        /// </summary>
-        internal static string LockoutExpired {
-            get {
-                return ResourceManager.GetString("LockoutExpired", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Your account has been locked after too many failed sign-in attempts..
         /// </summary>
         internal static string LockoutMessage {
             get {
                 return ResourceManager.GetString("LockoutMessage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Locked until.
-        /// </summary>
-        internal static string LockoutUntil {
-            get {
-                return ResourceManager.GetString("LockoutUntil", resourceCulture);
             }
         }
         
@@ -1276,15 +1249,6 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Your account stays locked until an administrator unlocks it..
-        /// </summary>
-        internal static string PermanentLockout {
-            get {
-                return ResourceManager.GetString("PermanentLockout", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Personal data.
         /// </summary>
         internal static string PersonalData {
@@ -1524,15 +1488,6 @@ namespace CheapHelpers.Blazor.Properties {
         internal static string RefreshData {
             get {
                 return ResourceManager.GetString("RefreshData", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Refresh status.
-        /// </summary>
-        internal static string RefreshStatus {
-            get {
-                return ResourceManager.GetString("RefreshStatus", resourceCulture);
             }
         }
         
@@ -1789,15 +1744,6 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Status refreshed.
-        /// </summary>
-        internal static string StatusRefreshed {
-            get {
-                return ResourceManager.GetString("StatusRefreshed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Symbolic links are not allowed in upload paths.
         /// </summary>
         internal static string SymbolicLinkNotAllowed {
@@ -1812,15 +1758,6 @@ namespace CheapHelpers.Blazor.Properties {
         internal static string TemporaryRestriction {
             get {
                 return ResourceManager.GetString("TemporaryRestriction", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Time remaining.
-        /// </summary>
-        internal static string TimeRemaining {
-            get {
-                return ResourceManager.GetString("TimeRemaining", resourceCulture);
             }
         }
         

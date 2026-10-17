@@ -70,6 +70,12 @@ public class NtfyNotificationChannel(
 
             return NotificationChannelResult.Success(ChannelName);
         }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            // The caller did not cancel, so this is the HttpClient timeout
+            logger.LogWarning(ex, "ntfy publish timed out for '{Title}'", notification.Title);
+            return NotificationChannelResult.Failure(ChannelName, "ntfy publish timed out");
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogWarning(ex, "ntfy publish failed for '{Title}'", notification.Title);

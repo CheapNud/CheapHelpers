@@ -115,6 +115,9 @@
   <ItemGroup Label="Source Link Package" Condition="'$(Configuration)' == 'Release'">
     <!-- Source Link for the forge (Gitea-compatible raw URLs) -->
     <PackageReference Include="Microsoft.SourceLink.Gitea" Version="8.0.0" PrivateAssets="All" />
+    <SourceLinkGiteaHost Include="git.cheapludes.be" />
+    <!-- Clones from the LAN address still link to the public raw URLs -->
+    <SourceLinkGiteaHost Include="192.168.1.40" ContentUrl="https://git.cheapludes.be" />
   </ItemGroup>
 
 </Project>

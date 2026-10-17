@@ -26,11 +26,6 @@ public sealed record ExternalLoginsInfo(IList<UserLoginInfo> CurrentLogins, ILis
 public sealed record TwoFactorStatus(bool IsTwoFactorEnabled, int RecoveryCodesCount, bool HasAuthenticatorKey);
 
 /// <summary>
-/// Lockout state for the lockout page.
-/// </summary>
-public sealed record LockoutInfo(DateTimeOffset? LockoutEnd, bool IsLockedOut);
-
-/// <summary>
 /// Non-generic identity operations for the shared Account pages. Pages can't be generic over
 /// TUser (the router needs concrete types), so they inject this interface and the DI
 /// registration supplies <see cref="UserService{TUser, TContext}"/> for the app's user type.
@@ -112,11 +107,6 @@ public interface IUserService
     Task<string> GeneratePasswordResetTokenAsync(string userId);
 
     Task<IdentityResult> ResetPasswordAsync(string userId, string code, string newPassword);
-
-    /// <summary>
-    /// Lockout state of the user with this email. Null for unknown emails.
-    /// </summary>
-    Task<LockoutInfo?> GetLockoutAsync(string email);
 
     Task<bool> HasPasswordAsync(string userId);
 }

@@ -2,6 +2,7 @@
   <!-- CI Solution - Excludes MAUI and platform-specific projects that require workloads -->
   <!-- MediaProcessing excluded - multi-targets net10.0-windows and is packed/published separately after base packages -->
   <Project Path="CheapHelpers.Avalonia.Bridge/CheapHelpers.Avalonia.Bridge.csproj" />
+  <Project Path="CheapHelpers.Barcodes/CheapHelpers.Barcodes.csproj" />
   <Project Path="CheapHelpers.Blazor/CheapHelpers.Blazor.csproj" />
   <Project Path="CheapHelpers.EF/CheapHelpers.EF.csproj" />
   <Project Path="CheapHelpers.Models/CheapHelpers.Models.csproj" />

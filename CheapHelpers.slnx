@@ -5,6 +5,7 @@
     <Platform Name="x86" />
   </Configurations>
   <Project Path="CheapHelpers.Avalonia.Bridge/CheapHelpers.Avalonia.Bridge.csproj" />
+  <Project Path="CheapHelpers.Barcodes/CheapHelpers.Barcodes.csproj" />
   <Project Path="CheapHelpers.Blazor/CheapHelpers.Blazor.csproj" />
   <Project Path="CheapHelpers.EF/CheapHelpers.EF.csproj" />
   <Project Path="CheapHelpers.MAUI/CheapHelpers.MAUI.csproj" />

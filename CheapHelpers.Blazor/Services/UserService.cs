@@ -233,7 +233,7 @@ namespace CheapHelpers.Blazor.Services
         #region Account pages (IUserService)
 
         // The token operations below (password reset, authenticator, two-factor, recovery codes, email tokens,
-        // external logins) need Identity's token providers, which only UserManager offers. They resolve
+        // external logins, passkeys) need Identity's token providers or stores, which only UserManager offers. They resolve
         // UserManager from a fresh DI scope per call, so they are safe from Blazor Server circuits.
         // Everything else goes through UserRepo, which has no UserManager.
 
@@ -475,6 +475,51 @@ namespace CheapHelpers.Blazor.Services
 
         public async Task<bool> HasPasswordAsync(string userId)
             => (await GetUserByIdAsync(userId))?.PasswordHash is not null;
+
+        public async Task<IList<UserPasskeyInfo>?> GetPasskeysAsync(string userId)
+        {
+            using var scope = scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+
+            var user = await userManager.FindByIdAsync(userId);
+            return user is null ? null : await userManager.GetPasskeysAsync(user);
+        }
+
+        public async Task<UserPasskeyInfo?> GetPasskeyAsync(string userId, byte[] credentialId)
+        {
+            using var scope = scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+
+            var user = await userManager.FindByIdAsync(userId);
+            return user is null ? null : await userManager.GetPasskeyAsync(user, credentialId);
+        }
+
+        public async Task<IdentityResult> AddOrUpdatePasskeyAsync(string userId, UserPasskeyInfo passkey)
+        {
+            using var scope = scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+
+            var user = await userManager.FindByIdAsync(userId);
+            return user is null ? UserNotFound(userId) : await userManager.AddOrUpdatePasskeyAsync(user, passkey);
+        }
+
+        public async Task<IdentityResult> RemovePasskeyAsync(string userId, byte[] credentialId)
+        {
+            using var scope = scopeFactory.CreateScope();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TUser>>();
+
+            var user = await userManager.FindByIdAsync(userId);
+            return user is null ? UserNotFound(userId) : await userManager.RemovePasskeyAsync(user, credentialId);
+        }
+
+        // The scoped SignInManager reads the challenge cookie through IHttpContextAccessor, which only
+        // has a request inside an endpoint, not in a circuit
+        public async Task<PasskeyAttestationResult> PerformPasskeyAttestationAsync(string credentialJson)
+        {
+            using var scope = scopeFactory.CreateScope();
+            var signInManager = scope.ServiceProvider.GetRequiredService<SignInManager<TUser>>();
+            return await signInManager.PerformPasskeyAttestationAsync(credentialJson);
+        }
 
         /// <summary>
         /// Generates a password reset token for the user in an isolated DI scope.

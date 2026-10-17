@@ -1,0 +1,27 @@
+@* Submit button that runs the browser's passkey dialog before the form posts. The <passkey-submit> element
+   comes from PasskeySubmit.razor.js, which CheapHelpers.Blazor.lib.module.js loads on every page. The form must contain
+   <AntiforgeryToken />: the script sends it with the options request and the form post *@
+@using CheapHelpers.Blazor.Helpers
+@using CheapHelpers.Blazor.Pages.Account
+
+<MudButton ButtonType="ButtonType.Submit" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Key"
+           FullWidth="FullWidth" UserAttributes="_submitAttributes">@ChildContent</MudButton>
+<passkey-submit operation="@Operation" options-url="@OptionsUrl"></passkey-submit>
+
+@code {
+    [Inject] private AccountRouteOptions Routes { get; set; } = default!;
+
+    [Parameter, EditorRequired] public PasskeyOperation Operation { get; set; }
+    [Parameter] public bool FullWidth { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    // The script recognises its own button by this name; formnovalidate skips the form's own validation
+    private readonly Dictionary<string, object?> _submitAttributes = new()
+    {
+        ["name"] = "__passkeySubmit",
+        ["formnovalidate"] = true,
+    };
+
+    private string OptionsUrl => Routes.EndpointPath(
+        Operation == PasskeyOperation.Create ? "PasskeyCreationOptions" : "PasskeyRequestOptions");
+}

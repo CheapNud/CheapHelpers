@@ -109,4 +109,31 @@ public interface IUserService
     Task<IdentityResult> ResetPasswordAsync(string userId, string code, string newPassword);
 
     Task<bool> HasPasswordAsync(string userId);
+
+    /// <summary>
+    /// Gets the user's passkeys. Null when the user doesn't exist.
+    /// </summary>
+    Task<IList<UserPasskeyInfo>?> GetPasskeysAsync(string userId);
+
+    /// <summary>
+    /// Gets one of the user's passkeys. Null when the user or the passkey doesn't exist.
+    /// </summary>
+    Task<UserPasskeyInfo?> GetPasskeyAsync(string userId, byte[] credentialId);
+
+    /// <summary>
+    /// Adds the passkey, or saves it when the user already has one with the same credential id.
+    /// Load the passkey with <see cref="GetPasskeyAsync"/> right before a rename: saving an old copy
+    /// writes its old sign count back.
+    /// </summary>
+    Task<IdentityResult> AddOrUpdatePasskeyAsync(string userId, UserPasskeyInfo passkey);
+
+    Task<IdentityResult> RemovePasskeyAsync(string userId, byte[] credentialId);
+
+    /// <summary>
+    /// Verifies a new passkey from the browser against the challenge the PasskeyCreationOptions endpoint issued.
+    /// That challenge lives in a cookie, so call this inside an HTTP request (the AddPasskey endpoint does),
+    /// never from a Blazor circuit.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">No passkey registration is underway for this request.</exception>
+    Task<PasskeyAttestationResult> PerformPasskeyAttestationAsync(string credentialJson);
 }

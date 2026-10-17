@@ -3,11 +3,13 @@
 @page "/Account/{TabIndex:int}"
 @using CheapHelpers.Blazor.Helpers
 @using CheapHelpers.Blazor.Services
+@using CheapHelpers.Blazor.Shared
 @using CheapHelpers.Services.Email
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.Extensions.Options
 @using System.Text
 @attribute [Authorize]
 
@@ -107,6 +109,61 @@
                                 </MudText>
                             }
                         </MudPaper>
+
+                        @if (PasskeysEnabled)
+                        {
+                            <MudPaper Class="pa-6 mb-6" Elevation="0">
+                                <MudText Typo="Typo.h6" Class="mb-2">@Loc["Passkeys"]</MudText>
+                                @if (_passkeys is not { Count: > 0 })
+                                {
+                                    <MudText Class="mud-text-secondary mb-4">@Loc["NoPasskeys"]</MudText>
+                                }
+                                else
+                                {
+                                    <MudSimpleTable Dense="true" Hover="true" Elevation="0" Class="mb-4">
+                                        <tbody>
+                                            @foreach (var passkey in _passkeys)
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        @if (IsRenaming(passkey))
+                                                        {
+                                                            <MudTextField @bind-Value="_passkeyName" Label="@Loc["PasskeyName"]" MaxLength="MaxPasskeyNameLength"
+                                                                          Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <MudText Typo="Typo.body2">@(PasskeyAuthenticators.GetDisplayName(passkey) ?? Loc["UnnamedPasskey"])</MudText>
+                                                            <MudText Typo="Typo.caption" Class="mud-text-secondary">@Loc["PasskeyCreatedOn", passkey.CreatedAt.ToLocalTime().ToString("d")]</MudText>
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        <div class="d-flex justify-end gap-1">
+                                                            @if (IsRenaming(passkey))
+                                                            {
+                                                                <MudIconButton Icon="@Icons.Material.Filled.Check" Size="Size.Small" aria-label="@Loc["Save"]" OnClick="SavePasskeyName" />
+                                                                <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" aria-label="@Loc["Cancel"]" OnClick="@(() => _renamingId = null)" />
+                                                            }
+                                                            else
+                                                            {
+                                                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" aria-label="@Loc["Rename"]" OnClick="@(() => StartRename(passkey))" />
+                                                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" aria-label="@Loc["Remove"]" OnClick="@(() => RemovePasskey(passkey))" />
+                                                            }
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </MudSimpleTable>
+                                }
+
+                                @* Real form post, not a circuit call: registering a passkey reads the challenge cookie in the AddPasskey endpoint *@
+                                <form method="post" action="@Routes.EndpointPath("AddPasskey")">
+                                    <AntiforgeryToken />
+                                    <PasskeySubmit Operation="PasskeyOperation.Create">@Loc["AddPasskey"]</PasskeySubmit>
+                                </form>
+                            </MudPaper>
+                        }
                     }
                 </CascadingValue>
             </MudTabPanel>
@@ -135,10 +192,14 @@
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;
     [Inject] protected IEmailService? Mailer { get; set; }
     [Inject] protected IAuthorizationService AuthorizationService { get; set; } = default!;
+    [Inject] private IOptions<IdentityOptions> IdentityOptions { get; set; } = default!;
     
     [CascadingParameter] private Task<AuthenticationState> AuthenticationState { get; set; } = default!;
     
     [Parameter] public int TabIndex { get; set; }
+
+    // Set by the AddPasskey endpoint when it redirects back: added, limit or failed
+    [SupplyParameterFromQuery(Name = "passkey")] private string? PasskeyStatus { get; set; }
     [Parameter] public string Title { get; set; } = "Manage Your Account";
     [Parameter] public bool ShowEmailSection { get; set; } = true;
     [Parameter] public bool ShowSecurityTab { get; set; } = true;
@@ -155,6 +216,15 @@
     private bool wasDarkMode;
     private List<AccountTabDefinition> _authorizedTabs = [];
     private ExternalLoginsInfo? _externalLogins;
+    private IList<UserPasskeyInfo>? _passkeys;
+    private byte[]? _renamingId;
+    private string _passkeyName = string.Empty;
+
+    // Identity maps the passkey table only from schema version 3, so apps below it keep the page without passkeys
+    private bool PasskeysEnabled => IdentityOptions.Value.Stores.SchemaVersion >= IdentitySchemaVersions.Version3;
+
+    // Same limit as the ASP.NET Core template's rename page
+    private const int MaxPasskeyNameLength = 200;
 
     protected override async Task OnInitializedAsync()
     {
@@ -166,6 +236,10 @@
             if (ShowSecurityTab && SecurityTabContent is null)
             {
                 _externalLogins = await UserService.GetExternalLoginsAsync(CurrentUser.Id);
+                if (PasskeysEnabled)
+                {
+                    _passkeys = await UserService.GetPasskeysAsync(CurrentUser.Id);
+                }
             }
         }
 
@@ -176,6 +250,99 @@
                 if (await IsTabAuthorized(tab))
                     _authorizedTabs.Add(tab);
             }
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        // After render, so the message shows once in the interactive circuit and not in the prerender
+        if (!firstRender || PasskeyStatus is null)
+        {
+            return;
+        }
+
+        if (PasskeyStatus == "added")
+        {
+            ToastService.Add(Loc["PasskeyAdded"], Severity.Success);
+        }
+        else
+        {
+            ToastService.Add(PasskeyStatus == "limit" ? Loc["PasskeyLimitReached"] : Loc["PasskeyNotAdded"], Severity.Error);
+        }
+
+        // Drop the status from the address so a reload does not show it again
+        Nav.NavigateTo(Nav.GetUriWithQueryParameter("passkey", (string?)null), replace: true);
+    }
+
+    private bool IsRenaming(UserPasskeyInfo passkey) =>
+        _renamingId is not null && passkey.CredentialId.AsSpan().SequenceEqual(_renamingId);
+
+    private void StartRename(UserPasskeyInfo passkey)
+    {
+        _renamingId = passkey.CredentialId;
+        _passkeyName = PasskeyAuthenticators.GetDisplayName(passkey) ?? string.Empty;
+    }
+
+    private async Task SavePasskeyName()
+    {
+        if (CurrentUser is null || _renamingId is null) return;
+
+        var name = _passkeyName.Trim();
+        if (name.Length is 0 or > MaxPasskeyNameLength)
+        {
+            ToastService.Add(Loc["PasskeyNameRequired"], Severity.Error);
+            return;
+        }
+
+        try
+        {
+            // Reload first: the listed copy may hold an old sign count, and saving it would write that back
+            var passkey = await UserService.GetPasskeyAsync(CurrentUser.Id, _renamingId);
+            if (passkey is null)
+            {
+                ToastService.Add(Loc["PasskeyNotRenamed"], Severity.Error);
+                return;
+            }
+
+            passkey.Name = name;
+            var renameResult = await UserService.AddOrUpdatePasskeyAsync(CurrentUser.Id, passkey);
+            if (!renameResult.Succeeded)
+            {
+                ToastService.Add(Loc["PasskeyNotRenamed"], Severity.Error);
+                return;
+            }
+
+            _renamingId = null;
+            _passkeys = await UserService.GetPasskeysAsync(CurrentUser.Id);
+            ToastService.Add(Loc["PasskeyRenamed"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            ToastService.Add(Loc["PasskeyNotRenamed"], Severity.Error);
+            Debug.WriteLine(ex.Message);
+        }
+    }
+
+    private async Task RemovePasskey(UserPasskeyInfo passkey)
+    {
+        if (CurrentUser is null) return;
+
+        try
+        {
+            var removeResult = await UserService.RemovePasskeyAsync(CurrentUser.Id, passkey.CredentialId);
+            if (!removeResult.Succeeded)
+            {
+                ToastService.Add(Loc["PasskeyNotRemoved"], Severity.Error);
+                return;
+            }
+
+            _passkeys = await UserService.GetPasskeysAsync(CurrentUser.Id);
+            ToastService.Add(Loc["PasskeyRemoved"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            ToastService.Add(Loc["PasskeyNotRemoved"], Severity.Error);
+            Debug.WriteLine(ex.Message);
         }
     }
 

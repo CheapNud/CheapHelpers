@@ -366,17 +366,8 @@
   <data name="LastName" xml:space="preserve">
     <value>Last name</value>
   </data>
-  <data name="LockoutDetails" xml:space="preserve">
-    <value>Lockout details</value>
-  </data>
-  <data name="LockoutExpired" xml:space="preserve">
-    <value>The lockout has expired. You can log in again.</value>
-  </data>
   <data name="LockoutMessage" xml:space="preserve">
     <value>Your account has been locked after too many failed sign-in attempts.</value>
-  </data>
-  <data name="LockoutUntil" xml:space="preserve">
-    <value>Locked until</value>
   </data>
   <data name="LogIn" xml:space="preserve">
     <value>Log in</value>
@@ -465,9 +456,6 @@
   <data name="PasswordsDoNotMatch" xml:space="preserve">
     <value>The passwords do not match.</value>
   </data>
-  <data name="PermanentLockout" xml:space="preserve">
-    <value>Your account stays locked until an administrator unlocks it.</value>
-  </data>
   <data name="PersonalData" xml:space="preserve">
     <value>Personal data</value>
   </data>
@@ -530,9 +518,6 @@
   </data>
   <data name="RefreshData" xml:space="preserve">
     <value>Refresh</value>
-  </data>
-  <data name="RefreshStatus" xml:space="preserve">
-    <value>Refresh status</value>
   </data>
   <data name="RememberThisMachine" xml:space="preserve">
     <value>Remember this device</value>
@@ -597,14 +582,8 @@
   <data name="Sms" xml:space="preserve">
     <value>SMS</value>
   </data>
-  <data name="StatusRefreshed" xml:space="preserve">
-    <value>Status refreshed</value>
-  </data>
   <data name="TemporaryRestriction" xml:space="preserve">
     <value>The lockout is temporary</value>
-  </data>
-  <data name="TimeRemaining" xml:space="preserve">
-    <value>Time remaining</value>
   </data>
   <data name="Title" xml:space="preserve">
     <value>Title</value>
@@ -722,5 +701,56 @@
   </data>
   <data name="Error" xml:space="preserve">
     <value>An error occurred.</value>
+  </data>
+  <data name="Passkeys" xml:space="preserve">
+    <value>Passkeys</value>
+  </data>
+  <data name="NoPasskeys" xml:space="preserve">
+    <value>No passkeys yet.</value>
+  </data>
+  <data name="AddPasskey" xml:space="preserve">
+    <value>Add a passkey</value>
+  </data>
+  <data name="SignInWithPasskey" xml:space="preserve">
+    <value>Sign in with a passkey</value>
+  </data>
+  <data name="PasskeySignInFailed" xml:space="preserve">
+    <value>Signing in with a passkey failed. Please try again.</value>
+  </data>
+  <data name="PasskeyAdded" xml:space="preserve">
+    <value>Your passkey has been added.</value>
+  </data>
+  <data name="PasskeyNotAdded" xml:space="preserve">
+    <value>The passkey could not be added.</value>
+  </data>
+  <data name="PasskeyLimitReached" xml:space="preserve">
+    <value>You have reached the maximum number of passkeys. Remove one before you add another.</value>
+  </data>
+  <data name="PasskeyName" xml:space="preserve">
+    <value>Passkey name</value>
+  </data>
+  <data name="PasskeyNameRequired" xml:space="preserve">
+    <value>Enter a name of at most 200 characters.</value>
+  </data>
+  <data name="PasskeyRenamed" xml:space="preserve">
+    <value>Passkey renamed.</value>
+  </data>
+  <data name="PasskeyNotRenamed" xml:space="preserve">
+    <value>The passkey could not be renamed.</value>
+  </data>
+  <data name="PasskeyRemoved" xml:space="preserve">
+    <value>Passkey removed.</value>
+  </data>
+  <data name="PasskeyNotRemoved" xml:space="preserve">
+    <value>The passkey could not be removed.</value>
+  </data>
+  <data name="PasskeyCreatedOn" xml:space="preserve">
+    <value>Created on {0}</value>
+  </data>
+  <data name="UnnamedPasskey" xml:space="preserve">
+    <value>Unnamed passkey</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>Rename</value>
   </data>
 </root>

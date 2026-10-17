@@ -26,6 +26,12 @@ public class AccountRouteOptions
     public string SetPasswordRoute { get; set; } = "/Account/SetPassword";
 
     /// <summary>
+    /// Account page tab that lists the passkeys (the Security tab). AddPasskey redirects here
+    /// with <c>?passkey=added|limit|failed</c>.
+    /// </summary>
+    public string PasskeysRoute { get; set; } = "/Account/1";
+
+    /// <summary>
     /// TOTP challenge page shown when a password sign-in requires two-factor.
     /// </summary>
     public string TwoFactorRoute { get; set; } = "/Account/Login2FA";

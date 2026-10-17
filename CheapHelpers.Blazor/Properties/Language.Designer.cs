@@ -1600,6 +1600,15 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Sign in with {0}.
+        /// </summary>
+        internal static string SignInWith {
+            get {
+                return ResourceManager.GetString("SignInWith", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Sign in with recovery code.
         /// </summary>
         internal static string SignInWithRecoveryCode {

@@ -582,6 +582,9 @@
   <data name="SignIn" xml:space="preserve">
     <value>Sign in</value>
   </data>
+  <data name="SignInWith" xml:space="preserve">
+    <value>Sign in with {0}</value>
+  </data>
   <data name="SignInWithRecoveryCode" xml:space="preserve">
     <value>Sign in with recovery code</value>
   </data>

@@ -1,5 +1,7 @@
 using CheapHelpers.Blazor.Configuration;
+using CheapHelpers.Blazor.Helpers;
 using CheapHelpers.Blazor.Pages.Account;
+using CheapHelpers.Blazor.Services;
 using CheapHelpers.Models.Entities;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
@@ -23,11 +25,18 @@ public static class AccountEndpointExtensions
     private const string LoggerCategory = "CheapHelpers.Account";
     private const string ExternalLoginNotRemovedMessage = "The external login was not removed.";
 
+    // Form field PasskeySubmit.razor.js fills with the browser's credential
+    private const string PasskeyCredentialField = "Passkey.CredentialJson";
+
+    // Same cap as the ASP.NET Core template, so one account cannot grow the passkey table without bound
+    private const int MaxPasskeys = 100;
+
     /// <summary>
     /// Maps the account endpoints under <see cref="AccountRouteOptions.BaseRoute"/> (default <c>/Account</c>):
     /// <c>SignIn</c>, <c>SignInWith2fa</c>, <c>SignInWithRecoveryCode</c>, <c>SignOut</c>, <c>Refresh</c>,
-    /// <c>ClearExternalCookie</c>, <c>ResetAuthenticator</c>, <c>RemoveLogin</c>, <c>ChangePassword</c> and
-    /// <c>SetPassword</c>. All of them are POST
+    /// <c>ClearExternalCookie</c>, <c>ResetAuthenticator</c>, <c>RemoveLogin</c>, <c>ChangePassword</c>,
+    /// <c>SetPassword</c>, <c>PasskeyCreationOptions</c>, <c>PasskeyRequestOptions</c>, <c>SignInWithPasskey</c> and
+    /// <c>AddPasskey</c>. All of them are POST
     /// and demand an antiforgery token, so <c>app.UseAntiforgery()</c> must run before this call.
     /// </summary>
     /// <param name="endpoints">The app's endpoint route builder.</param>
@@ -252,6 +261,122 @@ public static class AccountEndpointExtensions
 
             return await PasswordResultAsync(result, user, signInManager, routes.SetPasswordRoute);
         }).RequireAuthorization();
+
+        // WebAuthn options for registering a passkey, fetched by PasskeySubmit before it asks the authenticator.
+        // SignInManager keeps the challenge in a cookie that AddPasskey reads back
+        group.MapPost("PasskeyCreationOptions", async (HttpContext httpContext, SignInManager<TUser> signInManager,
+            UserManager<TUser> userManager) =>
+        {
+            var user = await userManager.GetUserAsync(httpContext.User);
+            if (user is null)
+            {
+                return Results.NotFound();
+            }
+
+            var userName = await userManager.GetUserNameAsync(user) ?? user.Id;
+            var optionsJson = await signInManager.MakePasskeyCreationOptionsAsync(new()
+            {
+                Id = user.Id,
+                Name = userName,
+                DisplayName = userName
+            });
+            return Results.Content(optionsJson, "application/json");
+        }).RequireAuthorization().RequireAntiforgeryToken();
+
+        // WebAuthn options for a passkey sign-in. No user name is taken, so the browser offers every
+        // passkey it has for this site and the endpoint reveals nothing about which accounts exist
+        group.MapPost("PasskeyRequestOptions", async (SignInManager<TUser> signInManager) =>
+        {
+            var optionsJson = await signInManager.MakePasskeyRequestOptionsAsync(null);
+            return Results.Content(optionsJson, "application/json");
+        }).AllowAnonymous().RequireAntiforgeryToken();
+
+        // Passkey sign-in posted by PasskeySubmit. Identity skips the two-factor step for passkeys;
+        // locked-out and not-allowed users get the same redirects as SignIn
+        group.MapPost("SignInWithPasskey", async (HttpContext httpContext, IFormCollection fc,
+            SignInManager<TUser> signInManager, UserManager<TUser> userManager) =>
+        {
+            var credentialJson = (string?)fc[PasskeyCredentialField];
+            if (string.IsNullOrEmpty(credentialJson))
+            {
+                return Results.Redirect($"{routes.LoginRoute}?failed=passkey");
+            }
+
+            var result = await signInManager.PasskeySignInAsync(credentialJson);
+
+            // A successful sign-in puts the new principal on HttpContext.User
+            var user = result.Succeeded ? await userManager.GetUserAsync(httpContext.User) : null;
+            LogSignInAttempt(httpContext, user?.UserName, result);
+
+            if (user is not null)
+            {
+                return await RedirectAfterSignInAsync(user, httpContext);
+            }
+
+            return result switch
+            {
+                { IsLockedOut: true } => Results.Redirect(routes.LockoutRoute),
+                { IsNotAllowed: true } => Results.Redirect($"{routes.LoginRoute}?failed=notallowed"),
+                _ => Results.Redirect($"{routes.LoginRoute}?failed=passkey")
+            };
+        }).AllowAnonymous();
+
+        // Registers the passkey PasskeySubmit created. A full request, because attestation reads the
+        // challenge cookie that PasskeyCreationOptions set
+        group.MapPost("AddPasskey", async (HttpContext httpContext, IFormCollection fc,
+            IUserService userService, UserManager<TUser> userManager) =>
+        {
+            var userId = userManager.GetUserId(httpContext.User);
+            var credentialJson = (string?)fc[PasskeyCredentialField];
+            if (userId is null || string.IsNullOrEmpty(credentialJson))
+            {
+                return PasskeyRedirect("failed");
+            }
+
+            var passkeys = await userService.GetPasskeysAsync(userId);
+            if (passkeys is null)
+            {
+                return PasskeyRedirect("failed");
+            }
+
+            if (passkeys.Count >= MaxPasskeys)
+            {
+                return PasskeyRedirect("limit");
+            }
+
+            PasskeyAttestationResult attestation;
+            try
+            {
+                attestation = await userService.PerformPasskeyAttestationAsync(credentialJson);
+            }
+            catch (InvalidOperationException)
+            {
+                // No challenge cookie: the options were never fetched, or the cookie expired
+                return PasskeyRedirect("failed");
+            }
+
+            if (!attestation.Succeeded)
+            {
+                GetLogger(httpContext).LogWarning("Passkey attestation failed: {Reason}", attestation.Failure.Message);
+                return PasskeyRedirect("failed");
+            }
+
+            // The challenge names the user it was issued for; a different account signed in since then must not get the passkey
+            if (attestation.UserEntity.Id != userId)
+            {
+                return PasskeyRedirect("failed");
+            }
+
+            if (PasskeyAuthenticators.TryGetDefaultDisplayName(attestation.Passkey, out var defaultName))
+            {
+                attestation.Passkey.Name = defaultName;
+            }
+
+            var addResult = await userService.AddOrUpdatePasskeyAsync(userId, attestation.Passkey);
+            return PasskeyRedirect(addResult.Succeeded ? "added" : "failed");
+        }).RequireAuthorization();
+
+        IResult PasskeyRedirect(string status) => Results.Redirect($"{routes.PasskeysRoute}?passkey={status}");
 
         async Task<IResult> PasswordResultAsync(IdentityResult result, TUser user, SignInManager<TUser> signInManager, string failureRoute)
         {

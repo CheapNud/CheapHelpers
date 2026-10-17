@@ -13,6 +13,11 @@ public class AccountRouteOptions
     /// </summary>
     public string BaseRoute { get; set; } = "Account";
 
+    /// <summary>
+    /// Path of an endpoint mapped by MapCheapAccountEndpoints, e.g. <c>EndpointPath("SignOut")</c> gives <c>/Account/SignOut</c>.
+    /// </summary>
+    public string EndpointPath(string name) => $"/{BaseRoute.Trim('/')}/{name}";
+
     public string HomeRoute { get; set; } = "/";
     public string LoginRoute { get; set; } = "/Account/Login/";
     public string LockoutRoute { get; set; } = "/Account/Lockout/";

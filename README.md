@@ -235,6 +235,9 @@ app.MapCheapCultureEndpoint();
 // Account dashboard with extensible custom tabs
 ```
 
+#### Migrating from the account controller
+Delete your `CheapAccountController<TUser, TContext>` subclass and its `[Route]` attribute. Call `app.MapCheapAccountEndpoints<TUser>()` and `app.MapCheapCultureEndpoint()` after `app.UseAntiforgery()`. Sign-out is now POST only, so replace any sign-out link with a `<form method="post">` that contains `<AntiforgeryToken />`. A forced redirect after sign-in, such as a password change, goes in the `AfterSignIn` option instead of an overridden action.
+
 ### Entity Framework
 ```csharp
 // Generic context with Identity

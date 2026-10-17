@@ -90,7 +90,7 @@
                                 @foreach (var login in _externalLogins.CurrentLogins)
                                 {
                                     @* Real form post, not a circuit call: removing a login refreshes the sign-in cookie *@
-                                    <form method="post" action="/Account/RemoveLogin" class="d-flex align-center justify-space-between gap-2 mb-2">
+                                    <form method="post" action="@Routes.EndpointPath("RemoveLogin")" class="d-flex align-center justify-space-between gap-2 mb-2">
                                         <AntiforgeryToken />
                                         <input type="hidden" name="loginProvider" value="@login.LoginProvider" />
                                         <input type="hidden" name="providerKey" value="@login.ProviderKey" />
@@ -132,6 +132,7 @@
     [Inject] protected UserService UserService { get; set; } = default!;
     [Inject] protected UserManager<CheapUser> UserManager { get; set; } = default!;
     [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
+    [Inject] protected AccountRouteOptions Routes { get; set; } = default!;
     [Inject] protected NavigationManager Nav { get; set; } = default!;
     [Inject] protected ISnackbar ToastService { get; set; } = default!;
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;

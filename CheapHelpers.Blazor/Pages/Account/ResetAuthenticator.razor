@@ -65,7 +65,7 @@
         </MudAlert>
         
         @* Plain form post: the reset refreshes the sign-in cookie, which a circuit cannot write *@
-        <form method="post" action="/Account/ResetAuthenticator">
+        <form method="post" action="@Routes.EndpointPath("ResetAuthenticator")">
             <AntiforgeryToken />
             <MudStack Row="true" Spacing="3">
                 <MudButton Variant="Variant.Filled" Color="Color.Error" ButtonType="ButtonType.Submit">
@@ -83,6 +83,7 @@
 
 @code {
     [Inject] private IAccountIdentityService AccountIdentity { get; set; } = default!;
+    [Inject] private AccountRouteOptions Routes { get; set; } = default!;
     [Inject] private ISnackbar ToastService { get; set; } = default!;
     [Inject] private IStringLocalizer Loc { get; set; } = default!;
     

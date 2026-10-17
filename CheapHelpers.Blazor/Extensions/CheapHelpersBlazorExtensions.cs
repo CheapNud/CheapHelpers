@@ -30,6 +30,7 @@ namespace CheapHelpers.Blazor.Extensions
             // Configure options
             var options = new CheapHelpersBlazorOptions();
             configure?.Invoke(options);
+            options.CreateUser ??= () => Activator.CreateInstance<TUser>();
             services.AddSingleton(options);
 
             // Add MudBlazor if not already registered, kind of a hack to detect mudblazor presence
@@ -78,7 +79,7 @@ namespace CheapHelpers.Blazor.Extensions
             services.AddScoped<UserService<TUser, TContext>>();
 
             // Non-generic bridge so the shared Account pages work with any TUser
-            services.TryAddSingleton<IAccountIdentityService, AccountIdentityService<TUser>>();
+            services.TryAddSingleton<IAccountIdentityService, AccountIdentityService<TUser, TContext>>();
 
             // Register account route options (configurable via CheapHelpersBlazorOptions)
             if (options.AccountRouteOptions is not null)

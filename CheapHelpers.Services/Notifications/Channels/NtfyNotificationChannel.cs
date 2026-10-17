@@ -42,16 +42,18 @@ public class NtfyNotificationChannel(
         {
             using var ntfyRequest = new HttpRequestMessage(HttpMethod.Post, ntfyOptions.TopicUrl)
             {
-                Content = new StringContent(notification.Body)
+                Content = new StringContent(notification.Body ?? string.Empty)
             };
             ntfyRequest.Headers.Add("X-Title", EncodeHeader(notification.Title));
             ntfyRequest.Headers.Add("X-Priority", MapPriority(notification.Priority));
             if (notification.Data?.TryGetValue("tags", out var tags) == true && !string.IsNullOrEmpty(tags))
                 ntfyRequest.Headers.Add("X-Tags", EncodeHeader(tags));
-            if (!string.IsNullOrEmpty(notification.ActionUrl))
-                ntfyRequest.Headers.Add("X-Click", notification.ActionUrl);
-            if (!string.IsNullOrEmpty(notification.IconUrl))
-                ntfyRequest.Headers.Add("X-Icon", notification.IconUrl);
+            // AbsoluteUri is ASCII-encoded, so a non-ASCII link cannot break the request.
+            // IsFile is excluded because on Linux a relative path like "/orders/5" parses as file:///orders/5.
+            if (Uri.TryCreate(notification.ActionUrl, UriKind.Absolute, out var clickUri) && !clickUri.IsFile)
+                ntfyRequest.Headers.Add("X-Click", clickUri.AbsoluteUri);
+            if (Uri.TryCreate(notification.IconUrl, UriKind.Absolute, out var iconUri) && !iconUri.IsFile)
+                ntfyRequest.Headers.Add("X-Icon", iconUri.AbsoluteUri);
             if (!string.IsNullOrEmpty(ntfyOptions.Token))
                 ntfyRequest.Headers.Add("Authorization", $"Bearer {ntfyOptions.Token}");
 

@@ -18,6 +18,7 @@ public class NotificationDispatcher(
 
     // ntfy publishes to a topic and desktop shows on this machine, so neither is per user.
     // They go out once per dispatch with the original notification, not once per recipient.
+    // This is deliberate even when no recipients resolve: an ops alert to a topic has no user recipients.
     private static readonly NotificationChannelFlags BroadcastChannels =
         NotificationChannelFlags.Ntfy | NotificationChannelFlags.Desktop;
 

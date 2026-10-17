@@ -244,9 +244,9 @@ Delete your `CheapAccountController<TUser, TContext>` subclass and its `[Route]`
 services.AddCheapContext<MyUser>(options => options.UseSqlServer(connectionString))
     .AddIdentity<IdentityRole>();
 
-// Generic repository with pagination
-public class ProductRepo<TUser>(IDbContextFactory<CheapContext<TUser>> factory)
-    : UserRepo<TUser>(factory) where TUser : CheapUser { }
+// UserRepo<TUser, TContext> needs Identity's hasher, normalizer, options and error describer, so don't construct it:
+// inject UserService<TUser, TContext> (a UserRepo, registered by AddCheapHelpersBlazor) from DI
+var userRepo = serviceProvider.GetRequiredService<UserService<MyUser, CheapContext<MyUser>>>();
 
 var users = await userRepo.GetAllUsersPaginatedAsync(pageIndex: 1, pageSize: 20);
 var stats = await userRepo.GetUserStatisticsAsync();

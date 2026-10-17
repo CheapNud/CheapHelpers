@@ -1,20 +1,21 @@
-﻿using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.PixelFormats;
-using System.Diagnostics;
+﻿using System.Diagnostics;
+using ZXing;
 using ZXing.Common;
 
-namespace CheapHelpers.Services.Communication.Barcode;
+namespace CheapHelpers.Barcodes;
 
 /// <summary>
-/// Service for generating and reading barcodes using ImageSharp and ZXing libraries
+/// Service for generating and reading barcodes with ZXing.Net, without any native image library
 /// </summary>
 public class BarcodeService : IBarcodeService
 {
     // Default barcode generation constants
     private const int DefaultHeight = 30;
     private const int DefaultWidth = 100;
-    private const ZXing.BarcodeFormat DefaultFormat = ZXing.BarcodeFormat.CODE_39;
+    private const BarcodeFormat DefaultFormat = BarcodeFormat.CODE_39;
+
+    // ZXing's pixel renderer writes 4 bytes per pixel (BGRA32)
+    private const int RenderedBytesPerPixel = 4;
 
     private event Func<string, Task>? _barcodeScannedHandler;
 
@@ -34,16 +35,14 @@ public class BarcodeService : IBarcodeService
     /// <param name="height">Height of the generated barcode image</param>
     /// <param name="width">Width of the generated barcode image</param>
     /// <param name="format">Barcode format to use</param>
-    /// <param name="cancellationToken">Cancellation token for async operation</param>
-    /// <returns>JPEG-encoded barcode image as byte array</returns>
+    /// <returns>PNG-encoded (8-bit grayscale) barcode image as byte array</returns>
     /// <exception cref="ArgumentException">Thrown when input is null or empty</exception>
     /// <exception cref="InvalidOperationException">Thrown when barcode generation fails</exception>
-    public async Task<byte[]> GetBarcodeAsync(
+    public byte[] GetBarcode(
         string input,
         int height = DefaultHeight,
         int width = DefaultWidth,
-        ZXing.BarcodeFormat format = DefaultFormat,
-        CancellationToken cancellationToken = default)
+        BarcodeFormat format = DefaultFormat)
     {
         if (string.IsNullOrWhiteSpace(input))
             throw new ArgumentException("Input cannot be null or empty", nameof(input));
@@ -56,7 +55,7 @@ public class BarcodeService : IBarcodeService
 
         try
         {
-            var barcodeWriter = new ZXing.ImageSharp.BarcodeWriter<Rgba32>
+            var barcodeWriter = new BarcodeWriterPixelData
             {
                 Format = format,
                 Options = new EncodingOptions
@@ -66,11 +65,14 @@ public class BarcodeService : IBarcodeService
                 }
             };
 
-            using var image = barcodeWriter.Write(input);
-            using var memoryStream = new MemoryStream();
+            var rendered = barcodeWriter.Write(input);
 
-            await image.SaveAsync(memoryStream, new JpegEncoder(), cancellationToken);
-            return memoryStream.ToArray();
+            // The renderer only produces black and white, so one channel is the grayscale value
+            var gray = new byte[rendered.Width * rendered.Height];
+            for (var i = 0; i < gray.Length; i++)
+                gray[i] = rendered.Pixels[i * RenderedBytesPerPixel];
+
+            return PngEncoder.EncodeGray8(gray, rendered.Width, rendered.Height);
         }
         catch (Exception ex)
         {
@@ -112,26 +114,35 @@ public class BarcodeService : IBarcodeService
     }
 
     /// <summary>
-    /// Reads barcode data from image bytes
+    /// Reads barcode data from raw pixels, for example a camera frame or a bitmap the platform already decoded
     /// </summary>
-    /// <param name="imageBytes">Image data as byte array</param>
-    /// <param name="cancellationToken">Cancellation token for async operation</param>
+    /// <param name="pixels">Pixel buffer, row by row, without padding</param>
+    /// <param name="width">Width of the image in pixels</param>
+    /// <param name="height">Height of the image in pixels</param>
+    /// <param name="format">Byte layout of each pixel in <paramref name="pixels"/></param>
     /// <returns>Tuple containing the decoded text and barcode format, or null if no barcode found</returns>
-    /// <exception cref="ArgumentException">Thrown when imageBytes is null or empty</exception>
-    public async Task<(string Text, string Format)?> ReadBarcodeAsync(
-        byte[] imageBytes,
-        CancellationToken cancellationToken = default)
+    /// <exception cref="ArgumentException">Thrown when pixels is empty or a dimension is not positive</exception>
+    /// <exception cref="InvalidOperationException">Thrown when decoding fails</exception>
+    public (string Text, string Format)? ReadBarcode(
+        ReadOnlySpan<byte> pixels,
+        int width,
+        int height,
+        RGBLuminanceSource.BitmapFormat format)
     {
-        if (imageBytes == null || imageBytes.Length == 0)
-            throw new ArgumentException("Image bytes cannot be null or empty", nameof(imageBytes));
+        if (pixels.IsEmpty)
+            throw new ArgumentException("Pixels cannot be empty", nameof(pixels));
+
+        if (width <= 0)
+            throw new ArgumentException("Width must be positive", nameof(width));
+
+        if (height <= 0)
+            throw new ArgumentException("Height must be positive", nameof(height));
 
         try
         {
-            using var imageStream = new MemoryStream(imageBytes);
-            using var image = await Image.LoadAsync<Rgba32>(imageStream, cancellationToken);
-            var reader = new ZXing.ImageSharp.BarcodeReader<Rgba32>();
-
-            var result = reader.Decode(image);
+            // ZXing's luminance source only takes a byte[], so copy the span once
+            var source = new RGBLuminanceSource(pixels.ToArray(), width, height, format);
+            var result = new BarcodeReaderGeneric().Decode(source);
 
             if (result != null)
             {

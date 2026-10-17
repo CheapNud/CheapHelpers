@@ -61,6 +61,15 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Available providers.
+        /// </summary>
+        internal static string AvailableExternalLogins {
+            get {
+                return ResourceManager.GetString("AvailableExternalLogins", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Are you sure you want to delete this image?.
         /// </summary>
         internal static string ConfirmDeleteMessage {
@@ -84,6 +93,33 @@ namespace CheapHelpers.Blazor.Properties {
         internal static string DisplayIndex {
             get {
                 return ResourceManager.GetString("DisplayIndex", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to External logins.
+        /// </summary>
+        internal static string ExternalLogins {
+            get {
+                return ResourceManager.GetString("ExternalLogins", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No external logins..
+        /// </summary>
+        internal static string NoExternalLogins {
+            get {
+                return ResourceManager.GetString("NoExternalLogins", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Remove.
+        /// </summary>
+        internal static string Remove {
+            get {
+                return ResourceManager.GetString("Remove", resourceCulture);
             }
         }
         

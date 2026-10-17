@@ -78,6 +78,36 @@
                             <MudDivider Class="my-4" />
                             <LoginWith2fa />
                         }
+
+                        <MudPaper Class="pa-6 mb-6" Elevation="0">
+                            <MudText Typo="Typo.h6" Class="mb-2">@Loc["ExternalLogins"]</MudText>
+                            @if (_externalLogins is not { CurrentLogins.Count: > 0 })
+                            {
+                                <MudText Class="mud-text-secondary">@Loc["NoExternalLogins"]</MudText>
+                            }
+                            else
+                            {
+                                @foreach (var login in _externalLogins.CurrentLogins)
+                                {
+                                    @* Real form post, not a circuit call: removing a login refreshes the sign-in cookie *@
+                                    <form method="post" action="/Account/RemoveLogin" class="d-flex align-center justify-space-between gap-2 mb-2">
+                                        <AntiforgeryToken />
+                                        <input type="hidden" name="loginProvider" value="@login.LoginProvider" />
+                                        <input type="hidden" name="providerKey" value="@login.ProviderKey" />
+                                        <MudText>@(login.ProviderDisplayName ?? login.LoginProvider)</MudText>
+                                        <MudButton ButtonType="ButtonType.Submit" Size="Size.Small"
+                                                   Variant="Variant.Text" Color="Color.Error">@Loc["Remove"]</MudButton>
+                                    </form>
+                                }
+                            }
+
+                            @if (_externalLogins is { AvailableLogins.Count: > 0 })
+                            {
+                                <MudText Typo="Typo.body2" Class="mud-text-secondary mt-2">
+                                    @Loc["AvailableExternalLogins"]: @string.Join(", ", _externalLogins.AvailableLogins.Select(scheme => scheme.DisplayName ?? scheme.Name))
+                                </MudText>
+                            }
+                        </MudPaper>
                     }
                 </CascadingValue>
             </MudTabPanel>
@@ -101,6 +131,7 @@
 @code {
     [Inject] protected UserService UserService { get; set; } = default!;
     [Inject] protected UserManager<CheapUser> UserManager { get; set; } = default!;
+    [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
     [Inject] protected NavigationManager Nav { get; set; } = default!;
     [Inject] protected ISnackbar ToastService { get; set; } = default!;
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;
@@ -125,6 +156,7 @@
     protected CheapUser? CurrentUser { get; set; }
     private bool wasDarkMode;
     private List<AccountTabDefinition> _authorizedTabs = [];
+    private ExternalLoginsInfo? _externalLogins;
 
     protected override async Task OnInitializedAsync()
     {
@@ -132,6 +164,11 @@
         if (CurrentUser != null)
         {
             wasDarkMode = CurrentUser.IsDarkMode;
+
+            if (ShowSecurityTab && SecurityTabContent is null)
+            {
+                _externalLogins = await AccountIdentity.GetExternalLoginsAsync(CurrentUser.Id);
+            }
         }
 
         if (CustomTabs is not null)

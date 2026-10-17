@@ -1,7 +1,7 @@
 ﻿@page "/Account/RecoveryCodes"
 @using Microsoft.AspNetCore.Components.Authorization
-@using Microsoft.AspNetCore.Identity
 @using CheapHelpers.Blazor.Helpers
+@using CheapHelpers.Blazor.Services
 @attribute [Authorize]
 
 <MudText Typo="Typo.h4">@Loc["RecoveryCodes"]</MudText>
@@ -89,7 +89,7 @@ else
 </style>
 
 @code {
-    [Inject] private UserManager<IdentityUser> UserManager { get; set; } = default!;
+    [Inject] private IAccountIdentityService AccountIdentity { get; set; } = default!;
     [Inject] private ISnackbar ToastService { get; set; } = default!;
     [Inject] private IStringLocalizer Loc { get; set; } = default!;
     [Inject] private ClipboardService ClipboardService { get; set; } = default!;
@@ -109,10 +109,10 @@ else
     {
         try
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return;
+            var userId = await GetCurrentUserIdAsync();
+            if (userId == null) return;
 
-            var codesCount = await UserManager.CountRecoveryCodesAsync(user);
+            var codesCount = (await AccountIdentity.GetTwoFactorStatusAsync(userId))?.RecoveryCodesCount ?? 0;
             if (codesCount == 0)
             {
                 // No codes exist, show message
@@ -154,10 +154,12 @@ else
             isProcessing = true;
             StateHasChanged();
 
-            var user = await GetCurrentUserAsync();
-            if (user == null) return;
+            var userId = await GetCurrentUserIdAsync();
+            if (userId == null) return;
 
-            var codes = await UserManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
+            var codes = await AccountIdentity.GenerateRecoveryCodesAsync(userId);
+            if (codes == null) return;
+
             recoveryCodes = codes;
 
             ToastService.Add(Loc["NewCodesGenerated"], Severity.Success);
@@ -198,9 +200,9 @@ else
         );
     }
 
-    private async Task<IdentityUser?> GetCurrentUserAsync()
+    private async Task<string?> GetCurrentUserIdAsync()
     {
         var authState = await AuthenticationStateTask;
-        return await UserManager.GetUserAsync(authState.User);
+        return authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
     }
 }

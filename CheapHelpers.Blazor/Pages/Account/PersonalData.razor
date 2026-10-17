@@ -1,7 +1,7 @@
 ﻿@page "/Account/PersonalData"
 @using CheapHelpers.Extensions
+@using CheapHelpers.Blazor.Services
 @using Microsoft.AspNetCore.Components.Authorization
-@using Microsoft.AspNetCore.Identity
 @using MimeMapping
 @attribute [Authorize]
 
@@ -55,7 +55,7 @@
 </MudPaper>
 
 @code {
-    [Inject] private UserManager<IdentityUser> UserManager { get; set; } = default!;
+    [Inject] private IAccountIdentityService AccountIdentity { get; set; } = default!;
     [Inject] private ISnackbar ToastService { get; set; } = default!;
     [Inject] private IStringLocalizer Loc { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
@@ -75,10 +75,10 @@
     {
         try
         {
-            var user = await GetCurrentUserAsync();
-            if (user == null) return;
+            var userId = await GetCurrentUserIdAsync();
+            if (userId == null) return;
 
-            personalData = await BuildPersonalDataDictionary(user);
+            personalData = await AccountIdentity.GetPersonalDataAsync(userId);
             personalDataItems = personalData?.ToList();
             StateHasChanged();
         }
@@ -129,40 +129,10 @@
         }
     }
 
-    private async Task<IdentityUser?> GetCurrentUserAsync()
+    private async Task<string?> GetCurrentUserIdAsync()
     {
         var authState = await AuthenticationStateTask;
-        return await UserManager.GetUserAsync(authState.User);
-    }
-
-    private async Task<Dictionary<string, string>> BuildPersonalDataDictionary(IdentityUser user)
-    {
-        var personalData = new Dictionary<string, string>();
-
-        // Add basic user properties
-        personalData.Add("Id", user.Id ?? "null");
-        personalData.Add("UserName", user.UserName ?? "null");
-        personalData.Add("Email", user.Email ?? "null");
-        personalData.Add("EmailConfirmed", user.EmailConfirmed.ToString());
-        personalData.Add("PhoneNumber", user.PhoneNumber ?? "null");
-        personalData.Add("PhoneNumberConfirmed", user.PhoneNumberConfirmed.ToString());
-        personalData.Add("TwoFactorEnabled", user.TwoFactorEnabled.ToString());
-        personalData.Add("AccessFailedCount", user.AccessFailedCount.ToString());
-        personalData.Add("LockoutEnabled", user.LockoutEnabled.ToString());
-
-        if (user.LockoutEnd.HasValue)
-        {
-            personalData.Add("LockoutEnd", user.LockoutEnd.Value.ToString());
-        }
-
-        // Add external login information
-        var logins = await UserManager.GetLoginsAsync(user);
-        foreach (var login in logins)
-        {
-            personalData.Add($"{login.LoginProvider} external login provider key", login.ProviderKey);
-        }
-
-        return personalData;
+        return authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
     }
 }
 

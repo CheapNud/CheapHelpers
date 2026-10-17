@@ -30,15 +30,34 @@
     </MudListItem>
 </MudList>
 
-<form @ref="_form" class="mt-3" method="post" action="/Account/EnableAuthenticator">
-    <AntiforgeryToken />
-    <MudTextField Variant="Variant.Outlined" Label="@Loc["VerificationCode"]"
-                  @bind-Value="VerificationCode" name="VerificationCode" @onkeypress="HandleKeyPress" />
+@if (_newRecoveryCodes is not null)
+{
+    @* First-time codes exist only in this response; the recovery codes page can show just the count *@
+    <MudAlert Severity="Severity.Warning" Class="mt-3 mb-4">
+        <strong>@Loc["ImportantWarning"]:</strong> @Loc["RecoveryCodesWarning"]
+    </MudAlert>
+    <MudText Typo="Typo.h6" Class="mb-2">@Loc["YourRecoveryCodes"]</MudText>
+    @foreach (var recoveryCode in _newRecoveryCodes)
+    {
+        <MudText><kbd>@recoveryCode</kbd></MudText>
+    }
+    <MudButton Class="mt-3" Variant="Variant.Filled" FullWidth="true" Color="Color.Primary"
+               Href="@Routes.RecoveryCodesRoute">
+        @Loc["Continue"]
+    </MudButton>
+}
+else
+{
+<div class="mt-3">
+    @* Immediate so Enter verifies the code that was just typed, not the last blurred value *@
+    <MudTextField Variant="Variant.Outlined" Label="@Loc["VerificationCode"]" Immediate="true"
+                  @bind-Value="VerificationCode" @onkeypress="HandleKeyPress" />
     <MudButton Class="mt-3" Variant="Variant.Filled" FullWidth="true"
-               Color="Color.Primary" ButtonType="ButtonType.Submit">
+               Color="Color.Primary" OnClick="VerifyAsync" Disabled="_verifying">
         @Loc["Verify"]
     </MudButton>
-</form>
+</div>
+}
 
 @code {
     [Parameter] public string AppName { get; set; } = "CheapHelpers";
@@ -49,24 +68,27 @@
     // IAccountIdentityService keeps this page free of user-typed services so it
     // resolves for consumers with derived TUser
     [Inject] protected IAccountIdentityService AccountIdentity { get; set; } = default!;
-    [Inject] protected IJSRuntime Js { get; set; } = default!;
+    [Inject] protected AccountRouteOptions Routes { get; set; } = default!;
+    [Inject] protected NavigationManager Nav { get; set; } = default!;
     [Inject] protected ISnackbar ToastService { get; set; } = default!;
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;
 
     private string SharedKey = "";
     private string AuthenticatorUri = "";
     private string VerificationCode = "";
-    private object? _form;
+    private string? _userId;
+    private bool _verifying;
+    private string[]? _newRecoveryCodes;
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthenticationStateTask;
-        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        if (userId is null) return;
+        _userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (_userId is null) return;
 
         try
         {
-            var keyInfo = await AccountIdentity.GetOrCreateAuthenticatorKeyAsync(userId);
+            var keyInfo = await AccountIdentity.GetOrCreateAuthenticatorKeyAsync(_userId);
             if (keyInfo is null)
             {
                 ToastService.Add(Loc["ErrorMessage"], Severity.Error);
@@ -87,7 +109,40 @@
     {
         if (args.Code is "Enter" or "NumpadEnter")
         {
-            await Js.InvokeVoidAsync("submitForm", _form);
+            await VerifyAsync();
+        }
+    }
+
+    private async Task VerifyAsync()
+    {
+        if (_userId is null || _verifying) return;
+
+        _verifying = true;
+        try
+        {
+            var result = await AccountIdentity.EnableAuthenticatorAsync(_userId, VerificationCode);
+            if (!result.Succeeded)
+            {
+                ToastService.Add(Loc["ErrorMessage"], Severity.Error);
+                return;
+            }
+
+            if (result.RecoveryCodes is { Length: > 0 })
+            {
+                _newRecoveryCodes = result.RecoveryCodes;
+                return;
+            }
+
+            Nav.NavigateTo(Routes.RecoveryCodesRoute);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to enable authenticator: {ex.Message}");
+            ToastService.Add(Loc["ErrorMessage"], Severity.Error);
+        }
+        finally
+        {
+            _verifying = false;
         }
     }
 }

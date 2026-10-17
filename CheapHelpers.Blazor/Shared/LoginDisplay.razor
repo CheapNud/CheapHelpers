@@ -1,3 +1,4 @@
+@using CheapHelpers.Blazor.Pages.Account
 @using CheapHelpers.Blazor.Services
 @using CheapHelpers.Services.Notifications
 @using Microsoft.AspNetCore.Components.Authorization
@@ -38,12 +39,14 @@
                             </MudMenuItem>
                             <MudDivider />
                             <MudMenuItem>
-                                <MudForm method="post" action="/Account/SignOut">
+                                @* Plain form, not MudForm: MudForm renders a div and drops method/action *@
+                                <form method="post" action="@Routes.EndpointPath("SignOut")">
+                                    <AntiforgeryToken />
                                     <MudButton ButtonType="ButtonType.Submit" IconSize="Size.Small"
                                                Color="Color.Secondary" Size="Size.Medium" Variant="Variant.Filled">
                                         @Loc["LogOut"]
                                     </MudButton>
-                                </MudForm>
+                                </form>
                             </MudMenuItem>
                         </ChildContent>
                     </MudMenu>
@@ -66,6 +69,7 @@
     [Inject] protected UserService UserService { get; set; } = default!;
     [Inject] protected IInAppNotificationService? NotificationService { get; set; }
     [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    [Inject] protected AccountRouteOptions Routes { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {

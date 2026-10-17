@@ -5,7 +5,6 @@
     <Version>3.9.0</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
 
     <!-- NuGet Package Metadata -->
     <PackageId>CheapHelpers.Blazor</PackageId>
@@ -55,7 +54,6 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="10.0.13" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.13" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="10.0.13" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.3.13" />
     <PackageReference Include="Humanizer.Core" Version="3.0.10" />
     <PackageReference Include="Microsoft.Azure.NotificationHubs" Version="4.2.0" />
     <PackageReference Include="MudBlazor" Version="9.11.0" />

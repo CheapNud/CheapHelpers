@@ -9,9 +9,14 @@ public class AccountRouteOptions
     public const string SectionName = "AccountRoutes";
 
     /// <summary>
-    /// Base route prefix (default "Account"). Used by consumer's [Route] attribute.
+    /// Base route prefix (default "Account").
     /// </summary>
     public string BaseRoute { get; set; } = "Account";
+
+    /// <summary>
+    /// Path of an endpoint mapped by MapCheapAccountEndpoints, e.g. <c>EndpointPath("SignOut")</c> gives <c>/Account/SignOut</c>.
+    /// </summary>
+    public string EndpointPath(string name) => $"/{BaseRoute.Trim('/')}/{name}";
 
     public string HomeRoute { get; set; } = "/";
     public string LoginRoute { get; set; } = "/Account/Login/";
@@ -27,4 +32,9 @@ public class AccountRouteOptions
     /// Recovery-code fallback page for users without their authenticator.
     /// </summary>
     public string RecoveryCodeRoute { get; set; } = "/Account/LoginWithRecoveryCode";
+
+    /// <summary>
+    /// Recovery codes page, shown after the authenticator is enabled.
+    /// </summary>
+    public string RecoveryCodesRoute { get; set; } = "/Account/RecoveryCodes";
 }

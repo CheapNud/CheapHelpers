@@ -5,7 +5,7 @@ namespace CheapHelpers.Blazor.Helpers;
 
 /// <summary>
 /// Shared helper for TOTP authenticator key formatting and QR URI generation.
-/// Used by both Authenticator.razor and AccountController.
+/// Used by Authenticator.razor.
 /// </summary>
 public static class AuthenticatorHelper
 {

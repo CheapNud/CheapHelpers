@@ -53,12 +53,6 @@
     <!-- FFmpeg wrapper -->
     <PackageReference Include="FFMpegCore" Version="5.5.0" />
 
-    <!-- Archive extraction for dependency installation -->
-    <PackageReference Include="SharpCompress" Version="1.0.0" />
-
-    <!-- Retry logic for downloads -->
-    <PackageReference Include="Polly" Version="8.8.0" />
-
     <!-- DI extension -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.13" />
   </ItemGroup>

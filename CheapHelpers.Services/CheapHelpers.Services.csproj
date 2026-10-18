@@ -95,6 +95,8 @@
     <PackageReference Include="NetVips.Native" Version="8.18.7" />
     <PackageReference Include="RabbitMQ.Client" Version="7.2.2" />
     <PackageReference Include="SendGrid" Version="9.29.3" />
+    <!-- Lifts the transitive floor from MimeKit and System.Security.Cryptography.Xml (via itext); CVE-2026-84008 and CVE-2026-70162 are fixed in 10.0.13 -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
     <PackageReference Include="Twilio" Version="8.1.0" />
     <PackageReference Include="UblSharp" Version="1.1.1" />
   </ItemGroup>

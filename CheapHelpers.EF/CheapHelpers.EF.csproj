@@ -41,6 +41,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.13" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.13" />
     <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="10.0.13" />
+    <!-- Lifts the transitive floor from Microsoft.Data.SqlClient; CVE-2026-84008 and CVE-2026-70162 are fixed in 10.0.13 -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,6 +1,6 @@
 ﻿using ZXing;
 
-namespace CheapHelpers.Services.Communication.Barcode;
+namespace CheapHelpers.Barcodes;
 
 /// <summary>
 /// Interface for barcode generation and reading services
@@ -13,20 +13,18 @@ public interface IBarcodeService
     event Func<string, Task> BarcodeScanned;
 
     /// <summary>
-    /// Generates a barcode image as byte array from input text (async)
+    /// Generates a barcode image as byte array from input text
     /// </summary>
     /// <param name="input">Text to encode in the barcode</param>
     /// <param name="height">Height of the generated barcode image</param>
     /// <param name="width">Width of the generated barcode image</param>
     /// <param name="format">Barcode format to use</param>
-    /// <param name="cancellationToken">Cancellation token for async operation</param>
-    /// <returns>JPEG-encoded barcode image as byte array</returns>
-    Task<byte[]> GetBarcodeAsync(
+    /// <returns>PNG-encoded (8-bit grayscale) barcode image as byte array</returns>
+    byte[] GetBarcode(
         string input,
         int height = 30,
         int width = 100,
-        BarcodeFormat format = BarcodeFormat.CODE_39,
-        CancellationToken cancellationToken = default);
+        BarcodeFormat format = BarcodeFormat.CODE_39);
 
     /// <summary>
     /// Triggers the barcode scanned event with the provided barcode data (async)
@@ -36,13 +34,17 @@ public interface IBarcodeService
     Task OnScanAsync(string barcode, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Reads barcode data from image bytes
+    /// Reads barcode data from raw pixels, for example a camera frame or a bitmap the platform already decoded
     /// </summary>
-    /// <param name="imageBytes">Image data as byte array</param>
-    /// <param name="cancellationToken">Cancellation token for async operation</param>
+    /// <param name="pixels">Pixel buffer, row by row, without padding</param>
+    /// <param name="width">Width of the image in pixels</param>
+    /// <param name="height">Height of the image in pixels</param>
+    /// <param name="format">Byte layout of each pixel in <paramref name="pixels"/></param>
     /// <returns>Tuple containing the decoded text and barcode format, or null if no barcode found</returns>
-    Task<(string Text, string Format)?> ReadBarcodeAsync(
-        byte[] imageBytes,
-        CancellationToken cancellationToken = default);
+    (string Text, string Format)? ReadBarcode(
+        ReadOnlySpan<byte> pixels,
+        int width,
+        int height,
+        RGBLuminanceSource.BitmapFormat format);
 
 }

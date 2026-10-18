@@ -91,10 +91,10 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.13" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.13" />
     <PackageReference Include="Microsoft.Graph" Version="6.8.0" />
+    <PackageReference Include="NetVips" Version="3.2.0" />
+    <PackageReference Include="NetVips.Native" Version="8.18.7" />
     <PackageReference Include="RabbitMQ.Client" Version="7.2.2" />
     <PackageReference Include="SendGrid" Version="9.29.3" />
-    <!-- ImageSharp 3.2.0 and 4.x require a Six Labors license key at build time — staying on 3.1.12 -->
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
     <PackageReference Include="Twilio" Version="8.1.0" />
     <PackageReference Include="UblSharp" Version="1.1.1" />
   </ItemGroup>

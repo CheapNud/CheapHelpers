@@ -1,6 +1,5 @@
 using CheapHelpers.Barcodes;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using NetVips;
 using System.Diagnostics;
 using ZXing;
 
@@ -8,12 +7,13 @@ namespace CheapHelpers.Services.Communication.Barcode;
 
 public static class BarcodeImageExtensions
 {
-    // ImageSharp's Rgba32 is 4 bytes per pixel
-    private const int Rgba32BytesPerPixel = 4;
-
     /// <summary>
-    /// Reads barcode data from encoded image bytes (JPEG, PNG and the other formats ImageSharp decodes)
+    /// Reads barcode data from encoded image bytes (JPEG, PNG, GIF, WebP, TIFF, HEIF and AVIF)
     /// </summary>
+    /// <remarks>
+    /// BMP is not supported, because NetVips.Native ships no BMP loader. Decode a BMP yourself and pass the pixels
+    /// to <see cref="IBarcodeService.ReadBarcode(ReadOnlySpan{byte}, int, int, RGBLuminanceSource.BitmapFormat)"/>.
+    /// </remarks>
     /// <param name="barcodes">The barcode service that decodes the pixels</param>
     /// <param name="imageBytes">Image data as byte array</param>
     /// <returns>Tuple containing the decoded text and barcode format, or null if no barcode found</returns>
@@ -24,17 +24,19 @@ public static class BarcodeImageExtensions
         if (imageBytes == null || imageBytes.Length == 0)
             throw new ArgumentException("Image bytes cannot be null or empty", nameof(imageBytes));
 
-        // This is the only place Services decodes image files for barcodes; #17 swaps the decoder
         byte[] pixels;
         int width;
         int height;
         try
         {
-            using var image = Image.Load<Rgba32>(imageBytes);
-            width = image.Width;
-            height = image.Height;
-            pixels = new byte[width * height * Rgba32BytesPerPixel];
-            image.CopyPixelDataTo(pixels);
+            using var image = Image.NewFromBuffer(imageBytes);
+            // Grey, CMYK and 16-bit files all become 8-bit sRGB here; alpha survives the conversion
+            using var srgb = image.Colourspace(Enums.Interpretation.Srgb);
+            // Flatten onto white, not the libvips default of black, so bars on a transparent background stay readable
+            using var rgb = srgb.HasAlpha() ? srgb.Flatten(background: [255]) : srgb.Copy();
+            width = rgb.Width;
+            height = rgb.Height;
+            pixels = rgb.WriteToMemory<byte>();
         }
         catch (Exception ex)
         {
@@ -43,6 +45,6 @@ public static class BarcodeImageExtensions
         }
 
         // The service wraps its own decode errors, so only the image load is wrapped here
-        return barcodes.ReadBarcode(pixels, width, height, RGBLuminanceSource.BitmapFormat.RGBA32);
+        return barcodes.ReadBarcode(pixels, width, height, RGBLuminanceSource.BitmapFormat.RGB24);
     }
 }

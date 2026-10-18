@@ -10,8 +10,7 @@
 @using FileTypeChecker;
 @using FileTypeChecker.Extensions;
 @using MimeMapping;
-@using SixLabors.ImageSharp;
-@using SixLabors.ImageSharp.Processing;
+@using NetVips
 @typeparam T
 
 @if (typeof(T) == typeof(IReadOnlyList<IBrowserFile>))
@@ -580,14 +579,16 @@ else
                 using MemoryStream outStream = new MemoryStream();
                 var isimage = stream.IsImage();
                 stream.Position = 0;
+                // NetVips.Native has no BMP loader; a BMP carries no orientation tag, so it is stored as uploaded.
+                // Both probes read from the stream, so it is rewound after each one
+                isimage = isimage && Image.FindLoadStream(stream) is not null;
+                stream.Position = 0;
 
                 if (isimage)
                 {
-                    using (SixLabors.ImageSharp.Image image = await SixLabors.ImageSharp.Image.LoadAsync(stream))
-                    {
-                        image.Mutate(x => x.AutoOrient());
-                        await image.SaveAsJpegAsync(outStream);
-                    }
+                    using var image = Image.NewFromStream(stream);
+                    using var upright = image.Autorot();
+                    upright.JpegsaveStream(outStream);
                 }
 
                 stream.Position = 0;

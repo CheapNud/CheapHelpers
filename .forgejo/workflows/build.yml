@@ -4,13 +4,20 @@ name: Build
 # merged PRs, and a release pushes its tag only after the master build of the merged
 # bump PR has finished. A direct master push next to a tag push once raced the tag
 # publish for the runner's shared toolcache volume and stalled both; the ordering
-# above is what keeps the two builds apart, so never push master by hand.
+# above keeps the two builds apart, and the shared concurrency group below queues one
+# behind the other if they ever do meet. Never push master by hand.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
   push:
     branches:
       - master
+
+# Shared with publish.yml: both compile on the runner's one toolcache volume.
+concurrency:
+  group: dotnet-toolcache
+  cancel-in-progress: false
+
 jobs:
   build:
     name: Build and Test

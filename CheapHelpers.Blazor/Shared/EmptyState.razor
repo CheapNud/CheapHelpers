@@ -1,0 +1,26 @@
+@* House rule: an empty list or page is never blank, it always says why in one short sentence. *@
+<MudText Class="mud-text-secondary">
+    @if (ChildContent is not null)
+    {
+        @ChildContent
+    }
+    else
+    {
+        @Text
+    }
+</MudText>
+
+@code {
+    /// <summary>
+    /// The sentence shown when there is nothing to display, e.g. "No parts in stock."
+    /// </summary>
+    [EditorRequired]
+    [Parameter]
+    public string Text { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Optional content that replaces <see cref="Text"/>, e.g. a sentence with a link
+    /// </summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

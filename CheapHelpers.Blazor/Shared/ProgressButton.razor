@@ -1,3 +1,5 @@
+@using Microsoft.Extensions.DependencyInjection
+
 @* House rule: any async action self-disables, swaps its StartIcon for a spinner,
    guards re-entry and resets in finally — never a bare MudButton on an awaited call. *@
 <MudButton @attributes="@CapturedAttributes"
@@ -22,7 +24,7 @@
     }
     else if (processing)
     {
-        <MudText>@Loc["Processing"]</MudText>
+        <MudText>@processingText</MudText>
     }
     else
     {
@@ -77,9 +79,24 @@
     [Parameter]
     public MudBlazor.Size Size { get; set; } = Size.Medium;
 
-    [Inject] protected IStringLocalizer Loc { get; set; } = default!;
+    /// <summary>
+    /// When set, an exception thrown by <see cref="OnClick"/> is passed here instead of propagating
+    /// </summary>
+    [Parameter]
+    public EventCallback<Exception> OnError { get; set; }
+
+    // The non-generic IStringLocalizer is only registered by AddCheapHelpersBlazor; a plain
+    // [Inject] would fail to render in apps that only call AddMudServices
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
+    private const string DefaultProcessingText = "Processing";
+
+    private string processingText = DefaultProcessingText;
 
     private bool processing = false;
+
+    protected override void OnInitialized() =>
+        processingText = Services.GetService<IStringLocalizer>()?[DefaultProcessingText] ?? DefaultProcessingText;
 
     private async Task Clicked(MouseEventArgs args)
     {
@@ -94,6 +111,10 @@
         try
         {
             await OnClick.InvokeAsync(args);
+        }
+        catch (Exception ex) when (OnError.HasDelegate)
+        {
+            await OnError.InvokeAsync(ex);
         }
         finally
         {

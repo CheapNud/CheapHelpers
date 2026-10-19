@@ -38,4 +38,12 @@ public sealed class LenientStringConverter : JsonConverter<string?>
         else
             writer.WriteStringValue(text);
     }
+
+    /// <inheritdoc />
+    public override string? ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        reader.GetString();
+
+    /// <inheritdoc />
+    public override void WriteAsPropertyName(Utf8JsonWriter writer, string? text, JsonSerializerOptions options) =>
+        writer.WritePropertyName(text!);
 }

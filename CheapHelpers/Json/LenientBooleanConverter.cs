@@ -36,4 +36,15 @@ public sealed class LenientBooleanConverter : JsonConverter<bool>
     /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, bool flag, JsonSerializerOptions options) =>
         writer.WriteBooleanValue(flag);
+
+    /// <summary>Reads a <c>true</c>/<c>false</c> dictionary key; anything else throws, since defaulting it could merge entries.</summary>
+    public override bool ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var key = reader.GetString();
+        return bool.TryParse(key, out var parsed) ? parsed : throw new JsonException($"'{key}' is not a valid Boolean dictionary key.");
+    }
+
+    /// <inheritdoc />
+    public override void WriteAsPropertyName(Utf8JsonWriter writer, bool flag, JsonSerializerOptions options) =>
+        writer.WritePropertyName(flag ? "true" : "false");
 }

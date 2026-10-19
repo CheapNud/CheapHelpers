@@ -55,4 +55,19 @@ public class TolerantEnumConverter<TEnum>(TEnum fallback = default, IReadOnlyDic
     /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, TEnum enumValue, JsonSerializerOptions options) =>
         writer.WriteStringValue(enumValue.ToString());
+
+    /// <summary>Reads a dictionary key by name or legacy name; an unknown key throws, since falling back could merge entries.</summary>
+    public override TEnum ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var name = reader.GetString();
+        if (Enum.TryParse<TEnum>(name, ignoreCase: true, out var parsed))
+            return parsed;
+        if (name is not null && _legacyNames?.TryGetValue(name, out var legacy) == true)
+            return legacy;
+        throw new JsonException($"'{name}' is not a valid {typeof(TEnum).Name} dictionary key.");
+    }
+
+    /// <inheritdoc />
+    public override void WriteAsPropertyName(Utf8JsonWriter writer, TEnum enumValue, JsonSerializerOptions options) =>
+        writer.WritePropertyName(enumValue.ToString());
 }

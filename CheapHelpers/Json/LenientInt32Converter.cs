@@ -28,4 +28,17 @@ public sealed class LenientInt32Converter : JsonConverter<int>
     /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, int number, JsonSerializerOptions options) =>
         writer.WriteNumberValue(number);
+
+    /// <summary>Reads a dictionary key; unlike values, a key that does not parse throws, since defaulting it could merge entries.</summary>
+    public override int ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        var key = reader.GetString();
+        return int.TryParse(key, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : throw new JsonException($"'{key}' is not a valid {typeof(int).Name} dictionary key.");
+    }
+
+    /// <inheritdoc />
+    public override void WriteAsPropertyName(Utf8JsonWriter writer, int number, JsonSerializerOptions options) =>
+        writer.WritePropertyName(number.ToString(CultureInfo.InvariantCulture));
 }

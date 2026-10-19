@@ -68,6 +68,38 @@ public sealed class JsonConverterTests
         Assert.Equal("18446744073709551615", JsonSerializer.Deserialize<Payload>("""{ "label": 18446744073709551615 }""", Options)!.Label);
     }
 
+    public sealed class Keyed
+    {
+        public Dictionary<string, int> ByName { get; set; } = [];
+        public Dictionary<int, long> ByNumber { get; set; } = [];
+        public Dictionary<double, bool> ByRatio { get; set; } = [];
+        public Dictionary<bool, string> ByFlag { get; set; } = [];
+        public Dictionary<Provider, int> ByProvider { get; set; } = [];
+    }
+
+    [Fact]
+    public void Dictionaries_keyed_by_converted_types_round_trip()
+    {
+        var keyed = new Keyed
+        {
+            ByName = { ["a"] = 1 },
+            ByNumber = { [2] = 3 },
+            ByRatio = { [0.5] = true },
+            ByFlag = { [true] = "yes" },
+            ByProvider = { [Provider.Whisper] = 4 }
+        };
+
+        var json = JsonSerializer.Serialize(keyed, Options);
+        var roundTripped = JsonSerializer.Deserialize<Keyed>(json, Options)!;
+
+        Assert.Equal(1, roundTripped.ByName["a"]);
+        Assert.Equal(3, roundTripped.ByNumber[2]);
+        Assert.True(roundTripped.ByRatio[0.5]);
+        Assert.Equal("yes", roundTripped.ByFlag[true]);
+        Assert.Equal(4, roundTripped.ByProvider[Provider.Whisper]);
+        Assert.Contains("\"Whisper\":4", json);
+    }
+
     public enum Small : byte
     {
         Zero,

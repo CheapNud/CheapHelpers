@@ -13,9 +13,11 @@ on:
     branches:
       - master
 
-# Shared with publish.yml: both compile on the runner's one toolcache volume.
+# The master build shares the dotnet-toolcache group with publish.yml, since both compile on the
+# runner's one toolcache volume. PR builds queue per branch instead, so a waiting publish run is
+# never displaced by a PR push.
 concurrency:
-  group: dotnet-toolcache
+  group: ${{ github.event_name == 'push' && 'dotnet-toolcache' || format('build-{0}', github.ref) }}
   cancel-in-progress: false
 
 jobs:

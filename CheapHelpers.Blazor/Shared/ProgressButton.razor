@@ -2,8 +2,9 @@
 
 @* House rule: any async action self-disables, swaps its StartIcon for a spinner,
    guards re-entry and resets in finally — never a bare MudButton on an awaited call. *@
+@* MudBlazor 9 opens the element by HtmlTag's name, so passing our null default through would render a nameless tag *@
 <MudButton @attributes="@CapturedAttributes"
-           HtmlTag="@HtmlTag"
+           HtmlTag="@(HtmlTag ?? "button")"
            Class="@Class"
            Variant="@Variant"
            Color="@Color"

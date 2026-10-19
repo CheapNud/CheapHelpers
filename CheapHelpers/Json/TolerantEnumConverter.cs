@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -31,7 +33,10 @@ public class TolerantEnumConverter<TEnum>(TEnum fallback = default, IReadOnlyDic
         switch (reader.TokenType)
         {
             case JsonTokenType.Number:
-                return reader.TryGetInt64(out var ordinal) ? (TEnum)Enum.ToObject(typeof(TEnum), ordinal) : fallback;
+                // Parsing the raw text checks the ordinal against the enum's own underlying type, so an out-of-range value
+                // falls back instead of being truncated, and unsigned 64-bit ordinals still read.
+                var ordinal = Encoding.UTF8.GetString(reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan);
+                return Enum.TryParse<TEnum>(ordinal, out var numbered) ? numbered : fallback;
 
             case JsonTokenType.String:
                 var name = reader.GetString();

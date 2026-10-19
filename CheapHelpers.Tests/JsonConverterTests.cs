@@ -65,6 +65,21 @@ public sealed class JsonConverterTests
     {
         Assert.Equal("42", JsonSerializer.Deserialize<Payload>("""{ "label": 42 }""", Options)!.Label);
         Assert.Equal("2.5", JsonSerializer.Deserialize<Payload>("""{ "label": 2.5 }""", Options)!.Label);
+        Assert.Equal("18446744073709551615", JsonSerializer.Deserialize<Payload>("""{ "label": 18446744073709551615 }""", Options)!.Label);
+    }
+
+    public enum Small : byte
+    {
+        Zero,
+        One
+    }
+
+    [Fact]
+    public void Enum_ordinals_outside_the_underlying_range_fall_back_instead_of_truncating()
+    {
+        Assert.Equal(Small.One, JsonSerializer.Deserialize<Small>("1", Options));
+        Assert.Equal(Small.Zero, JsonSerializer.Deserialize<Small>("257", Options));
+        Assert.Equal(Small.Zero, JsonSerializer.Deserialize<Small>("-1", Options));
     }
 
     [Theory]

@@ -1,4 +1,5 @@
-using System.Globalization;
+using System.Buffers;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -17,9 +18,8 @@ public sealed class LenientStringConverter : JsonConverter<string?>
             case JsonTokenType.String:
                 return reader.GetString();
             case JsonTokenType.Number:
-                return reader.TryGetInt64(out var whole)
-                    ? whole.ToString(CultureInfo.InvariantCulture)
-                    : reader.GetDouble().ToString(CultureInfo.InvariantCulture);
+                // The raw token text, so large or precise numbers are not rounded through double.
+                return Encoding.UTF8.GetString(reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan);
             case JsonTokenType.True:
                 return bool.TrueString;
             case JsonTokenType.False:

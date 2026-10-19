@@ -1,0 +1,201 @@
+using System.Text.Json;
+using Anthropic.Models.Messages;
+using Microsoft.Extensions.Logging;
+
+namespace CheapHelpers.Llm;
+
+/// <summary>
+/// Pure mapping from the OpenAI-shaped <see cref="LlmRequest"/> to Anthropic's Messages API
+/// parameters. No I/O. Cache markers go on the system block and the last tool so the whole
+/// static prefix is served from the prompt cache between tool rounds.
+/// </summary>
+internal static class AnthropicRequestTranslator
+{
+    /// <summary>Leading user turn for a message window that starts on an assistant turn.</summary>
+    internal const string TrimmedConversationPlaceholder = "(earlier conversation trimmed)";
+
+    private const string EmptyArguments = "{}";
+
+    public static MessageCreateParams ToMessageParams(LlmRequest request, LlmOptions options, ILogger logger)
+    {
+        var systemText = string.Join("\n", request.Messages
+            .Where(m => m.Role == "system")
+            .Select(m => m.Content?.ToString() ?? string.Empty));
+
+        var tools = request.Tools is { Count: > 0 }
+            ? request.Tools.Select((t, i) => (ToolUnion)new Tool
+            {
+                Name = t.Function.Name,
+                Description = t.Function.Description,
+                InputSchema = ToInputSchema(t.Function.Parameters),
+                // Only the last tool carries the marker; it caches the whole tool list.
+                CacheControl = i == request.Tools.Count - 1 ? new CacheControlEphemeral() : null,
+            }).ToList()
+            : null;
+
+        var effort = ParseEffort(request.Reasoning?.Effort ?? request.ReasoningEffort ?? options.ReasoningEffort, logger);
+
+        var parameters = new MessageCreateParams
+        {
+            Model = string.IsNullOrEmpty(request.Model) ? options.Model : request.Model,
+            MaxTokens = request.MaxTokens ?? options.MaxTokens,
+            Messages = ToMessages(request.Messages),
+        };
+
+        // The SDK's optional properties reject an explicit null, so they are only set when present.
+        if (!string.IsNullOrEmpty(systemText))
+        {
+            parameters = parameters with
+            {
+                System = new List<TextBlockParam> { new() { Text = systemText, CacheControl = new CacheControlEphemeral() } },
+            };
+        }
+
+        if (tools is not null)
+            parameters = parameters with { Tools = tools };
+
+        if (effort is not null)
+            parameters = parameters with { OutputConfig = new OutputConfig { Effort = effort.Value } };
+
+        return parameters;
+    }
+
+    /// <summary>
+    /// Tool schemas are full JSON Schema objects; the SDK's InputSchema takes the
+    /// property map and the required list separately.
+    /// </summary>
+    public static InputSchema ToInputSchema(JsonElement parameters)
+    {
+        if (parameters.ValueKind != JsonValueKind.Object) return new InputSchema();
+
+        Dictionary<string, JsonElement>? properties = null;
+        if (parameters.TryGetProperty("properties", out var props) && props.ValueKind == JsonValueKind.Object)
+        {
+            properties = props.EnumerateObject()
+                .ToDictionary(p => p.Name, p => p.Value.Clone());
+        }
+
+        List<string>? requiredNames = null;
+        if (parameters.TryGetProperty("required", out var required) && required.ValueKind == JsonValueKind.Array)
+        {
+            requiredNames = required.EnumerateArray()
+                .Select(r => r.GetString())
+                .OfType<string>()
+                .ToList();
+        }
+
+        return new InputSchema { Properties = properties ?? [], Required = requiredNames ?? [] };
+    }
+
+    private static Effort? ParseEffort(string? reasoningEffort, ILogger logger)
+    {
+        if (string.IsNullOrWhiteSpace(reasoningEffort)) return null;
+        switch (reasoningEffort.Trim().ToLowerInvariant())
+        {
+            case "low": return Effort.Low;
+            case "medium": return Effort.Medium;
+            case "high": return Effort.High;
+            case "xhigh": return Effort.Xhigh;
+            case "max": return Effort.Max;
+            default:
+                logger.LogWarning("Unknown reasoning effort '{Effort}', sending the model default", reasoningEffort);
+                return null;
+        }
+    }
+
+    private static List<MessageParam> ToMessages(IReadOnlyList<LlmMessage> messages)
+    {
+        var output = new List<MessageParam>();
+        Role? currentRole = null;
+        List<ContentBlockParam>? currentBlocks = null;
+
+        void Append(Role role, IEnumerable<ContentBlockParam> blocks)
+        {
+            // Consecutive same-role turns are merged into one message: the API merges them
+            // server-side anyway, and one user turn per tool-result batch is the documented shape.
+            if (currentRole != role)
+            {
+                Flush();
+                currentRole = role;
+                currentBlocks = [];
+            }
+            currentBlocks!.AddRange(blocks);
+        }
+
+        void Flush()
+        {
+            if (currentRole is not null && currentBlocks is { Count: > 0 })
+                output.Add(new MessageParam { Role = currentRole.Value, Content = currentBlocks });
+            currentRole = null;
+            currentBlocks = null;
+        }
+
+        foreach (var message in messages)
+        {
+            switch (message.Role)
+            {
+                case "system":
+                    break;
+
+                case "user":
+                    Append(Role.User, [new TextBlockParam { Text = message.Content?.ToString() ?? string.Empty }]);
+                    break;
+
+                case "assistant":
+                    Append(Role.Assistant, message.ProviderBlocks ?? ReconstructAssistant(message));
+                    break;
+
+                case "tool":
+                    Append(Role.User,
+                    [
+                        new ToolResultBlockParam
+                        {
+                            ToolUseID = message.ToolCallId ?? string.Empty,
+                            Content = message.Content?.ToString() ?? string.Empty,
+                        },
+                    ]);
+                    break;
+            }
+        }
+
+        Flush();
+
+        // The API requires the first message to be a user turn; a trimmed window can start on an assistant one.
+        if (output.Count > 0 && output[0].Role == Role.Assistant)
+        {
+            output.Insert(0, new MessageParam
+            {
+                Role = Role.User,
+                Content = new List<ContentBlockParam> { new TextBlockParam { Text = TrimmedConversationPlaceholder } },
+            });
+        }
+
+        return output;
+    }
+
+    private static List<ContentBlockParam> ReconstructAssistant(LlmMessage message)
+    {
+        var blocks = new List<ContentBlockParam>();
+        var text = message.Content?.ToString();
+        if (!string.IsNullOrEmpty(text))
+            blocks.Add(new TextBlockParam { Text = text });
+
+        foreach (var call in message.ToolCalls ?? [])
+        {
+            Dictionary<string, JsonElement> input;
+            try
+            {
+                input = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+                    string.IsNullOrWhiteSpace(call.Function.Arguments) ? EmptyArguments : call.Function.Arguments) ?? [];
+            }
+            catch (JsonException ex)
+            {
+                throw new JsonException($"Tool call '{call.Function.Name}' has invalid JSON arguments: {ex.Message}", ex);
+            }
+
+            blocks.Add(new ToolUseBlockParam { ID = call.Id, Name = call.Function.Name, Input = input });
+        }
+
+        return blocks;
+    }
+}

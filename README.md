@@ -11,6 +11,7 @@ A collection of production-ready C# utilities, extensions, and services for .NET
 | [CheapHelpers.EF](https://www.nuget.org/packages/CheapHelpers.EF) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.EF.svg) | Entity Framework repository pattern with Identity support |
 | [CheapHelpers.Services](https://www.nuget.org/packages/CheapHelpers.Services) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Services.svg) | Email, PDF, billing, reporting, notifications, auth, and integrations |
 | [CheapHelpers.Barcodes](https://www.nuget.org/packages/CheapHelpers.Barcodes) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Barcodes.svg) | Barcode generation and reading on ZXing.Net with no native image dependency |
+| [CheapHelpers.Llm](https://www.nuget.org/packages/CheapHelpers.Llm) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Llm.svg) | LLM client for Anthropic and OpenAI-compatible providers with structured output |
 | [CheapHelpers.Blazor](https://www.nuget.org/packages/CheapHelpers.Blazor) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Blazor.svg) | Blazor components, account module, auth endpoints, and Hybrid features |
 | [CheapHelpers.Networking](https://www.nuget.org/packages/CheapHelpers.Networking) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Networking.svg) | Network scanning, mDNS discovery, and device detection |
 | [CheapHelpers.MAUI](https://www.nuget.org/packages/CheapHelpers.MAUI) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.MAUI.svg) | MAUI platform implementations (iOS APNS, Android FCM) |

@@ -1,8 +1,10 @@
 name: Build
 
 # Runs on every pull request and on every master commit. Master only moves through
-# merged PRs: a direct master push next to a tag push once raced the tag publish for
-# the runner's shared toolcache volume and stalled both, so never push master by hand.
+# merged PRs, and a release pushes its tag only after the master build of the merged
+# bump PR has finished. A direct master push next to a tag push once raced the tag
+# publish for the runner's shared toolcache volume and stalled both; the ordering
+# above is what keeps the two builds apart, so never push master by hand.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -22,7 +24,7 @@ jobs:
       # No setup-dotnet: the ubuntu-latest label maps to a runner image with the
       # .NET 11 SDK baked in (ci-dotnet), so the SDK download is gone too.
       # No actions/cache: the runner mounts a persistent nuget-ci-cache volume
-      # into every job (act_runner container.options) â€” restore hits a warm local
+      # into every job (act_runner container.options) — restore hits a warm local
       # cache without the tar-and-transfer round trip the cache action cost.
       # CI solution excludes MAUI and MediaProcessing (Windows-only packaging)
       - name: Restore

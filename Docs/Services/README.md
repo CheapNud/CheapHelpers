@@ -289,7 +289,7 @@ Key NuGet packages used:
 - **Misc**: NetVips (3.2.0) with NetVips.Native (8.18.7), Twilio (8.1.0)
 - **Messaging and real-time**: RabbitMQ.Client (7.2.2), Microsoft.AspNetCore.SignalR.Client (10.0.13), Microsoft.AspNetCore.Http.Connections (1.2.13)
 - **Identity and Graph**: Duende.IdentityModel (8.1.0), Microsoft.Graph (6.8.0)
-- **Caching**: Microsoft.Extensions.Caching.Abstractions (10.0.13), Microsoft.Extensions.Caching.Memory (10.0.13)
+- **Caching**: Microsoft.Extensions.Caching.Memory (10.0.13)
 
 ## Configuration Examples
 

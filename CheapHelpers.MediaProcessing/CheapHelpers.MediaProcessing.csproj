@@ -52,9 +52,6 @@
   <ItemGroup>
     <!-- FFmpeg wrapper -->
     <PackageReference Include="FFMpegCore" Version="5.5.0" />
-
-    <!-- DI extension -->
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.13" />
   </ItemGroup>
 
   <!-- Windows-only: Hardware detection via WMI -->

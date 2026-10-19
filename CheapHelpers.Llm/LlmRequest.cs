@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace CheapHelpers.Llm;
@@ -48,7 +49,17 @@ public sealed class LlmRequest
     /// <summary>Spend bucket for <see cref="LlmUsageTracker"/>. Never sent to the API.</summary>
     [JsonIgnore]
     public string Purpose { get; set; } = UsagePurpose.Chat;
+
+    /// <summary>
+    /// Asks for a JSON reply matching this schema; the reply lands in <see cref="LlmResponse.StructuredJson"/>.
+    /// Streaming does not support it.
+    /// </summary>
+    [JsonIgnore]
+    public LlmJsonSchema? ResponseSchema { get; set; }
 }
+
+/// <summary>A named JSON Schema for structured output. The schema root must be an object.</summary>
+public sealed record LlmJsonSchema(string Name, JsonElement Schema);
 
 public sealed class ReasoningOptions
 {

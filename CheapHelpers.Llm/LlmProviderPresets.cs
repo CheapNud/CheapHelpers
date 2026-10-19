@@ -11,7 +11,18 @@ public sealed record LlmProviderPreset(
 public static class LlmProviderPresets
 {
     public const string OpenRouterBaseUrl = "https://openrouter.ai/api/v1";
-    public const string OpenRouterDefaultModel = "anthropic/claude-sonnet-5.5";
+
+    // OpenRouter ids checked on 2026-10-19: each lists tools, response_format and structured_outputs.
+    public const string OpenRouterMistral = "mistralai/mistral-large-4-0";
+    public const string OpenRouterClaudeSonnet = "anthropic/claude-sonnet-5.5";
+    public const string OpenRouterClaudeHaiku = "anthropic/claude-haiku-5.5";
+    public const string OpenRouterOpenAi = "openai/gpt-6.1-sol";
+    public const string OpenRouterGemini = "google/gemini-4-argon";
+    public const string OpenRouterDeepSeek = "deepseek/deepseek-v4.1-flash-1017";
+    public const string OpenRouterGlm = "z-ai/glm-5.3-flash";
+    public const string OpenRouterQwen = "qwen/qwen3.8-max-0902";
+
+    public const string OpenRouterDefaultModel = OpenRouterMistral;
 
     public static IReadOnlyDictionary<LlmProvider, LlmProviderPreset> All { get; } =
         new Dictionary<LlmProvider, LlmProviderPreset>
@@ -22,14 +33,14 @@ public static class LlmProviderPresets
                 OpenRouterDefaultModel,
                 "https://openrouter.ai/keys",
                 [
-                    "anthropic/claude-sonnet-5.5",
-                    "anthropic/claude-opus-5.5",
-                    "anthropic/claude-haiku-5.5",
-                    "openai/gpt-4o",
-                    "openai/gpt-4o-mini",
-                    "google/gemini-2.5-flash",
-                    "google/gemini-2.5-pro",
-                    "meta-llama/llama-3.3-70b-instruct",
+                    OpenRouterMistral,
+                    OpenRouterClaudeSonnet,
+                    OpenRouterClaudeHaiku,
+                    OpenRouterOpenAi,
+                    OpenRouterGemini,
+                    OpenRouterDeepSeek,
+                    OpenRouterGlm,
+                    OpenRouterQwen,
                 ]),
             [LlmProvider.OpenAI] = new(
                 "OpenAI",

@@ -36,6 +36,13 @@ public sealed class AnthropicLlmClient(
 
         var message = await factory.Get().Messages.Create(parameters, cancellationToken);
         var response = ToLlmResponse(message);
+        if (request.ResponseSchema is { } schema)
+        {
+            // The translator forced a tool named after the schema; its input is the structured reply.
+            response.StructuredJson = response.ToolCalls?
+                .FirstOrDefault(call => call.Function.Name == schema.Name)?
+                .Function.Arguments;
+        }
         usageTracker.Record(request.Purpose, response.Usage);
         return response;
     }
@@ -45,6 +52,9 @@ public sealed class AnthropicLlmClient(
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (request.ResponseSchema is not null)
+            throw new NotSupportedException(OpenAiCompatibleLlmClient.StreamingSchemaMessage);
+
         var config = options.CurrentValue;
         if (usageTracker.IsOverBudget(config.MaxSessionTokens))
         {

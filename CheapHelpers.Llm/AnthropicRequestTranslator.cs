@@ -15,6 +15,7 @@ internal static class AnthropicRequestTranslator
     internal const string TrimmedConversationPlaceholder = "(earlier conversation trimmed)";
 
     private const string EmptyArguments = "{}";
+    private const string SchemaToolDescription = "Return the result. The input must match this schema.";
 
     public static MessageCreateParams ToMessageParams(LlmRequest request, LlmOptions options, ILogger logger)
     {
@@ -22,14 +23,20 @@ internal static class AnthropicRequestTranslator
             .Where(m => m.Role == "system")
             .Select(m => m.Content?.ToString() ?? string.Empty));
 
-        var tools = request.Tools is { Count: > 0 }
-            ? request.Tools.Select((t, i) => (ToolUnion)new Tool
+        // Structured output on the Messages API: one extra tool shaped like the schema, forced
+        // through tool_choice, so the tool input is the JSON reply.
+        List<LlmToolDefinition> toolDefinitions = request.ResponseSchema is { } schema
+            ? [.. request.Tools ?? [], LlmToolDefinition.Create(schema.Name, SchemaToolDescription, schema.Schema)]
+            : request.Tools ?? [];
+
+        var tools = toolDefinitions.Count > 0
+            ? toolDefinitions.Select((t, i) => (ToolUnion)new Tool
             {
                 Name = t.Function.Name,
                 Description = t.Function.Description,
                 InputSchema = ToInputSchema(t.Function.Parameters),
                 // Only the last tool carries the marker; it caches the whole tool list.
-                CacheControl = i == request.Tools.Count - 1 ? new CacheControlEphemeral() : null,
+                CacheControl = i == toolDefinitions.Count - 1 ? new CacheControlEphemeral() : null,
             }).ToList()
             : null;
 
@@ -53,6 +60,9 @@ internal static class AnthropicRequestTranslator
 
         if (tools is not null)
             parameters = parameters with { Tools = tools };
+
+        if (request.ResponseSchema is not null)
+            parameters = parameters with { ToolChoice = new ToolChoiceTool { Name = request.ResponseSchema.Name } };
 
         if (effort is not null)
             parameters = parameters with { OutputConfig = new OutputConfig { Effort = effort.Value } };

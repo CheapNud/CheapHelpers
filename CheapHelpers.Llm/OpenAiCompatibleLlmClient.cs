@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -28,6 +29,9 @@ public sealed class OpenAiCompatibleLlmClient(
     private const string SseDone = "[DONE]";
     private const int RetryDelayStepMs = 1000;
     private const int FirstServerErrorStatus = 500;
+    private const string ResponseFormatField = "response_format";
+    private const string JsonSchemaFormat = "json_schema";
+    internal const string StreamingSchemaMessage = "Streaming does not support ResponseSchema; use GenerateAsync for structured output.";
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -49,7 +53,7 @@ public sealed class OpenAiCompatibleLlmClient(
         var wireRequest = ToWireRequest(request, config, stream: false);
         // Serialised once; every attempt gets a fresh HttpRequestMessage over the same bytes,
         // since a request message can only be sent once.
-        var body = JsonSerializer.SerializeToUtf8Bytes(wireRequest, SerializerOptions);
+        var body = Serialize(wireRequest, request.ResponseSchema);
         logger.LogDebug("POST {Endpoint} | model={Model} | messages={Messages} | tools={Tools}", endpoint, wireRequest.Model, request.Messages.Count, request.Tools?.Count ?? 0);
 
         var retries = 0;
@@ -82,6 +86,9 @@ public sealed class OpenAiCompatibleLlmClient(
                 var llmResponse = JsonSerializer.Deserialize<LlmResponse>(responseBody, SerializerOptions)
                     ?? throw new JsonException("Failed to deserialize LLM response");
 
+                if (request.ResponseSchema is not null)
+                    llmResponse.StructuredJson = llmResponse.TextContent;
+
                 logger.LogDebug("Response: finish={FinishReason} | tools={HasToolCalls} | usage={TotalTokens}", llmResponse.FinishReason, llmResponse.HasToolCalls, llmResponse.Usage?.TotalTokens ?? 0);
                 usageTracker.Record(request.Purpose, llmResponse.Usage);
                 return llmResponse;
@@ -104,6 +111,9 @@ public sealed class OpenAiCompatibleLlmClient(
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (request.ResponseSchema is not null)
+            throw new NotSupportedException(StreamingSchemaMessage);
+
         var config = options.CurrentValue;
         if (usageTracker.IsOverBudget(config.MaxSessionTokens))
         {
@@ -112,7 +122,7 @@ public sealed class OpenAiCompatibleLlmClient(
         }
 
         var endpoint = Endpoint(config);
-        var body = JsonSerializer.SerializeToUtf8Bytes(ToWireRequest(request, config, stream: true), SerializerOptions);
+        var body = Serialize(ToWireRequest(request, config, stream: true), responseSchema: null);
         logger.LogDebug("POST {Endpoint} (stream) | messages={Messages}", endpoint, request.Messages.Count);
 
         // Covers the whole stream, not just the headers: documented on LlmOptions.TimeoutSeconds.
@@ -206,6 +216,30 @@ public sealed class OpenAiCompatibleLlmClient(
             StreamOptions = stream ? new StreamOptions { IncludeUsage = true } : null,
             Purpose = request.Purpose,
         };
+    }
+
+    /// <summary>
+    /// Serialises the wire request, adding a strict json_schema response_format when a schema
+    /// is given. <see cref="LlmRequest.ResponseSchema"/> is not serialised itself because the
+    /// Anthropic client sends the same schema as a forced tool instead.
+    /// </summary>
+    private static byte[] Serialize(LlmRequest wireRequest, LlmJsonSchema? responseSchema)
+    {
+        if (responseSchema is null)
+            return JsonSerializer.SerializeToUtf8Bytes(wireRequest, SerializerOptions);
+
+        var node = JsonSerializer.SerializeToNode(wireRequest, SerializerOptions)!.AsObject();
+        node[ResponseFormatField] = new JsonObject
+        {
+            ["type"] = JsonSchemaFormat,
+            [JsonSchemaFormat] = new JsonObject
+            {
+                ["name"] = responseSchema.Name,
+                ["strict"] = true,
+                ["schema"] = JsonSerializer.SerializeToNode(responseSchema.Schema),
+            },
+        };
+        return JsonSerializer.SerializeToUtf8Bytes(node, SerializerOptions);
     }
 
     internal static bool IsOpenRouter(string baseUrl) =>

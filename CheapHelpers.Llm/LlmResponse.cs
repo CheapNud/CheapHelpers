@@ -18,6 +18,10 @@ public sealed class LlmResponse
     public List<LlmToolCall>? ToolCalls => FirstMessage?.ToolCalls;
     public bool HasToolCalls => ToolCalls is { Count: > 0 };
     public string? FinishReason => Choices.Count > 0 ? Choices[0].FinishReason : null;
+
+    /// <summary>The JSON reply when the request carried <see cref="LlmRequest.ResponseSchema"/>; null when the model gave none.</summary>
+    [JsonIgnore]
+    public string? StructuredJson { get; set; }
 }
 
 public sealed class LlmChoice

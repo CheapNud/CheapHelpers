@@ -112,7 +112,9 @@ public class CsvService : ICsvService
         var ci = CultureInfo.CreateSpecificCulture(culture ?? DefaultCulture);
         return new CsvConfiguration(ci)
         {
-            Delimiter = delimiter ?? DefaultDelimiter
+            Delimiter = delimiter ?? DefaultDelimiter,
+            // Quote-prefix cells starting with =, +, -, @, tab or CR so spreadsheets do not run them as formulas
+            InjectionOptions = InjectionOptions.Escape,
         };
     }
 }

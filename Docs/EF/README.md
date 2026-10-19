@@ -19,7 +19,7 @@ It works on any `IHost` and on any `IServiceProvider`.
 
 ### UseSqliteWal
 
-Switches SQLite databases to WAL journal mode, so reads keep working while a write is in progress. The `SqliteWalInterceptor` sends `PRAGMA journal_mode=WAL;` on the first open of each connection string and skips it after that, because the mode is stored in the database file. Connections of other providers are left alone, so the call is safe when the provider is chosen at runtime. The package does not depend on SQLite.
+Switches SQLite databases to WAL journal mode, so reads keep working while a write is in progress. The `SqliteWalInterceptor` sends `PRAGMA journal_mode=WAL;` on the first open of each connection string and skips it after that, because the mode is stored in the database file. Read-only connections are skipped. Connections of other providers are left alone, so the call is safe when the provider is chosen at runtime. The package does not depend on SQLite.
 
 ```csharp
 using CheapHelpers.EF.Extensions;

@@ -12,8 +12,10 @@ public sealed class SqliteWalInterceptor : DbConnectionInterceptor
     // Matched by name so this package needs no SQLite reference.
     private const string SqliteConnectionTypeName = "Microsoft.Data.Sqlite.SqliteConnection";
     private const string WalPragma = "PRAGMA journal_mode=WAL;";
-    private const string ModeKeyword = "Mode";
-    private const string ReadOnlyMode = "ReadOnly";
+    // SqliteException.SqliteErrorCode; DbException.ErrorCode does not carry the SQLite result code.
+    private const string SqliteErrorCodeProperty = "SqliteErrorCode";
+    // SQLITE_READONLY, "attempt to write a readonly database".
+    private const int SqliteReadOnlyErrorCode = 8;
 
     // WAL mode is stored in the database file, so one pragma per database is enough. Without this the
     // pragma would run again on every open of a pooled connection. Static because AddDbContext builds
@@ -30,7 +32,14 @@ public sealed class SqliteWalInterceptor : DbConnectionInterceptor
 
         using var command = connection.CreateCommand();
         command.CommandText = WalPragma;
-        command.ExecuteNonQuery();
+        try
+        {
+            command.ExecuteNonQuery();
+        }
+        catch (DbException ex) when (IsReadOnlyError(ex))
+        {
+            // Read-only connection, see IsReadOnlyError.
+        }
         HandledConnectionStrings.TryAdd(connection.ConnectionString, 0);
     }
 
@@ -42,31 +51,24 @@ public sealed class SqliteWalInterceptor : DbConnectionInterceptor
 
         await using var command = connection.CreateCommand();
         command.CommandText = WalPragma;
-        await command.ExecuteNonQueryAsync(cancellationToken);
+        try
+        {
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
+        catch (DbException ex) when (IsReadOnlyError(ex))
+        {
+            // Read-only connection, see IsReadOnlyError.
+        }
         HandledConnectionStrings.TryAdd(connection.ConnectionString, 0);
     }
 
     private static bool NeedsPragma(DbConnection connection)
-    {
-        if (connection.GetType().FullName != SqliteConnectionTypeName
-            || HandledConnectionStrings.ContainsKey(connection.ConnectionString))
-            return false;
+        => connection.GetType().FullName == SqliteConnectionTypeName
+            && !HandledConnectionStrings.ContainsKey(connection.ConnectionString);
 
-        // EF opens a Mode=ReadOnly connection to check whether the database exists; the pragma would fail
-        // there with "attempt to write a readonly database". The writable connection that follows sets WAL.
-        if (IsReadOnly(connection.ConnectionString))
-        {
-            HandledConnectionStrings.TryAdd(connection.ConnectionString, 0);
-            return false;
-        }
-
-        return true;
-    }
-
-    private static bool IsReadOnly(string connectionString)
-    {
-        var builder = new DbConnectionStringBuilder { ConnectionString = connectionString };
-        return builder.TryGetValue(ModeKeyword, out var mode)
-            && string.Equals(mode?.ToString(), ReadOnlyMode, StringComparison.OrdinalIgnoreCase);
-    }
+    // A read-only connection cannot change the journal mode: EF's Mode=ReadOnly probe that checks whether the
+    // database exists, a file: URI with mode=ro, or a file without write access. The pragma fails there with
+    // SQLITE_READONLY and is skipped; a writable connection to the same database sets WAL.
+    private static bool IsReadOnlyError(DbException exception)
+        => exception.GetType().GetProperty(SqliteErrorCodeProperty)?.GetValue(exception) is SqliteReadOnlyErrorCode;
 }

@@ -69,6 +69,19 @@ public sealed class AnthropicRequestTranslatorTests
     }
 
     [Fact]
+    public void Input_schema_keeps_every_root_keyword()
+    {
+        var schema = JsonDocument.Parse("""{"type":"object","properties":{"a":{"$ref":"#/$defs/A"}},"$defs":{"A":{"type":"string"}},"additionalProperties":false}""").RootElement;
+
+        var json = JsonSerializer.Serialize(AnthropicRequestTranslator.ToInputSchema(schema));
+
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("string", doc.RootElement.GetProperty("$defs").GetProperty("A").GetProperty("type").GetString());
+        Assert.False(doc.RootElement.GetProperty("additionalProperties").GetBoolean());
+        Assert.Equal("object", doc.RootElement.GetProperty("type").GetString());
+    }
+
+    [Fact]
     public void Tool_calls_and_results_become_tool_use_and_tool_result_blocks()
     {
         var call = new LlmToolCall { Id = "tu_1", Function = new() { Name = "lights", Arguments = """{"on":true}""" } };

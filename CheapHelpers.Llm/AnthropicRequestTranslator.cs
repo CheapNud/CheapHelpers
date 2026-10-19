@@ -16,6 +16,8 @@ internal static class AnthropicRequestTranslator
 
     private const string EmptyArguments = "{}";
     private const string SchemaToolDescription = "Return the result. The input must match this schema.";
+    private const string TypeKeyword = "type";
+    private static readonly JsonElement ObjectType = JsonSerializer.SerializeToElement("object");
 
     public static MessageCreateParams ToMessageParams(LlmRequest request, LlmOptions options, ILogger logger)
     {
@@ -71,30 +73,17 @@ internal static class AnthropicRequestTranslator
     }
 
     /// <summary>
-    /// Tool schemas are full JSON Schema objects; the SDK's InputSchema takes the
-    /// property map and the required list separately.
+    /// Tool schemas are full JSON Schema objects. Every root keyword is copied as is, so
+    /// $defs, additionalProperties and anyOf survive; only a missing "type" is filled in,
+    /// because the Messages API requires an object schema.
     /// </summary>
     public static InputSchema ToInputSchema(JsonElement parameters)
     {
         if (parameters.ValueKind != JsonValueKind.Object) return new InputSchema();
 
-        Dictionary<string, JsonElement>? properties = null;
-        if (parameters.TryGetProperty("properties", out var props) && props.ValueKind == JsonValueKind.Object)
-        {
-            properties = props.EnumerateObject()
-                .ToDictionary(p => p.Name, p => p.Value.Clone());
-        }
-
-        List<string>? requiredNames = null;
-        if (parameters.TryGetProperty("required", out var required) && required.ValueKind == JsonValueKind.Array)
-        {
-            requiredNames = required.EnumerateArray()
-                .Select(r => r.GetString())
-                .OfType<string>()
-                .ToList();
-        }
-
-        return new InputSchema { Properties = properties ?? [], Required = requiredNames ?? [] };
+        var raw = parameters.EnumerateObject().ToDictionary(p => p.Name, p => p.Value.Clone());
+        raw.TryAdd(TypeKeyword, ObjectType);
+        return InputSchema.FromRawUnchecked(raw);
     }
 
     private static Effort? ParseEffort(string? reasoningEffort, ILogger logger)

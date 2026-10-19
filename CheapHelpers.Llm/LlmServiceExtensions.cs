@@ -11,7 +11,9 @@ public static class LlmServiceExtensions
     public static IServiceCollection AddCheapLlm(this IServiceCollection services, Action<LlmOptions> configure)
     {
         services.Configure(configure);
-        services.AddHttpClient<OpenAiCompatibleLlmClient>();
+        // The client enforces LlmOptions.TimeoutSeconds itself; HttpClient's own 100 s default
+        // would otherwise cut off any longer setting.
+        services.AddHttpClient<OpenAiCompatibleLlmClient>(httpClient => httpClient.Timeout = Timeout.InfiniteTimeSpan);
         services.AddSingleton<LlmUsageTracker>();
         services.AddSingleton<AnthropicClientFactory>();
         services.AddSingleton<AnthropicLlmClient>();

@@ -36,6 +36,13 @@ public sealed class StructuredOutputTests
     }
 
     [Fact]
+    public void Generic_type_names_become_valid_schema_names()
+    {
+        Assert.Equal("List_1", LlmClientExtensions.SchemaName(typeof(List<Verdict>)));
+        Assert.Equal("Verdict", LlmClientExtensions.SchemaName(typeof(Verdict)));
+    }
+
+    [Fact]
     public async Task GenerateAsync_of_T_throws_with_the_finish_reason_when_no_json_came_back()
     {
         var server = new FakeLlmServer().Reply(TestClients.CompatReply(null, finishReason: "length"));

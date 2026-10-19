@@ -268,6 +268,10 @@ public sealed class OpenAiCompatibleLlmClient(
     {
         using var doc = JsonDocument.Parse(payload);
 
+        // A provider that fails after the 200 headers reports it as an error event in the stream.
+        if (doc.RootElement.TryGetProperty("error", out var error))
+            throw new HttpRequestException($"LLM stream returned an error: {error.GetRawText()}");
+
         var hasChoices = doc.RootElement.TryGetProperty("choices", out var choices) &&
             choices.ValueKind == JsonValueKind.Array &&
             choices.GetArrayLength() > 0;

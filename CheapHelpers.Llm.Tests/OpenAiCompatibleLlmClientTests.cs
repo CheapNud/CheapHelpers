@@ -159,6 +159,23 @@ public sealed class OpenAiCompatibleLlmClientTests
     }
 
     [Fact]
+    public async Task Stream_error_event_after_the_headers_throws()
+    {
+        const string stream =
+            "data: {\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hel\"}}]}\n\n" +
+            "data: {\"error\":{\"message\":\"upstream failure\"}}\n\n";
+        var server = new FakeLlmServer().Reply(stream, contentType: "text/event-stream");
+        var client = TestClients.Compatible(server, Options());
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(async () =>
+        {
+            await foreach (var _ in client.GenerateStreamAsync(new LlmRequest { Messages = [LlmMessage.User("hi")] }, TestContext.Current.CancellationToken)) { }
+        });
+
+        Assert.Contains("upstream failure", ex.Message);
+    }
+
+    [Fact]
     public async Task Stream_with_a_schema_is_not_supported()
     {
         var server = new FakeLlmServer();

@@ -11,6 +11,7 @@ public static partial class LlmClientExtensions
     private const string PropertiesKeyword = "properties";
     private const string RequiredKeyword = "required";
     private const string AdditionalPropertiesKeyword = "additionalProperties";
+    private const string RefKeyword = "$ref";
     private const int MaxSchemaNameLength = 64;
 
     private static readonly JsonSchemaExporterOptions SchemaOptions = new()
@@ -19,11 +20,13 @@ public static partial class LlmClientExtensions
         // Strict structured output (OpenAI and most OpenAI-compatible providers) rejects an
         // object schema unless every property is required and extra properties are closed off.
         // Nullable properties stay nullable through their type, so this does not force values.
-        TransformSchemaNode = (_, schema) =>
+        // A $ref node (recursive type) is left alone; its target already carries both keywords.
+        TransformSchemaNode = (context, schema) =>
         {
-            if (schema is JsonObject node && node[PropertiesKeyword] is JsonObject properties)
+            if (context.TypeInfo.Kind == JsonTypeInfoKind.Object && schema is JsonObject node && !node.ContainsKey(RefKeyword))
             {
-                node[RequiredKeyword] = new JsonArray([.. properties.Select(property => (JsonNode?)property.Key)]);
+                var propertyNames = (node[PropertiesKeyword] as JsonObject)?.Select(property => (JsonNode?)property.Key) ?? [];
+                node[RequiredKeyword] = new JsonArray([.. propertyNames]);
                 node[AdditionalPropertiesKeyword] = false;
             }
             return schema;

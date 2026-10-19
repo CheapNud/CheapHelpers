@@ -80,6 +80,7 @@ public sealed class RoutedClientsTests
             .BuildServiceProvider();
 
         Assert.IsType<RoutedLlmClient>(provider.GetRequiredService<ILlmClient>());
+        Assert.Same(provider.GetRequiredService<AnthropicClientFactory>(), provider.GetRequiredService<AnthropicClientFactory>());
         Assert.Same(provider.GetRequiredService<LlmUsageTracker>(), provider.GetRequiredService<LlmUsageTracker>());
         Assert.Equal(LlmProviderPresets.Get(LlmProvider.Anthropic).BaseUrl, provider.GetRequiredService<Microsoft.Extensions.Options.IOptionsMonitor<LlmOptions>>().CurrentValue.BaseUrl);
     }

@@ -5,6 +5,8 @@ namespace CheapHelpers.Llm.Tests;
 public sealed class StructuredOutputTests
 {
     public sealed record Verdict(string Name, int Score, string? Note);
+    public sealed record Marker;
+    public sealed record Wrapper(Marker Inner);
 
     private static OpenAiCompatibleLlmClient Client(FakeLlmServer server) =>
         TestClients.Compatible(server, new LlmOptions { ApiKey = "k", BaseUrl = "https://openrouter.ai/api/v1" });
@@ -33,6 +35,19 @@ public sealed class StructuredOutputTests
         Assert.Equal("object", schema.GetProperty("type").GetString());
         Assert.False(schema.GetProperty("additionalProperties").GetBoolean());
         Assert.Equal(["name", "score", "note"], schema.GetProperty("required").EnumerateArray().Select(name => name.GetString()));
+    }
+
+    [Fact]
+    public async Task Objects_without_properties_are_closed_too()
+    {
+        var server = new FakeLlmServer().Reply(TestClients.CompatReply("""{"inner":{}}"""));
+
+        await Client(server).GenerateAsync<Wrapper>(new LlmRequest { Messages = [LlmMessage.User("x")] }, cancellationToken: TestContext.Current.CancellationToken);
+
+        using var body = JsonDocument.Parse(Assert.Single(server.PostedBodies));
+        var inner = body.RootElement.GetProperty("response_format").GetProperty("json_schema").GetProperty("schema").GetProperty("properties").GetProperty("inner");
+        Assert.False(inner.GetProperty("additionalProperties").GetBoolean());
+        Assert.Empty(inner.GetProperty("required").EnumerateArray());
     }
 
     [Fact]

@@ -1,4 +1,5 @@
-﻿using Azure.Storage.Blobs;
+﻿using Azure;
+using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using CheapHelpers.Extensions;
 using CheapHelpers.Models.Entities;
@@ -19,13 +20,13 @@ public class BlobService(BlobServiceClient blobServiceClient)
     private const int DefaultSasExpiryMinutes = 10;
 
     /// <summary>
-    /// Gets the URI string for a file, returns placeholder if file doesn't exist
+    /// Gets the URI string for a file, returns placeholder if no file name is given
     /// </summary>
     public string GetFile(string? filename, BlobContainers blobContainer) =>
         string.IsNullOrWhiteSpace(filename) ? PlaceholderImageFilename : GetFileUri(filename, blobContainer).AbsoluteUri;
 
     /// <summary>
-    /// Gets the URI string for a file attachment, returns placeholder if file doesn't exist
+    /// Gets the URI string for a file attachment, returns placeholder if no file name is given
     /// </summary>
     public string GetFile(FileAttachment? file, BlobContainers container) =>
         file?.FileName is null ? PlaceholderImageFilename : GetFileUri(file.FileName, container).AbsoluteUri;
@@ -106,7 +107,13 @@ public class BlobService(BlobServiceClient blobServiceClient)
         try
         {
             var client = GetClient(filename, container);
-            await client.UploadAsync(stream, overwrite);
+            // The content type is stored once here so that reads never have to write it
+            var uploadOptions = new BlobUploadOptions
+            {
+                HttpHeaders = new BlobHttpHeaders { ContentType = MimeUtility.GetMimeMapping(filename) },
+                Conditions = overwrite ? null : new BlobRequestConditions { IfNoneMatch = ETag.All }
+            };
+            await client.UploadAsync(stream, uploadOptions);
             Debug.WriteLine($"Successfully uploaded blob '{filename}' to container '{container}'");
         }
         catch (Exception ex)
@@ -167,13 +174,13 @@ public class BlobService(BlobServiceClient blobServiceClient)
     }
 
     /// <summary>
-    /// Gets a SAS URI for a file, returns placeholder URI if file doesn't exist
+    /// Gets a SAS URI for a file, returns placeholder URI if no file name is given
     /// </summary>
     public Uri GetFileUri(FileAttachment? fileAttachment, BlobContainers container) =>
         GetFileUri(fileAttachment?.FileName, container);
 
     /// <summary>
-    /// Gets a SAS URI for a file, returns placeholder URI if file doesn't exist
+    /// Gets a SAS URI for a file, returns placeholder URI if no file name is given
     /// </summary>
     public Uri GetFileUri(string? filename, BlobContainers container, DateTimeOffset expires = default)
     {
@@ -185,9 +192,9 @@ public class BlobService(BlobServiceClient blobServiceClient)
 
         try
         {
-            var mimeType = MimeUtility.GetMimeMapping(filename);
+            // Signing is local and the blob is never checked, so a missing blob gets a URL that returns 404,
+            // not the placeholder. An existence check here would put a storage call back on every read.
             var client = GetClient(filename, container);
-            client.SetHttpHeaders(new BlobHttpHeaders { ContentType = mimeType });
             return client.GenerateSasUri(Azure.Storage.Sas.BlobSasPermissions.Read, expires);
         }
         catch (Exception ex)

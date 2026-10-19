@@ -56,7 +56,7 @@ public class FileSettingsService : ISettingsService, IDisposable
                 }
                 catch (JsonException ex)
                 {
-                    _logger?.LogWarning(ex, "Failed to deserialize setting '{Key}', returning default", key);
+                    HandleCorruptValue(key, ex);
                     return defaultValue;
                 }
             }
@@ -146,7 +146,7 @@ public class FileSettingsService : ISettingsService, IDisposable
                 }
                 catch (JsonException ex)
                 {
-                    _logger?.LogWarning(ex, "Failed to deserialize section '{Section}', returning default", sectionKey);
+                    HandleCorruptValue(sectionKey, ex);
                 }
             }
             return defaultValue ?? new T();
@@ -242,6 +242,18 @@ public class FileSettingsService : ISettingsService, IDisposable
         }
 
         SettingsChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// Throws or logs per <see cref="SettingsServiceOptions.OnCorruptValue"/>. The stored node is left untouched,
+    /// so the raw JSON survives until the caller explicitly writes the key.
+    /// </summary>
+    private void HandleCorruptValue(string key, JsonException ex)
+    {
+        if (_options.OnCorruptValue == CorruptValueHandling.Throw)
+            throw new InvalidOperationException($"Setting '{key}' in {_settingsFilePath} cannot be deserialised; the stored value was left unchanged.", ex);
+
+        _logger?.LogWarning(ex, "Failed to deserialize setting '{Key}', returning default", key);
     }
 
     private async Task EnsureLoadedAsync()

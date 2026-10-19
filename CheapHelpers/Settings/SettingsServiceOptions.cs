@@ -25,4 +25,10 @@ public class SettingsServiceOptions
     /// Automatically save settings after every Set/Delete/SetSection/UpdateSection call (default: true)
     /// </summary>
     public bool AutoSave { get; set; } = true;
+
+    /// <summary>
+    /// What a read does with a stored value that no longer deserialises, for example after a schema change (default: <see cref="CorruptValueHandling.Throw"/>).
+    /// A read never overwrites the stored value in either mode.
+    /// </summary>
+    public CorruptValueHandling OnCorruptValue { get; set; } = CorruptValueHandling.Throw;
 }

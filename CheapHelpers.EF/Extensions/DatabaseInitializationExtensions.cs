@@ -33,7 +33,8 @@ public static class DatabaseInitializationExtensions
 
         var contextName = typeof(TContext).Name;
 
-        if (context.Database.GetMigrations().Any())
+        // Non-relational providers (InMemory, Cosmos) have no migrations and throw on GetMigrations.
+        if (context.Database.IsRelational() && context.Database.GetMigrations().Any())
         {
             var pending = (await context.Database.GetPendingMigrationsAsync(cancellationToken)).ToList();
             Log(logger, pending.Count == 0

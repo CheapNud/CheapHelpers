@@ -31,16 +31,18 @@ builder.Services.AddCheapLlm(options =>
 |--------|---------|---------|
 | `Provider` | `OpenRouter` | Picks the client; see Register |
 | `ApiKey` | `""` | Bearer token, or the Anthropic API key |
-| `BaseUrl` | `https://openrouter.ai/api/v1` | Endpoint base; the compatible client appends `/chat/completions` |
-| `Model` | `mistralai/mistral-large-4-0` | Used when `LlmRequest.Model` is empty |
+| `BaseUrl` | The provider's preset | Endpoint base; the compatible client appends `/chat/completions` |
+| `Model` | The provider's preset | Used when `LlmRequest.Model` is empty |
 | `Temperature` | `1.0` | Used when `LlmRequest.Temperature` is null; the Anthropic client never sends it |
 | `MaxTokens` | `4096` | Used when `LlmRequest.MaxTokens` is null |
-| `ReasoningEffort` | `null` | `low`, `medium`, `high`, `xhigh` or `max`, applied when the request sets none |
+| `ReasoningEffort` | `null` | `low`, `medium`, `high`, `xhigh` or `max`; a request's own effort wins |
 | `TimeoutSeconds` | `60` | Per attempt; on the compatible client it caps a whole stream |
 | `MaxRetries` | `2` | Retries after a timeout or a 5xx reply |
 | `MaxSessionTokens` | `0` | Session token cap; `0` is unlimited |
 | `Referer` | `null` | `HTTP-Referer` header for OpenRouter app attribution |
 | `AppTitle` | `null` | `X-Title` header for OpenRouter app attribution |
+
+Until you set them, `BaseUrl` and `Model` follow the preset of the current `Provider` (OpenRouter and `mistralai/mistral-large-4-0` by default), so a key set for one provider never goes to another provider's endpoint.
 
 The compatible client sends the effort as OpenRouter's `reasoning: { effort }` when the base URL host ends with `openrouter.ai`, and as OpenAI's flat `reasoning_effort` everywhere else.
 

@@ -34,14 +34,14 @@ public sealed class LlmRequest
     public StreamOptions? StreamOptions { get; set; }
 
     /// <summary>
-    /// OpenAI-style effort field. Leave this and <see cref="Reasoning"/> null to let the client
-    /// apply <see cref="LlmOptions.ReasoningEffort"/> in the shape the endpoint expects.
+    /// Effort for this request, overriding <see cref="LlmOptions.ReasoningEffort"/>. The clients
+    /// send it in the shape the endpoint expects, whichever of this or <see cref="Reasoning"/> is set.
     /// </summary>
     [JsonPropertyName("reasoning_effort")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ReasoningEffort { get; set; }
 
-    /// <summary>OpenRouter's unified reasoning field, the only way it forwards effort to Claude.</summary>
+    /// <summary>OpenRouter's reasoning object; its effort wins over <see cref="ReasoningEffort"/>.</summary>
     [JsonPropertyName("reasoning")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public ReasoningOptions? Reasoning { get; set; }

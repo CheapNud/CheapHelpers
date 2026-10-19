@@ -18,11 +18,22 @@ public sealed class LlmOptions
     /// <summary>API key, sent as a bearer token (or x-api-key on the native Anthropic client).</summary>
     public string ApiKey { get; set; } = string.Empty;
 
-    /// <summary>Endpoint base URL; the OpenAI-compatible client appends /chat/completions.</summary>
-    public string BaseUrl { get; set; } = LlmProviderPresets.OpenRouterBaseUrl;
+    // BaseUrl and Model follow the provider's preset until set, so a key configured for one
+    // provider is never sent to another provider's default endpoint.
 
-    /// <summary>Model id used when <see cref="LlmRequest.Model"/> is empty.</summary>
-    public string Model { get; set; } = LlmProviderPresets.OpenRouterDefaultModel;
+    /// <summary>Endpoint base URL, defaulting to the provider's preset; the OpenAI-compatible client appends /chat/completions.</summary>
+    public string BaseUrl
+    {
+        get => field ?? LlmProviderPresets.Get(Provider).BaseUrl;
+        set => field = value;
+    }
+
+    /// <summary>Model id used when <see cref="LlmRequest.Model"/> is empty, defaulting to the provider's preset.</summary>
+    public string Model
+    {
+        get => field ?? LlmProviderPresets.Get(Provider).DefaultModel;
+        set => field = value;
+    }
 
     /// <summary>Temperature used when <see cref="LlmRequest.Temperature"/> is null; the native Anthropic client never sends one.</summary>
     public double Temperature { get; set; } = 1.0;

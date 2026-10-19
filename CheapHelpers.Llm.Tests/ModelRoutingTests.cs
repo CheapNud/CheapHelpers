@@ -39,6 +39,29 @@ public sealed class ModelRoutingTests
         Assert.Equal("low", wire.GetProperty("reasoning_effort").GetString());
     }
 
+    [Fact]
+    public async Task Request_effort_goes_out_as_the_reasoning_object_on_openrouter()
+    {
+        var wire = await PostWire(baseUrl: "https://openrouter.ai/api/v1", effort: null, requestEffort: "medium");
+
+        Assert.Equal("medium", wire.GetProperty("reasoning").GetProperty("effort").GetString());
+        Assert.False(wire.TryGetProperty("reasoning_effort", out _));
+    }
+
+    [Fact]
+    public void Base_url_and_model_follow_the_provider_until_set()
+    {
+        var options = new LlmOptions { Provider = LlmProvider.Anthropic, ApiKey = "k" };
+
+        Assert.Equal(LlmProviderPresets.Get(LlmProvider.Anthropic).BaseUrl, options.BaseUrl);
+        Assert.Equal(LlmProviderPresets.Get(LlmProvider.Anthropic).DefaultModel, options.Model);
+        Assert.Equal(LlmProviderPresets.OpenRouterBaseUrl, new LlmOptions().BaseUrl);
+        Assert.Equal(LlmProviderPresets.OpenRouterMistral, new LlmOptions().Model);
+
+        options.BaseUrl = "https://proxy.test/v1";
+        Assert.Equal("https://proxy.test/v1", options.BaseUrl);
+    }
+
     private static async Task<JsonElement> PostWire(string baseUrl, string? effort, string? requestEffort = null)
     {
         var server = new FakeLlmServer().Reply(TestClients.CompatReply("ok"));

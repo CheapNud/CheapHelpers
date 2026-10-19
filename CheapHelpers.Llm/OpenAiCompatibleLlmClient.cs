@@ -150,20 +150,9 @@ public sealed class OpenAiCompatibleLlmClient(
         {
             timeoutCts.Token.ThrowIfCancellationRequested();
 
-            string? line;
-            try
-            {
-                line = await reader.ReadLineAsync(timeoutCts.Token);
-            }
-            catch (IOException ex)
-            {
-                // Socket fault mid-stream, for example the provider dropping the connection
-                // after a billing error. End the stream cleanly so the caller sees no more
-                // chunks instead of an IOException. (yield break cannot live in a catch.)
-                logger.LogWarning(ex, "Transport read failed, ending stream");
-                line = null;
-            }
-
+            // A dropped connection surfaces as an IOException, so a cut-off reply is never
+            // mistaken for a finished one.
+            var line = await reader.ReadLineAsync(timeoutCts.Token);
             if (line is null) yield break;
             if (!line.StartsWith(SseDataPrefix, StringComparison.Ordinal)) continue;
 
@@ -197,7 +186,8 @@ public sealed class OpenAiCompatibleLlmClient(
     /// </summary>
     private static LlmRequest ToWireRequest(LlmRequest request, LlmOptions config, bool stream)
     {
-        var applyEffort = request.Reasoning is null && request.ReasoningEffort is null && !string.IsNullOrWhiteSpace(config.ReasoningEffort);
+        var effort = request.Reasoning?.Effort ?? request.ReasoningEffort ?? config.ReasoningEffort;
+        var hasEffort = !string.IsNullOrWhiteSpace(effort);
         // OpenRouter only forwards effort to Claude through its own "reasoning" object;
         // everyone else speaks OpenAI's flat "reasoning_effort".
         var isOpenRouter = IsOpenRouter(config.BaseUrl);
@@ -209,8 +199,8 @@ public sealed class OpenAiCompatibleLlmClient(
             Tools = request.Tools,
             Temperature = request.Temperature ?? config.Temperature,
             MaxTokens = request.MaxTokens ?? config.MaxTokens,
-            Reasoning = applyEffort && isOpenRouter ? new ReasoningOptions { Effort = config.ReasoningEffort! } : request.Reasoning,
-            ReasoningEffort = applyEffort && !isOpenRouter ? config.ReasoningEffort : request.ReasoningEffort,
+            Reasoning = hasEffort && isOpenRouter ? new ReasoningOptions { Effort = effort! } : null,
+            ReasoningEffort = hasEffort && !isOpenRouter ? effort : null,
             Stream = stream,
             // A trailing usage chunk keeps token spend tracked on the streaming path too.
             StreamOptions = stream ? new StreamOptions { IncludeUsage = true } : null,

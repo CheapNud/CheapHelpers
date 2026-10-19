@@ -1,12 +1,24 @@
 name: Build
 
-# PR-only on purpose: every master commit arrives through a PR this already
-# validated, and the tag publish rebuilds anyway. A master-push trigger races
-# the tag publish's build for the runner's shared toolcache volume when a
-# release pushes master and the tag together, which stalls both mid-compile.
+# Runs on every pull request and on every master commit. Master only moves through
+# merged PRs, and a release pushes its tag only after the master build of the merged
+# bump PR has finished. A direct master push next to a tag push once raced the tag
+# publish for the runner's shared toolcache volume and stalled both; the ordering
+# above keeps the two builds apart, and the shared concurrency group below queues one
+# behind the other if they ever do meet. Never push master by hand.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - master
+
+# The master build shares the dotnet-toolcache group with publish.yml, since both compile on the
+# runner's one toolcache volume. PR builds queue per branch instead, so a waiting publish run is
+# never displaced by a PR push.
+concurrency:
+  group: ${{ github.event_name == 'push' && 'dotnet-toolcache' || format('build-{0}', github.ref) }}
+  cancel-in-progress: false
 
 jobs:
   build:

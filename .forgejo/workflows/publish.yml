@@ -11,6 +11,11 @@ on:
     tags:
       - 'v*.*.*'
 
+# Shared with the master build in build.yml: the two must not compile on the toolcache volume at once.
+concurrency:
+  group: dotnet-toolcache
+  cancel-in-progress: false
+
 env:
   CONFIGURATION: Release
   NUGET_SOURCE: https://api.nuget.org/v3/index.json

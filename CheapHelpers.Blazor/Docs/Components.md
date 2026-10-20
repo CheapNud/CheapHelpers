@@ -5,6 +5,7 @@ Comprehensive guide to Blazor UI components, base classes, and utilities with Mu
 ## Table of Contents
 
 - [UI Components](#ui-components)
+- [Theme](#theme)
 - [Base Classes](#base-classes)
 - [Services](#services)
 - [Helpers and Utilities](#helpers-and-utilities)
@@ -36,11 +37,46 @@ A MudButton wrapper that shows a loading spinner during async operations.
 - `Disabled` - Disable button
 - `FullWidth` - Make button full width
 - `StartIcon` - Icon to display before text
+- `OnError` - Optional `EventCallback<Exception>`. When set, an exception thrown by `OnClick` is passed to it and the button resets. When not set, the exception propagates as before.
 
 **Features:**
 - Automatically shows spinner and "Processing" text during async operations
 - Disables button during processing to prevent duplicate submissions
 - Fully compatible with MudButton styling and parameters
+- Needs no registration beyond `AddMudServices()`. When an `IStringLocalizer` is registered (as `AddCheapHelpersBlazor` does), the "Processing" text is localized; otherwise it stays "Processing".
+
+```razor
+<ProgressButton ButtonText="Save" OnClick="SaveAsync" OnError="@(ex => Snackbar.Add(ex.Message, Severity.Error))" />
+```
+
+---
+
+### StatusTextChip
+
+The string counterpart of `StatusChip`, for a status that arrives as text instead of an enum.
+
+```razor
+<StatusTextChip Value="@order.Status" ColorMap="@(s => s == "Rma_Created" ? Color.Primary : Color.Default)" />
+```
+
+**Parameters:**
+- `Value` (required) - The status text
+- `ColorMap` (required) - Maps the status text to its semantic colour
+- `Label` - Optional label override. By default the value is humanised: `Rma_Created` becomes "Rma Created".
+
+---
+
+### EmptyState
+
+The sentence shown where a list or page has nothing to display, in the secondary text colour.
+
+```razor
+<EmptyState Text="No parts in stock." />
+```
+
+**Parameters:**
+- `Text` (required) - The sentence to show
+- `ChildContent` - Optional content that replaces `Text`, for example a sentence with a link
 
 ---
 
@@ -205,6 +241,26 @@ File upload component with validation.
 - Size limits
 - Progress tracking
 - Multiple file support
+
+---
+
+## Theme
+
+### CheapTheme
+
+`CheapTheme.Create` builds the house `MudTheme`: 12px corners, a 260px drawer, hairline lines, table lines and dividers, a drawer that stays dark in both modes, and dark-mode text at 0.92 and 0.62 white opacity. The app supplies its colours through `CheapThemeColors` and its two font stacks: a display face for H4 to H6 and a body face for everything else. `CheapTheme.ConfigureSnackbar` sets the snackbar defaults: bottom right, 2 seconds visible, 200 ms show and hide transitions.
+
+```csharp
+var theme = CheapTheme.Create(
+    new CheapThemeColors("#1565C0", "#FF8F00", "#F5F5F7", "#FFFFFF", "#0a0a0a", "#141414", "#0f0f0f"),
+    ["Space Grotesk", "sans-serif"], ["Inter", "sans-serif"]);
+builder.Services.AddSingleton(theme);
+builder.Services.AddMudServices(config => CheapTheme.ConfigureSnackbar(config.SnackbarConfiguration));
+```
+
+Pass the theme to `<MudThemeProvider Theme="@Theme" />` in the layout. Components still set `Elevation="0"` themselves.
+
+**`CheapThemeColors` (all hex strings):** `Primary`, `Secondary`, `LightField` (light page background), `LightCard` (light card surface), `DarkField`, `DarkCard` (lighter than `DarkField`), `Drawer` (both modes).
 
 ---
 

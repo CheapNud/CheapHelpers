@@ -354,6 +354,7 @@ Key NuGet packages used:
 - **CheapHelpers.EF** - Entity Framework utilities
 - **CheapHelpers.Blazor** - Blazor components
 - **CheapHelpers.Barcodes** - Barcode generation and reading; Services adds the `ReadBarcode(byte[])` extension that decodes image files
+- **CheapHelpers.Auth** - Plex, OAuth, OpenID Connect and API keys moved there in 4.0.0: see [Auth](../Auth/README.md)
 
 ## Detailed Documentation
 

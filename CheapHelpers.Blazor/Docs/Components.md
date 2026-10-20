@@ -80,6 +80,22 @@ The sentence shown where a list or page has nothing to display, in the secondary
 
 ---
 
+### PlexSignInCard
+
+A flat card with a title, one sentence and a "Sign in with Plex" button that links to the Plex start endpoint.
+
+```razor
+<PlexSignInCard />
+<PlexSignInCard Title="Welcome back" Text="Sign in with the Plex account that has access to this server." />
+```
+
+**Parameters:**
+- `StartPath` - Link target. Defaults to `PlexAuthOptions.StartPath` when `AddPlexAuth` is registered, else `/auth/plex-start`
+- `Title` - Defaults to "Sign in"
+- `Text` - Defaults to "Use your Plex account to continue."
+
+---
+
 ### BarcodeScanner
 
 Camera-based barcode scanner with manual entry fallback.
@@ -576,6 +592,8 @@ Model for file upload results.
 ---
 
 ## Authentication Pages
+
+Plex, OAuth, OpenID Connect and API key setup lives in the CheapHelpers.Auth package: see [Docs/Auth/README.md](../../Docs/Auth/README.md).
 
 The library includes complete authentication pages compatible with ASP.NET Core Identity:
 

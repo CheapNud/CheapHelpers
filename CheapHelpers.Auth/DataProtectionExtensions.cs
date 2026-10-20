@@ -14,11 +14,15 @@ public static class DataProtectionExtensions
     private const string KeysPathKey = "KeysPath";
     private const string DefaultKeysFolder = "keys";
 
+    // Owner read, write and traverse only: the key ring signs every auth cookie, so nobody else on the host may read it
+    private const UnixFileMode OwnerOnly = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+
     /// <summary>
-    /// Persists the Data Protection key ring to <c>{sectionKey}:KeysPath</c>, or to a <c>keys</c> folder next to
-    /// the app when that is not set, and creates the folder. Auth cookies and antiforgery tokens then survive
-    /// a restart or redeploy. The key files are written unencrypted: this does not encrypt secrets at rest,
-    /// so keep the folder readable only by the app.
+    /// Persists the Data Protection key ring to <c>{sectionKey}:KeysPath</c>, or to
+    /// <c>{LocalApplicationData}/{applicationName}/keys</c> when that is not set, and creates the folder readable
+    /// by the app's user only. Auth cookies and antiforgery tokens then survive a restart or redeploy.
+    /// On Windows the key files are encrypted with DPAPI for the account the app runs as; elsewhere they are
+    /// plain XML, so the folder permissions are the only protection and the folder must not sit on a shared mount.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">Configuration holding the Data Protection section.</param>
@@ -38,17 +42,51 @@ public static class DataProtectionExtensions
 
         var keysPath = configuration.GetSection(sectionKey)[KeysPathKey];
         if (string.IsNullOrWhiteSpace(keysPath))
-            keysPath = Path.Combine(AppContext.BaseDirectory, DefaultKeysFolder);
+            keysPath = DefaultKeysPath(applicationName);
 
-        var keysDirectory = Directory.CreateDirectory(keysPath);
+        var keysDirectory = CreateOwnerOnlyDirectory(keysPath);
 
-        services.AddDataProtection()
+        var dataProtection = services.AddDataProtection()
             .PersistKeysToFileSystem(keysDirectory)
             .SetApplicationName(applicationName);
+
+        if (OperatingSystem.IsWindows())
+            dataProtection.ProtectKeysWithDpapi();
 
         services.AddSingleton<IStartupFilter>(new StartupLogFilter(LogLevel.Information,
             "Data Protection keys for {ApplicationName} are stored in {KeysPath}", applicationName, keysDirectory.FullName));
 
         return services;
+    }
+
+    /// <summary>
+    /// The default key folder lives under the user's local application data, not next to the app,
+    /// so a redeploy that replaces the app folder does not wipe the keys and sign everyone out.
+    /// </summary>
+    internal static string DefaultKeysPath(string applicationName)
+    {
+        // DoNotVerify: a fresh service account has no ~/.local/share yet, and the default option would then return
+        // an empty string; the folder is created below anyway
+        var localApplicationData = Environment.GetFolderPath(
+            Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify);
+
+        // A container without HOME still resolves LocalApplicationData to an empty string; fall back to the app folder
+        var root = string.IsNullOrEmpty(localApplicationData)
+            ? AppContext.BaseDirectory
+            : Path.Combine(localApplicationData, applicationName);
+
+        return Path.Combine(root, DefaultKeysFolder);
+    }
+
+    private static DirectoryInfo CreateOwnerOnlyDirectory(string path)
+    {
+        if (OperatingSystem.IsWindows())
+            return Directory.CreateDirectory(path);
+
+        var keysDirectory = Directory.CreateDirectory(path, OwnerOnly);
+
+        // CreateDirectory leaves the mode of an existing folder alone, so tighten it on every start
+        File.SetUnixFileMode(path, OwnerOnly);
+        return keysDirectory;
     }
 }

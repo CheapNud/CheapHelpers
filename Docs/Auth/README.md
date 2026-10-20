@@ -167,4 +167,4 @@ Persists the Data Protection key ring so auth cookies and antiforgery tokens sur
 builder.Services.AddCheapDataProtection(builder.Configuration, "MyApp");
 ```
 
-Without `KeysPath` the keys go to a `keys` folder next to the app. The folder is created and its path is logged at startup. Mount it on a volume in a container, or every redeploy signs everyone out. The key files are not encrypted at rest, so keep the folder readable only by the app.
+Without `KeysPath` the keys go to `{LocalApplicationData}/{applicationName}/keys` (for example `~/.local/share/MyApp/keys` on Linux), never next to the app, so a redeploy that replaces the app folder keeps the keys. The folder is created readable by the app's user only (mode 700 on Linux and macOS) and its path is logged at startup. In a container, set `KeysPath` to a mounted volume, or every restart signs everyone out. On Windows the key files are encrypted with DPAPI for the account the app runs as, so a service that changes account cannot read the old keys. Elsewhere the files are plain XML and the folder permissions are the only protection: keep the folder off shared mounts and out of backups that others can read.

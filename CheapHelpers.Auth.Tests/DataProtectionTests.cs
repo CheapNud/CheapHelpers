@@ -6,18 +6,16 @@ namespace CheapHelpers.Auth.Tests;
 
 public class DataProtectionTests
 {
+    private const UnixFileMode OwnerOnly = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
+
     [Fact]
     public void Creates_the_key_folder_and_round_trips_a_string()
     {
-        var keysPath = Path.Combine(Path.GetTempPath(), $"cheaphelpers-auth-keys-{Guid.NewGuid():N}");
+        var keysPath = NewKeysPath();
         try
         {
-            var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?> { ["DataProtection:KeysPath"] = keysPath })
-                .Build();
-
             var services = new ServiceCollection();
-            services.AddCheapDataProtection(configuration, "auth-tests");
+            services.AddCheapDataProtection(ConfigurationFor(keysPath), "auth-tests");
 
             Assert.True(Directory.Exists(keysPath));
 
@@ -30,8 +28,132 @@ public class DataProtectionTests
         }
         finally
         {
-            if (Directory.Exists(keysPath))
-                Directory.Delete(keysPath, recursive: true);
+            Cleanup(keysPath);
         }
+    }
+
+    [Fact]
+    public void A_configured_path_stores_keys_without_dpapi_so_a_shared_ring_keeps_working()
+    {
+        var keysPath = NewKeysPath();
+        try
+        {
+            var services = new ServiceCollection();
+            services.AddCheapDataProtection(ConfigurationFor(keysPath), "auth-tests");
+
+            using var serviceProvider = services.BuildServiceProvider();
+            serviceProvider.GetRequiredService<IDataProtectionProvider>().CreateProtector("tests").Protect("plain text");
+
+            var keyXml = File.ReadAllText(Directory.GetFiles(keysPath, "key-*.xml").Single());
+
+            // DPAPI would wrap the master key in an encryptedKey element; a configured path must stay portable
+            Assert.DoesNotContain("encryptedKey", keyXml);
+        }
+        finally
+        {
+            Cleanup(keysPath);
+        }
+    }
+
+    [Fact]
+    public void A_folder_this_code_creates_is_owner_only_on_unix()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Unix file modes do not apply on Windows");
+        if (OperatingSystem.IsWindows())
+            return; // the platform analyzer does not see through Assert.SkipWhen
+
+        var keysPath = NewKeysPath();
+        try
+        {
+            var services = new ServiceCollection();
+            services.AddCheapDataProtection(ConfigurationFor(keysPath), "auth-tests");
+
+            Assert.Equal(OwnerOnly, File.GetUnixFileMode(keysPath));
+        }
+        finally
+        {
+            Cleanup(keysPath);
+        }
+    }
+
+    [Fact]
+    public void An_existing_folder_keeps_its_mode()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "Unix file modes do not apply on Windows");
+        if (OperatingSystem.IsWindows())
+            return; // the platform analyzer does not see through Assert.SkipWhen
+
+        var keysPath = NewKeysPath();
+        try
+        {
+            var shared = OwnerOnly | UnixFileMode.GroupRead | UnixFileMode.GroupExecute;
+            Directory.CreateDirectory(keysPath, shared);
+            File.SetUnixFileMode(keysPath, shared); // CreateDirectory applies the umask; set the mode explicitly
+
+            var services = new ServiceCollection();
+            services.AddCheapDataProtection(ConfigurationFor(keysPath), "auth-tests");
+
+            Assert.Equal(shared, File.GetUnixFileMode(keysPath));
+        }
+        finally
+        {
+            Cleanup(keysPath);
+        }
+    }
+
+    [Fact]
+    public void Default_key_path_is_outside_the_app_folder_when_local_application_data_resolves()
+    {
+        var localApplicationData = Environment.GetFolderPath(
+            Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify);
+        Assert.SkipWhen(string.IsNullOrEmpty(localApplicationData), "LocalApplicationData does not resolve on this host");
+
+        var defaultPath = DataProtectionExtensions.DefaultKeysPath("auth-tests");
+
+        Assert.EndsWith(Path.Combine("auth-tests", "keys"), defaultPath);
+        Assert.False(defaultPath.StartsWith(AppContext.BaseDirectory, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Theory]
+    [InlineData("https://example.com", "https___example.com")]
+    [InlineData("..\\..\\escape", ".._.._escape")]
+    [InlineData("..", "app")]
+    [InlineData("/", "app")]
+    [InlineData("My App", "My App")]
+    [InlineData("CON", "_CON")]
+    [InlineData("nul.txt", "_nul.txt")]
+    [InlineData("COM10", "COM10")]
+    public void Application_names_map_to_one_safe_folder_component(string applicationName, string expected)
+    {
+        Assert.Equal(expected, DataProtectionExtensions.SafeFolderName(applicationName));
+        Assert.DoesNotContain(Path.DirectorySeparatorChar, DataProtectionExtensions.SafeFolderName(applicationName));
+    }
+
+    [Fact]
+    public void Long_application_names_are_shortened_to_a_stable_bounded_folder_name()
+    {
+        var longName = new string('a', 300);
+
+        var first = DataProtectionExtensions.SafeFolderName(longName);
+        var second = DataProtectionExtensions.SafeFolderName(longName);
+
+        Assert.Equal(first, second);
+        Assert.Equal(64, first.Length);
+        Assert.StartsWith(new string('a', 51) + "-", first);
+        Assert.NotEqual(first, DataProtectionExtensions.SafeFolderName(longName + "b"));
+    }
+
+    private static string NewKeysPath() =>
+        Path.Combine(Path.GetTempPath(), $"cheaphelpers-auth-keys-{Guid.NewGuid():N}");
+
+    private static IConfiguration ConfigurationFor(string keysPath) =>
+        new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["DataProtection:KeysPath"] = keysPath })
+            .Build();
+
+    private static void Cleanup(string keysPath)
+    {
+        if (Directory.Exists(keysPath))
+            Directory.Delete(keysPath, recursive: true);
     }
 }

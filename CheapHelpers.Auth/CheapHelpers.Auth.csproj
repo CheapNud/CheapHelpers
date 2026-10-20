@@ -53,4 +53,8 @@
     <ProjectReference Include="..\CheapHelpers.EF\CheapHelpers.EF.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="CheapHelpers.Auth.Tests" />
+  </ItemGroup>
+
 </Project>

@@ -9,7 +9,7 @@ Authentication building blocks for ASP.NET Core: Plex and OAuth sign-in, API key
 - **Target Framework**: .NET 11.0 (net11.0)
 - **NuGet**: [CheapHelpers.Auth](https://www.nuget.org/packages/CheapHelpers.Auth)
 
-CheapHelpers.Blazor references this package, so a Blazor app gets it automatically. An app that only signs in through Plex or OAuth can reference CheapHelpers.Auth and CheapHelpers.Blazor without CheapHelpers.Services.
+CheapHelpers.Blazor references this package, so a Blazor app gets it automatically. CheapHelpers.Auth does not depend on CheapHelpers.Services, so an app that only needs Plex or OAuth sign-in without the Blazor components can reference CheapHelpers.Auth alone; CheapHelpers.Blazor still brings Services in.
 
 ## Namespaces
 

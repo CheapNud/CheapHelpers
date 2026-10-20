@@ -22,11 +22,9 @@ public class SharedSecretAuthenticationHandler(
     private const string BearerPrefix = "Bearer ";
 
     /// <inheritdoc />
-    protected override Task<AuthenticateResult> HandleAuthenticateAsync() =>
-        // The override has to return a Task and reading a header has nothing to await
-        Task.FromResult(Authenticate());
-
-    private AuthenticateResult Authenticate()
+#pragma warning disable CS1998 // the override has to return a Task, and reading a header has nothing to await
+    protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
+#pragma warning restore CS1998
     {
         var providedSecret = ReadProvidedSecret();
         if (providedSecret is null)

@@ -1,0 +1,41 @@
+@using CheapHelpers.Auth.Plex
+@using Microsoft.Extensions.DependencyInjection
+@inject IServiceProvider ServiceProvider
+
+<MudPaper Elevation="0" Class="pa-6">
+    <MudText Typo="Typo.h6" Class="mb-2">@(Title ?? DefaultTitle)</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4">@(Text ?? DefaultText)</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@_startPath">Sign in with Plex</MudButton>
+</MudPaper>
+
+@code {
+    private const string FallbackStartPath = "/auth/plex-start";
+    private const string DefaultTitle = "Sign in";
+    private const string DefaultText = "Use your Plex account to continue.";
+
+    private string _startPath = FallbackStartPath;
+
+    /// <summary>
+    /// Path of the Plex start endpoint. Defaults to <see cref="PlexAuthOptions.StartPath"/> when Plex auth is registered.
+    /// </summary>
+    [Parameter]
+    public string? StartPath { get; set; }
+
+    /// <summary>
+    /// Card title. Defaults to "Sign in".
+    /// </summary>
+    [Parameter]
+    public string? Title { get; set; }
+
+    /// <summary>
+    /// One sentence under the title. Defaults to "Use your Plex account to continue."
+    /// </summary>
+    [Parameter]
+    public string? Text { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        // GetService, not [Inject]: the card must also render in apps that have not called AddPlexAuth
+        _startPath = StartPath ?? ServiceProvider.GetService<PlexAuthOptions>()?.StartPath ?? FallbackStartPath;
+    }
+}

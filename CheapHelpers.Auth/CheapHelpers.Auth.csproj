@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <!-- Stays at 3.9.0 like every other package here; the 4.0.0 release bumps them all together -->
+    <Version>3.9.0</Version>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- Documentation and Symbols -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn> <!-- Suppress missing XML comment warnings -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- NuGet Package Metadata -->
+    <PackageId>CheapHelpers.Auth</PackageId>
+    <Authors>CheapNud</Authors>
+    <Company>CheapNud</Company>
+    <Product>CheapHelpers</Product>
+    <Description>Authentication building blocks for ASP.NET Core: Plex and OAuth sign-in, API keys, shared-secret auth, forwarded headers and Data Protection setup</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>authentication;plex;oauth;oidc;apikey;dotnet</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- DI, Options, Logging and Configuration come from the shared framework; explicit package
+         references to them raise NU1510 on net11.0 -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AspNet.Security.OAuth.Apple" Version="10.0.0" />
+    <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="10.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CheapHelpers\CheapHelpers.csproj" />
+    <ProjectReference Include="..\CheapHelpers.Models\CheapHelpers.Models.csproj" />
+    <!-- ApiKeyService stores keys through CheapBusinessContext -->
+    <ProjectReference Include="..\CheapHelpers.EF\CheapHelpers.EF.csproj" />
+  </ItemGroup>
+
+</Project>

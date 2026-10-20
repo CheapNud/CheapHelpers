@@ -1,6 +1,6 @@
 using CheapHelpers.Blazor.Services;
 using CheapHelpers.Models.Entities;
-using CheapHelpers.Services.Auth;
+using CheapHelpers.Auth;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CheapHelpers.Blazor.Extensions;

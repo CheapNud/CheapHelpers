@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using CheapHelpers.Models.Entities;
-using CheapHelpers.Services.Auth;
+using CheapHelpers.Auth;
 using Microsoft.AspNetCore.Identity;
 
 namespace CheapHelpers.Blazor.Services;

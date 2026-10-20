@@ -9,10 +9,11 @@ A collection of production-ready C# utilities, extensions, and services for .NET
 | [CheapHelpers](https://www.nuget.org/packages/CheapHelpers) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.svg) | Core utilities, extensions, threading, and scheduling |
 | [CheapHelpers.Models](https://www.nuget.org/packages/CheapHelpers.Models) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Models.svg) | Shared entities, DTOs, enums, and UBL invoice models |
 | [CheapHelpers.EF](https://www.nuget.org/packages/CheapHelpers.EF) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.EF.svg) | Entity Framework repository pattern with Identity support |
-| [CheapHelpers.Services](https://www.nuget.org/packages/CheapHelpers.Services) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Services.svg) | Email, PDF, billing, reporting, notifications, auth, and integrations |
+| [CheapHelpers.Services](https://www.nuget.org/packages/CheapHelpers.Services) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Services.svg) | Email, PDF, billing, reporting, notifications, and integrations |
 | [CheapHelpers.Barcodes](https://www.nuget.org/packages/CheapHelpers.Barcodes) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Barcodes.svg) | Barcode generation and reading on ZXing.Net with no native image dependency |
+| [CheapHelpers.Auth](https://www.nuget.org/packages/CheapHelpers.Auth) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Auth.svg) | Plex and OAuth sign-in, API keys, shared-secret auth, forwarded headers and Data Protection setup |
 | [CheapHelpers.Llm](https://www.nuget.org/packages/CheapHelpers.Llm) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Llm.svg) | LLM client for Anthropic and OpenAI-compatible providers with structured output |
-| [CheapHelpers.Blazor](https://www.nuget.org/packages/CheapHelpers.Blazor) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Blazor.svg) | Blazor components, account module, auth endpoints, and Hybrid features |
+| [CheapHelpers.Blazor](https://www.nuget.org/packages/CheapHelpers.Blazor) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Blazor.svg) | Blazor components, account module, and Hybrid features |
 | [CheapHelpers.Networking](https://www.nuget.org/packages/CheapHelpers.Networking) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Networking.svg) | Network scanning, mDNS discovery, and device detection |
 | [CheapHelpers.MAUI](https://www.nuget.org/packages/CheapHelpers.MAUI) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.MAUI.svg) | MAUI platform implementations (iOS APNS, Android FCM) |
 | [CheapHelpers.MediaProcessing](https://www.nuget.org/packages/CheapHelpers.MediaProcessing) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.MediaProcessing.svg) | FFmpeg integration, hardware detection (Windows/Linux) |
@@ -29,6 +30,9 @@ dotnet add package CheapHelpers.EF
 
 # Business services (email, PDF, billing, reporting, notifications)
 dotnet add package CheapHelpers.Services
+
+# Plex, OAuth and OpenID Connect sign-in, API keys, forwarded headers
+dotnet add package CheapHelpers.Auth
 
 # Blazor components, account module, and Hybrid features
 dotnet add package CheapHelpers.Blazor
@@ -104,6 +108,7 @@ services.AddCheapNotificationsRabbitMQConsumer("amqp://localhost");
 ```
 
 ### API Key System
+In CheapHelpers.Auth; full setup in [Docs/Auth](Docs/Auth/README.md).
 ```csharp
 services.AddCheapApiKeys<MyUser>(options =>
 {
@@ -198,6 +203,7 @@ var (content, fileName, mimeType) = await reportService.DownloadReportAsync(resu
 ```
 
 ### Authentication (Multiple Providers)
+In CheapHelpers.Auth; full setup, including shared-secret auth, forwarded headers and Data Protection, in [Docs/Auth](Docs/Auth/README.md).
 ```csharp
 // Plex SSO
 services.AddPlexAuth(options => { options.AdminToken = "..."; });
@@ -238,7 +244,7 @@ app.MapCheapCultureEndpoint();
 ```
 
 #### Migrating from the account controller
-Delete your `CheapAccountController<TUser, TContext>` subclass and its `[Route]` attribute. Call `app.MapCheapAccountEndpoints<TUser>()` and `app.MapCheapCultureEndpoint()` after `app.UseAntiforgery()`. Sign-out is now POST only, so replace any sign-out link with a `<form method="post">` that contains `<AntiforgeryToken />`. A forced redirect after sign-in, such as a password change, goes in the `AfterSignIn` option instead of an overridden action. `OAuthProviderOptions.LoginPath` and `PlexAuthOptions.LoginPath` now default to `/Account/Login`, so an app that relied on the old `/login` default must set them explicitly. The barcode types moved to the `CheapHelpers.Barcodes` namespace and package, `GetBarcodeAsync` is now `GetBarcode` and returns PNG, and reading an image file is the `ReadBarcode(byte[])` extension in CheapHelpers.Services. ImageSharp is gone and NetVips (with NetVips.Native) now comes in through CheapHelpers.Services, so an app that referenced ImageSharp only for this library can drop it. NetVips.Native has no BMP loader, so `ReadBarcode(byte[])` rejects BMP files and uploads keep BMP files as they are instead of converting them to JPEG. CheapHelpers.Blazor no longer depends on Blazored.LocalStorage, so an app that registered it only for this library can remove the `AddBlazoredLocalStorage` call. `BlobService` uploads now store the content type and `GetFileUri` no longer writes blob headers, so blobs uploaded before 4.0.0 keep whatever content type they have (browsers sniff images, and a one-off `SetHttpHeaders` pass fixes any that matter). `GetFileUri` and `GetFile` no longer contact storage at all, so a file name whose blob is missing now gets a URL that returns 404 instead of the placeholder. `ProgressButton` no longer needs `AddCheapHelpersBlazor` for its localizer, so it works in an app that only calls `AddMudServices`. `FileSettingsService` now throws an `InvalidOperationException` on a stored value it cannot deserialise instead of returning the default, and setting `OnCorruptValue = CorruptValueHandling.ReturnDefault` in `AddFileSettingsService` brings the old behaviour back. `IBackgroundTaskQueue.QueueBackgroundWorkItemAsync` and `GetExecutableVersionAsync` on both executable detection services take a trailing `CancellationToken`, and the `BackgroundTaskQueue` capacity is now an `int?` where null means unbounded, so implementations of the interface need the new parameter and existing binaries need a rebuild.
+Delete your `CheapAccountController<TUser, TContext>` subclass and its `[Route]` attribute. Call `app.MapCheapAccountEndpoints<TUser>()` and `app.MapCheapCultureEndpoint()` after `app.UseAntiforgery()`. Sign-out is now POST only, so replace any sign-out link with a `<form method="post">` that contains `<AntiforgeryToken />`. A forced redirect after sign-in, such as a password change, goes in the `AfterSignIn` option instead of an overridden action. `OAuthProviderOptions.LoginPath` and `PlexAuthOptions.LoginPath` now default to `/Account/Login`, so an app that relied on the old `/login` default must set them explicitly. The barcode types moved to the `CheapHelpers.Barcodes` namespace and package, `GetBarcodeAsync` is now `GetBarcode` and returns PNG, and reading an image file is the `ReadBarcode(byte[])` extension in CheapHelpers.Services. ImageSharp is gone and NetVips (with NetVips.Native) now comes in through CheapHelpers.Services, so an app that referenced ImageSharp only for this library can drop it. NetVips.Native has no BMP loader, so `ReadBarcode(byte[])` rejects BMP files and uploads keep BMP files as they are instead of converting them to JPEG. CheapHelpers.Blazor no longer depends on Blazored.LocalStorage, so an app that registered it only for this library can remove the `AddBlazoredLocalStorage` call. `BlobService` uploads now store the content type and `GetFileUri` no longer writes blob headers, so blobs uploaded before 4.0.0 keep whatever content type they have (browsers sniff images, and a one-off `SetHttpHeaders` pass fixes any that matter). `GetFileUri` and `GetFile` no longer contact storage at all, so a file name whose blob is missing now gets a URL that returns 404 instead of the placeholder. `ProgressButton` no longer needs `AddCheapHelpersBlazor` for its localizer, so it works in an app that only calls `AddMudServices`. `FileSettingsService` now throws an `InvalidOperationException` on a stored value it cannot deserialise instead of returning the default, and setting `OnCorruptValue = CorruptValueHandling.ReturnDefault` in `AddFileSettingsService` brings the old behaviour back. `IBackgroundTaskQueue.QueueBackgroundWorkItemAsync` and `GetExecutableVersionAsync` on both executable detection services take a trailing `CancellationToken`, and the `BackgroundTaskQueue` capacity is now an `int?` where null means unbounded, so implementations of the interface need the new parameter and existing binaries need a rebuild. The Plex, OAuth, OpenID Connect and API key types moved from CheapHelpers.Services and CheapHelpers.Blazor to the CheapHelpers.Auth package, under the `CheapHelpers.Auth`, `CheapHelpers.Auth.Plex`, `CheapHelpers.Auth.OAuth` and `CheapHelpers.Auth.ApiKeys` namespaces; the `AddXxxAuth`, `MapPlexAuthEndpoints`, `MapOAuthEndpoints`, `AddCheapApiKeys` and `UseCheapApiKeyMiddleware` methods keep their names and now live in the `CheapHelpers.Auth` namespace. CheapHelpers.Blazor references CheapHelpers.Auth, and since CheapHelpers.Auth does not depend on CheapHelpers.Services, an app that only needs Plex or OAuth sign-in without the Blazor components can reference CheapHelpers.Auth alone. `CsvService` exports now prefix cells that start with `=`, `+`, `-`, `@`, tab or CR and are not plain numbers with a `'` to stop spreadsheet formula injection.
 
 To force a password change, let `AfterSignIn` return `routes.ChangePasswordRoute + "?forced=true"` when your own check says the user needs a new password. The change-password page then shows a warning that a new password is required. Keeping the user on that page until the password is changed stays in your app, for example in middleware that redirects other requests.
 
@@ -291,9 +297,11 @@ scanner.Start();
 CheapHelpers/                      Core utilities, extensions, scheduling, threading
 CheapHelpers.Models/               Entities, DTOs, enums, UBL invoice models
 CheapHelpers.EF/                   Entity Framework, CheapContext, repositories
+CheapHelpers.Auth/                 Plex, OAuth/OIDC, shared secret, forwarded headers, Data Protection
+  ├── ApiKeys/                     API key generation, validation, rate-limiting middleware
+  ├── OAuth/                       Google, Microsoft, GitHub, Apple, OpenID Connect options
+  └── Plex/                        Plex PIN sign-in service
 CheapHelpers.Services/
-  ├── ApiKeys/                     API key generation, validation, rate limiting
-  ├── Auth/                        IExternalAuthProvider, Plex SSO service
   ├── Billing/                     Usage metering, invoice generation, billing cycles
   ├── DataExchange/
   │   ├── Csv/                     CSV import/export
@@ -310,13 +318,12 @@ CheapHelpers.Services/
   └── Storage/                     Azure Blob Storage
 CheapHelpers.Blazor/
   ├── Components/                  NotificationBell, CultureSelector
-  ├── Extensions/                  DI, Plex/OAuth/notification endpoint mapping
+  ├── Extensions/                  DI, account, culture and notification endpoint mapping
   ├── Helpers/                     AuthenticatorHelper, AccountTabDefinition
   ├── Hybrid/                      WebView bridge, push notifications, app bar
-  ├── Middleware/                   API key middleware
   ├── Pages/Account/               Full account module (login, register, 2FA, GDPR)
   ├── Services/                    UserService, ExternalUserProvisioner, RabbitMQ consumer
-  └── Shared/                      LoginDisplay, UploadFile, ImagePanel, Selectors
+  └── Shared/                      LoginDisplay, PlexSignInCard, UploadFile, ImagePanel, Selectors
 CheapHelpers.Networking/           Network scanner, mDNS discovery, device detectors
 CheapHelpers.MediaProcessing/      FFmpeg integration, hardware detection (Win/Linux)
 CheapHelpers.MAUI/                 iOS APNS, Android FCM, status bar helpers

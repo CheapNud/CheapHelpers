@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -110,10 +112,20 @@ public static class DataProtectionExtensions
 
         // Windows refuses device names as folders, also with an extension ("CON", "con.txt"); a prefix sidesteps them
         var stem = safe.Split('.')[0];
-        return ReservedWindowsNames.Contains(stem, StringComparer.OrdinalIgnoreCase) ? "_" + safe : safe;
+        if (ReservedWindowsNames.Contains(stem, StringComparer.OrdinalIgnoreCase))
+            safe = "_" + safe;
+
+        // File systems cap a path component at 255 bytes; a long name keeps a readable prefix plus a stable hash
+        if (safe.Length <= MaxFolderNameLength)
+            return safe;
+
+        var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(applicationName)))[..HashSuffixLength];
+        return safe[..(MaxFolderNameLength - HashSuffixLength - 1)] + "-" + hash;
     }
 
     private const string DefaultAppFolder = "app";
+    private const int MaxFolderNameLength = 64;
+    private const int HashSuffixLength = 12;
 
     private static readonly string[] ReservedWindowsNames =
     [

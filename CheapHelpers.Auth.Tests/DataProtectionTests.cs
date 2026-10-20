@@ -88,6 +88,7 @@ public class DataProtectionTests
         {
             var shared = OwnerOnly | UnixFileMode.GroupRead | UnixFileMode.GroupExecute;
             Directory.CreateDirectory(keysPath, shared);
+            File.SetUnixFileMode(keysPath, shared); // CreateDirectory applies the umask; set the mode explicitly
 
             var services = new ServiceCollection();
             services.AddCheapDataProtection(ConfigurationFor(keysPath), "auth-tests");
@@ -126,6 +127,20 @@ public class DataProtectionTests
     {
         Assert.Equal(expected, DataProtectionExtensions.SafeFolderName(applicationName));
         Assert.DoesNotContain(Path.DirectorySeparatorChar, DataProtectionExtensions.SafeFolderName(applicationName));
+    }
+
+    [Fact]
+    public void Long_application_names_are_shortened_to_a_stable_bounded_folder_name()
+    {
+        var longName = new string('a', 300);
+
+        var first = DataProtectionExtensions.SafeFolderName(longName);
+        var second = DataProtectionExtensions.SafeFolderName(longName);
+
+        Assert.Equal(first, second);
+        Assert.Equal(64, first.Length);
+        Assert.StartsWith(new string('a', 51) + "-", first);
+        Assert.NotEqual(first, DataProtectionExtensions.SafeFolderName(longName + "b"));
     }
 
     private static string NewKeysPath() =>

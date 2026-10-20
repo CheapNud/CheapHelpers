@@ -7,10 +7,11 @@ namespace CheapHelpers.Queuing;
 public interface IBackgroundTaskQueue
 {
     /// <summary>
-    /// Queues a background work item. Blocks if the queue is at capacity.
+    /// Queues a background work item. Waits while a bounded queue is at capacity.
     /// </summary>
     /// <param name="workItem">The async work item to queue.</param>
-    ValueTask QueueBackgroundWorkItemAsync(Func<CancellationToken, ValueTask> workItem);
+    /// <param name="cancellationToken">Token that abandons the wait for free capacity.</param>
+    ValueTask QueueBackgroundWorkItemAsync(Func<CancellationToken, ValueTask> workItem, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Dequeues a background work item. Blocks until an item is available or cancellation is requested.

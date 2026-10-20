@@ -94,6 +94,49 @@ CheapHelpers Core provides fundamental utilities for everyday .NET development i
 - Hexadecimal conversions
 - ETag generation
 
+### App Version
+**`AppVersion`** - The running app's version, read once from the entry assembly's informational version
+```csharp
+var caption = AppVersion.Display; // "1.2.3 (abc1234)"; AppVersion.Version and AppVersion.Hash hold the parts
+```
+
+### Tolerant JSON
+**`CheapHelpers.Json`** - Converters that read old or sloppy JSON instead of throwing: `TolerantEnumConverter<TEnum>` (any casing, ordinals, retired names, fallback for unknown values), `LenientInt32Converter`, `LenientInt64Converter`, `LenientDoubleConverter`, `LenientBooleanConverter` and `LenientStringConverter`
+```csharp
+var options = TolerantJsonConverters.AddAll(new JsonSerializerOptions()); // "42" reads as 42, an unknown enum name as the default
+```
+
+### Async Event Fan-out
+**`DelegateExtensions.InvokeSafelyAsync`** - Awaits every handler of a `Func<T, Task>` event; one that throws is logged and the rest still run
+```csharp
+await ItemChanged.InvokeSafelyAsync(item, logger, cancellationToken);
+```
+
+### JsonElement Getters
+**`JsonElementExtensions`** - `GetStringOrDefault`, `GetInt32OrDefault`, `GetBooleanOrDefault` and `GetPropertyOrNull` return a default instead of throwing
+```csharp
+var count = payload.GetInt32OrDefault("count", defaultValue: 0);
+```
+
+### Passphrase Envelope
+**`PassphraseEnvelope`** - AES-256-GCM encryption under a PBKDF2-SHA256 key from a passphrase, for exports and backups; a wrong passphrase throws `CryptographicException`
+```csharp
+byte[] sealedBytes = PassphraseEnvelope.Encrypt(backupBytes, passphrase);
+byte[] opened = PassphraseEnvelope.Decrypt(sealedBytes, passphrase);
+```
+
+### Path Helpers
+**`PathHelpers`** - `IsContainedIn` (rejects `..` escapes and sibling folders), `GetUniqueFilePath` (`name (2).ext`), `WaitUntilReadyAsync` (waits for a writer to let go) and `RevealInFileManager`
+```csharp
+if (!PathHelpers.IsContainedIn(requestedPath, uploadRoot)) return Results.BadRequest();
+```
+
+### Settings Corruption Handling
+**`SettingsServiceOptions.OnCorruptValue`** - `FileSettingsService` throws on a stored value it cannot deserialise (`CorruptValueHandling.Throw`, the default) or returns the default (`CorruptValueHandling.ReturnDefault`); a read never overwrites the stored value
+```csharp
+services.AddFileSettingsService(options => options.OnCorruptValue = CorruptValueHandling.ReturnDefault);
+```
+
 ## Quick Start
 
 ### Installation

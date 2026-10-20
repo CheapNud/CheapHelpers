@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using CheapHelpers.Helpers;
 using Microsoft.Extensions.Logging;
 
 namespace CheapHelpers.Settings;
@@ -56,7 +57,7 @@ public class FileSettingsService : ISettingsService, IDisposable
                 }
                 catch (JsonException ex)
                 {
-                    _logger?.LogWarning(ex, "Failed to deserialize setting '{Key}', returning default", key);
+                    HandleCorruptValue(key, ex);
                     return defaultValue;
                 }
             }
@@ -146,7 +147,7 @@ public class FileSettingsService : ISettingsService, IDisposable
                 }
                 catch (JsonException ex)
                 {
-                    _logger?.LogWarning(ex, "Failed to deserialize section '{Section}', returning default", sectionKey);
+                    HandleCorruptValue(sectionKey, ex);
                 }
             }
             return defaultValue ?? new T();
@@ -244,6 +245,18 @@ public class FileSettingsService : ISettingsService, IDisposable
         SettingsChanged?.Invoke();
     }
 
+    /// <summary>
+    /// Throws or logs per <see cref="SettingsServiceOptions.OnCorruptValue"/>. The stored node is left untouched,
+    /// so the raw JSON survives until the caller explicitly writes the key.
+    /// </summary>
+    private void HandleCorruptValue(string key, JsonException ex)
+    {
+        if (_options.OnCorruptValue == CorruptValueHandling.Throw)
+            throw new InvalidOperationException($"Setting '{key}' in {_settingsFilePath} cannot be deserialised; the stored value was left unchanged.", ex);
+
+        _logger?.LogWarning(ex, "Failed to deserialize setting '{Key}', returning default", key);
+    }
+
     private async Task EnsureLoadedAsync()
     {
         if (_root is not null) return;
@@ -262,25 +275,58 @@ public class FileSettingsService : ISettingsService, IDisposable
 
     private async Task<JsonObject> LoadFromDiskAsync()
     {
+        string json;
         try
         {
-            if (File.Exists(_settingsFilePath))
+            if (!File.Exists(_settingsFilePath))
             {
-                var json = await File.ReadAllTextAsync(_settingsFilePath);
-                var parsed = JsonNode.Parse(json);
-                if (parsed is JsonObject jsonObject)
-                {
-                    _logger?.LogDebug("Settings loaded from {Path}", _settingsFilePath);
-                    return jsonObject;
-                }
+                _logger?.LogDebug("Using empty settings");
+                return [];
             }
+
+            json = await File.ReadAllTextAsync(_settingsFilePath);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _logger?.LogWarning(ex, "Failed to load settings from {Path}, starting fresh", _settingsFilePath);
+            // Starting empty here would let the next save overwrite a file that was never read, for example one briefly
+            // locked by a virus scanner or sync client. _root stays null, so the next call tries the read again.
+            throw new InvalidOperationException($"Settings file {_settingsFilePath} could not be read; it was left unchanged.", ex);
         }
 
-        _logger?.LogDebug("Using empty settings");
+        // A blank file holds nothing to lose.
+        if (string.IsNullOrWhiteSpace(json))
+            return [];
+
+        try
+        {
+            if (JsonNode.Parse(json) is JsonObject jsonObject)
+            {
+                _logger?.LogDebug("Settings loaded from {Path}", _settingsFilePath);
+                return jsonObject;
+            }
+
+            return HandleCorruptFile(null);
+        }
+        catch (JsonException ex)
+        {
+            return HandleCorruptFile(ex);
+        }
+    }
+
+    /// <summary>
+    /// Throws, or moves the unreadable file aside to <c>&lt;name&gt;.corrupt-&lt;yyyyMMddHHmmss&gt;</c> (UTC) and starts empty,
+    /// per <see cref="SettingsServiceOptions.OnCorruptValue"/>. Either way the next save cannot overwrite the broken file.
+    /// </summary>
+    private JsonObject HandleCorruptFile(JsonException? ex)
+    {
+        if (_options.OnCorruptValue == CorruptValueHandling.Throw)
+            throw new InvalidOperationException($"Settings file {_settingsFilePath} is not a readable JSON object; it was left unchanged.", ex);
+
+        var asidePath = PathHelpers.GetUniqueFilePath($"{_settingsFilePath}.corrupt-{DateTime.UtcNow:yyyyMMddHHmmss}");
+        // Deliberately unguarded: if the move fails, starting empty would let the next save overwrite the broken file,
+        // so the error surfaces instead and the next call retries the load and the move.
+        File.Move(_settingsFilePath, asidePath);
+        _logger?.LogWarning(ex, "Settings file {Path} is not a readable JSON object; moved it to {AsidePath} and started empty", _settingsFilePath, asidePath);
         return [];
     }
 

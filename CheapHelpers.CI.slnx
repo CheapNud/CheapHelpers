@@ -10,5 +10,6 @@
   <Project Path="CheapHelpers.Models/CheapHelpers.Models.csproj" />
   <Project Path="CheapHelpers.Networking/CheapHelpers.Networking.csproj" />
   <Project Path="CheapHelpers.Services/CheapHelpers.Services.csproj" />
+  <Project Path="CheapHelpers.Tests/CheapHelpers.Tests.csproj" />
   <Project Path="CheapHelpers/CheapHelpers.csproj" />
 </Solution>

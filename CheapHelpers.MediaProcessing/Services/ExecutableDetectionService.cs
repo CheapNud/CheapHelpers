@@ -2,6 +2,7 @@ using SysProcess = System.Diagnostics.Process;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using CheapHelpers.MediaProcessing.Models;
+using CheapHelpers.MediaProcessing.Utilities;
 
 namespace CheapHelpers.MediaProcessing.Services;
 
@@ -20,6 +21,11 @@ namespace CheapHelpers.MediaProcessing.Services;
 public class ExecutableDetectionService(SvpDetectionService svpDetection)
 {
     private const int PROCESS_TIMEOUT_MS = 1000;
+
+    /// <summary>
+    /// Upper bound for a version probe, so a tool that waits for input cannot hang the caller.
+    /// </summary>
+    private const int VersionProbeTimeoutMs = 10_000;
 
     /// <summary>
     /// Characters that are not allowed in executable names for security
@@ -370,36 +376,33 @@ public class ExecutableDetectionService(SvpDetectionService svpDetection)
     }
 
     /// <summary>
-    /// Get version string from an executable
+    /// Get version string from an executable: the first line of stdout, or of stderr when stdout is empty
+    /// (some tools print their version banner to stderr). Gives up after <see cref="VersionProbeTimeoutMs"/>.
     /// </summary>
+    /// <param name="executablePath">Path to the executable</param>
+    /// <param name="versionArgument">Argument to get version (default: -version)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <exception cref="ArgumentException">Thrown when executablePath contains invalid characters</exception>
-    public async Task<string?> GetExecutableVersionAsync(string executablePath, string versionArgument = "-version")
+    public async Task<string?> GetExecutableVersionAsync(string executablePath, string versionArgument = "-version", CancellationToken cancellationToken = default)
     {
         ValidateExecutableName(executablePath, nameof(executablePath));
 
         try
         {
-            using var process = new SysProcess
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = executablePath,
-                    Arguments = versionArgument,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
+            using var process = ProcessHelper.CreateProcess(executablePath, versionArgument);
+            var (exitCode, stdout, stderr) = await ProcessHelper.RunAsync(process, VersionProbeTimeoutMs, cancellationToken).ConfigureAwait(false);
 
-            process.Start();
-            var output = await process.StandardOutput.ReadToEndAsync();
-            await process.WaitForExitAsync();
-
-            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
+            if (exitCode == 0)
             {
-                return output.Split('\n')[0].Trim();
+                var output = string.IsNullOrWhiteSpace(stdout) ? stderr : stdout;
+                var firstLine = output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
+                if (!string.IsNullOrEmpty(firstLine))
+                    return firstLine;
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

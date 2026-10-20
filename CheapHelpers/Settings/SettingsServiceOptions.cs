@@ -25,4 +25,11 @@ public class SettingsServiceOptions
     /// Automatically save settings after every Set/Delete/SetSection/UpdateSection call (default: true)
     /// </summary>
     public bool AutoSave { get; set; } = true;
+
+    /// <summary>
+    /// What a read does with a stored value that no longer deserialises, for example after a schema change (default: <see cref="CorruptValueHandling.Throw"/>).
+    /// A read never overwrites the stored value in either mode. The same rule covers a settings file that is not a JSON object:
+    /// it throws, or with <see cref="CorruptValueHandling.ReturnDefault"/> the file is moved to <c>&lt;name&gt;.corrupt-&lt;yyyyMMddHHmmss&gt;</c> before starting empty.
+    /// </summary>
+    public CorruptValueHandling OnCorruptValue { get; set; } = CorruptValueHandling.Throw;
 }

@@ -14,6 +14,11 @@ namespace CheapHelpers.MediaProcessing.Services.Linux;
 public class LinuxExecutableDetectionService
 {
     /// <summary>
+    /// Upper bound for a version probe, so a tool that waits for input cannot hang the caller.
+    /// </summary>
+    private const int VersionProbeTimeoutMs = 10_000;
+
+    /// <summary>
     /// Characters that are not allowed in executable names for security
     /// </summary>
     private static readonly char[] InvalidExecutableChars = ['&', '|', ';', '$', '`', '"', '\'', '<', '>', '(', ')', '{', '}', '[', ']', '\n', '\r'];
@@ -335,7 +340,8 @@ public class LinuxExecutableDetectionService
     }
 
     /// <summary>
-    /// Get version string from an executable
+    /// Get version string from an executable: the first line of stdout, or of stderr when stdout is empty
+    /// (some tools print their version banner to stderr). Gives up after <see cref="VersionProbeTimeoutMs"/>.
     /// </summary>
     /// <param name="executablePath">Path to the executable</param>
     /// <param name="versionArgument">Argument to get version (default: -version)</param>
@@ -347,12 +353,14 @@ public class LinuxExecutableDetectionService
         try
         {
             using var process = ProcessHelper.CreateProcess(executablePath, versionArgument);
-            var (exitCode, stdout, _) = await ProcessHelper.RunAsync(process, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var (exitCode, stdout, stderr) = await ProcessHelper.RunAsync(process, VersionProbeTimeoutMs, cancellationToken).ConfigureAwait(false);
 
-            if (exitCode == 0 && !string.IsNullOrWhiteSpace(stdout))
+            if (exitCode == 0)
             {
-                var lines = stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-                return lines.Length > 0 ? lines[0].Trim() : null;
+                var output = string.IsNullOrWhiteSpace(stdout) ? stderr : stdout;
+                var firstLine = output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
+                if (!string.IsNullOrEmpty(firstLine))
+                    return firstLine;
             }
         }
         catch (OperationCanceledException)

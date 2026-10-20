@@ -23,7 +23,7 @@ public class CsvService : ICsvService
         {
             using var writer = new StreamWriter(filePath, !DefaultOverwriteFile);
             var config = CreateCsvConfiguration();
-            using var csvWriter = new CsvWriter(writer, config);
+            using var csvWriter = new FormulaSafeCsvWriter(writer, config);
 
             await csvWriter.WriteRecordsAsync(list);
 
@@ -48,7 +48,7 @@ public class CsvService : ICsvService
         {
             using var writer = new StreamWriter(filePath, !DefaultOverwriteFile);
             var config = CreateCsvConfiguration();
-            using var csvWriter = new CsvWriter(writer, config);
+            using var csvWriter = new FormulaSafeCsvWriter(writer, config);
 
             await csvWriter.WriteRecordsAsync(list);
 
@@ -75,7 +75,7 @@ public class CsvService : ICsvService
             await using (writer.ConfigureAwait(false))
             {
                 var config = CreateCsvConfiguration(culture, delimiter);
-                var csvWriter = new CsvWriter(writer, config);
+                var csvWriter = new FormulaSafeCsvWriter(writer, config);
                 await using (csvWriter.ConfigureAwait(false))
                 {
                     await csvWriter.WriteRecordsAsync(records);
@@ -112,7 +112,10 @@ public class CsvService : ICsvService
         var ci = CultureInfo.CreateSpecificCulture(culture ?? DefaultCulture);
         return new CsvConfiguration(ci)
         {
-            Delimiter = delimiter ?? DefaultDelimiter
+            Delimiter = delimiter ?? DefaultDelimiter,
+            // Quote-prefix cells starting with =, +, -, @, tab or CR so spreadsheets do not run them as formulas;
+            // FormulaSafeCsvWriter leaves plain numbers such as "-5" alone
+            InjectionOptions = InjectionOptions.Escape,
         };
     }
 }

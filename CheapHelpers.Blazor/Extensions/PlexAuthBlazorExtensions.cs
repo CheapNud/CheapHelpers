@@ -30,8 +30,11 @@ public static class PlexAuthBlazorExtensions
 
         endpoints.MapGet(plexOptions.StartPath, async (IPlexAuthService plexAuth, HttpContext httpContext) =>
         {
-            var baseUrl = plexOptions.CallbackBaseUrl
-                ?? $"{httpContext.Request.Scheme}://{httpContext.Request.Host}";
+            // Configuration binds an empty setting as "", not null, so blank counts as unset.
+            // The trailing slash is trimmed because CallbackPath already starts with one.
+            var baseUrl = string.IsNullOrWhiteSpace(plexOptions.CallbackBaseUrl)
+                ? $"{httpContext.Request.Scheme}://{httpContext.Request.Host}"
+                : plexOptions.CallbackBaseUrl.TrimEnd('/');
 
             var (pinId, pinCode) = await plexAuth.CreatePinAsync(httpContext.RequestAborted);
             var authUrl = plexAuth.GetAuthRedirectUrl(pinCode, $"{baseUrl}{plexOptions.CallbackPath}");

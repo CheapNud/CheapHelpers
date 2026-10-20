@@ -1,0 +1,32 @@
+@using Humanizer
+
+@* String counterpart of StatusChip for statuses that arrive as text (API payloads, database strings).
+   Same fixed colour semantics as StatusChip. *@
+<MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@(ColorMap?.Invoke(Value) ?? Color.Default)">
+    @FormatLabel(Value)
+</MudChip>
+
+@code {
+    /// <summary>
+    /// The status text, e.g. "Rma_Created"
+    /// </summary>
+    [EditorRequired]
+    [Parameter]
+    public string Value { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Maps each status string to its semantic colour
+    /// </summary>
+    [EditorRequired]
+    [Parameter]
+    public Func<string, Color> ColorMap { get; set; } = default!;
+
+    /// <summary>
+    /// Optional label override; defaults to humanising the value (Rma_Created → "Rma Created")
+    /// </summary>
+    [Parameter]
+    public Func<string, string>? Label { get; set; }
+
+    private string FormatLabel(string status) =>
+        Label?.Invoke(status) ?? status.Replace('_', ' ').Humanize(LetterCasing.Title);
+}

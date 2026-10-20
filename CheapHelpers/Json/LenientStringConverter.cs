@@ -45,5 +45,5 @@ public sealed class LenientStringConverter : JsonConverter<string?>
 
     /// <inheritdoc />
     public override void WriteAsPropertyName(Utf8JsonWriter writer, string? text, JsonSerializerOptions options) =>
-        writer.WritePropertyName(text!);
+        writer.WritePropertyName(options.DictionaryKeyPolicy?.ConvertName(text!) ?? text!);
 }

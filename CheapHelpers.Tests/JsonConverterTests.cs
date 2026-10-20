@@ -100,6 +100,19 @@ public sealed class JsonConverterTests
         Assert.Contains("\"Whisper\":4", json);
     }
 
+    [Fact]
+    public void Dictionary_key_policy_still_applies_to_string_and_enum_keys()
+    {
+        var options = TolerantJsonConverters.AddAll(new JsonSerializerOptions { DictionaryKeyPolicy = JsonNamingPolicy.CamelCase });
+        var keyed = new Keyed { ByName = { ["UserName"] = 1 }, ByProvider = { [Provider.OpenAi] = 2 } };
+
+        var json = JsonSerializer.Serialize(keyed, options);
+
+        Assert.Contains("\"userName\":1", json);
+        Assert.Contains("\"openAi\":2", json);
+        Assert.Equal(2, JsonSerializer.Deserialize<Keyed>(json, options)!.ByProvider[Provider.OpenAi]);
+    }
+
     public enum Small : byte
     {
         Zero,

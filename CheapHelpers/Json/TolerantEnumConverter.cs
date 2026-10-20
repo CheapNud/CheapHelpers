@@ -72,7 +72,7 @@ public class TolerantEnumConverter<TEnum>(TEnum fallback = default, IReadOnlyDic
 
     /// <inheritdoc />
     public override void WriteAsPropertyName(Utf8JsonWriter writer, TEnum enumValue, JsonSerializerOptions options) =>
-        writer.WritePropertyName(enumValue.ToString());
+        writer.WritePropertyName(options.DictionaryKeyPolicy?.ConvertName(enumValue.ToString()) ?? enumValue.ToString());
 
     /// <summary>Parses a name or ordinal in any casing; outside a [Flags] enum the result must be a declared member.</summary>
     private static bool TryParseKnown(string? text, out TEnum parsed) =>

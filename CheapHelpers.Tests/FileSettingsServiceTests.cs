@@ -91,6 +91,19 @@ public sealed class FileSettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Locked_file_throws_instead_of_starting_empty_and_loads_once_released()
+    {
+        Assert.SkipUnless(OperatingSystem.IsWindows(), "Exclusive file locks are only enforced against other readers on Windows.");
+        using var service = CreateService(CorruptValueHandling.ReturnDefault);
+
+        using (new FileStream(SettingsPath, FileMode.Open, FileAccess.Read, FileShare.None))
+            await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetAsync<string>("other"));
+
+        await service.SetAsync("other", 1);
+        Assert.Contains("\"not a number\"", await File.ReadAllTextAsync(SettingsPath, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task Writing_another_key_after_a_failed_read_keeps_the_unreadable_value()
     {
         using var service = CreateService(CorruptValueHandling.ReturnDefault);

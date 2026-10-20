@@ -70,9 +70,9 @@ public static class PathHelpers
                 using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
                 return true;
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                // Missing or still locked by the writer; try again until the timeout.
+                // Missing, still locked by the writer, or pending delete on Windows; try again until the timeout.
             }
 
             var remaining = timeout - stopwatch.Elapsed;

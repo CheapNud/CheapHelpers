@@ -286,10 +286,11 @@ public class FileSettingsService : ISettingsService, IDisposable
 
             json = await File.ReadAllTextAsync(_settingsFilePath);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _logger?.LogWarning(ex, "Failed to load settings from {Path}, starting fresh", _settingsFilePath);
-            return [];
+            // Starting empty here would let the next save overwrite a file that was never read, for example one briefly
+            // locked by a virus scanner or sync client. _root stays null, so the next call tries the read again.
+            throw new InvalidOperationException($"Settings file {_settingsFilePath} could not be read; it was left unchanged.", ex);
         }
 
         // A blank file holds nothing to lose.
@@ -322,6 +323,8 @@ public class FileSettingsService : ISettingsService, IDisposable
             throw new InvalidOperationException($"Settings file {_settingsFilePath} is not a readable JSON object; it was left unchanged.", ex);
 
         var asidePath = PathHelpers.GetUniqueFilePath($"{_settingsFilePath}.corrupt-{DateTime.UtcNow:yyyyMMddHHmmss}");
+        // Deliberately unguarded: if the move fails, starting empty would let the next save overwrite the broken file,
+        // so the error surfaces instead and the next call retries the load and the move.
         File.Move(_settingsFilePath, asidePath);
         _logger?.LogWarning(ex, "Settings file {Path} is not a readable JSON object; moved it to {AsidePath} and started empty", _settingsFilePath, asidePath);
         return [];

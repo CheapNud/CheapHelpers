@@ -14,19 +14,22 @@ namespace CheapHelpers.Auth;
 public static class ForwardedHeadersExtensions
 {
     private const string KnownProxiesKey = "KnownProxies";
+    private const string AllowedHostsKey = "AllowedHosts";
     private const char CidrSeparator = '/';
 
     /// <summary>
-    /// Trusts <c>X-Forwarded-For</c>, <c>X-Forwarded-Proto</c> and <c>X-Forwarded-Host</c> only from the proxies
-    /// listed under <c>{sectionKey}:KnownProxies</c>. Each entry is an IP address (<c>10.0.0.5</c>) or a CIDR
+    /// Trusts <c>X-Forwarded-For</c> and <c>X-Forwarded-Proto</c> only from the proxies listed under
+    /// <c>{sectionKey}:KnownProxies</c>. Each entry is an IP address (<c>10.0.0.5</c>) or a CIDR
     /// network (<c>172.18.0.0/16</c>), and must be the address the proxy connects from.
+    /// <c>X-Forwarded-Host</c> is trusted only when <c>{sectionKey}:AllowedHosts</c> lists host names, and then
+    /// only for those hosts, because many proxies pass a client-supplied value through, which allows host-header poisoning.
     /// The framework's loopback defaults are cleared, so only listed proxies are trusted.
     /// When the list is empty nothing is configured and a warning is logged at startup.
     /// The app must still call <c>app.UseForwardedHeaders()</c> early in the pipeline.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">Configuration holding the proxy section.</param>
-    /// <param name="sectionKey">Section that holds the <c>KnownProxies</c> array.</param>
+    /// <param name="sectionKey">Section that holds the <c>KnownProxies</c> and optional <c>AllowedHosts</c> arrays.</param>
     /// <returns>The service collection for chaining.</returns>
     /// <exception cref="FormatException">An entry is not a valid IP address or CIDR network.</exception>
     public static IServiceCollection AddCheapForwardedHeaders(
@@ -38,10 +41,9 @@ public static class ForwardedHeadersExtensions
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentException.ThrowIfNullOrWhiteSpace(sectionKey);
 
-        string[] proxyEntries = [.. configuration.GetSection(sectionKey).GetSection(KnownProxiesKey).GetChildren()
-            .Select(proxyEntry => proxyEntry.Value?.Trim())
-            .OfType<string>()
-            .Where(proxyEntry => proxyEntry.Length > 0)];
+        var proxySection = configuration.GetSection(sectionKey);
+        var proxyEntries = ReadEntries(proxySection, KnownProxiesKey);
+        var allowedHosts = ReadEntries(proxySection, AllowedHostsKey);
 
         if (proxyEntries.Length == 0)
         {
@@ -64,7 +66,13 @@ public static class ForwardedHeadersExtensions
 
         services.Configure<ForwardedHeadersOptions>(forwardedOptions =>
         {
-            forwardedOptions.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
+            forwardedOptions.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            if (allowedHosts.Length > 0)
+            {
+                forwardedOptions.ForwardedHeaders |= ForwardedHeaders.XForwardedHost;
+                forwardedOptions.AllowedHosts = allowedHosts;
+            }
+
             forwardedOptions.KnownProxies.Clear();
             forwardedOptions.KnownIPNetworks.Clear();
 
@@ -77,4 +85,10 @@ public static class ForwardedHeadersExtensions
 
         return services;
     }
+
+    private static string[] ReadEntries(IConfigurationSection section, string key) =>
+        [.. section.GetSection(key).GetChildren()
+            .Select(entry => entry.Value?.Trim())
+            .OfType<string>()
+            .Where(entry => entry.Length > 0)];
 }

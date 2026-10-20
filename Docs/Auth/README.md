@@ -129,15 +129,18 @@ Callers send `X-Shared-Secret: <secret>` or `Authorization: Bearer <secret>`. `H
 
 ## Forwarded headers
 
-Trusts `X-Forwarded-For`, `X-Forwarded-Proto` and `X-Forwarded-Host` only from the proxies you list. Each entry is an IP address or a CIDR network, and must be the address the proxy connects from (for a container, its address on the shared network).
+Trusts `X-Forwarded-For` and `X-Forwarded-Proto` only from the proxies you list. Each entry is an IP address or a CIDR network, and must be the address the proxy connects from (for a container, its address on the shared network).
 
 ```json
 {
   "Proxy": {
-    "KnownProxies": [ "172.18.0.2", "10.0.0.0/24" ]
+    "KnownProxies": [ "172.18.0.2", "10.0.0.0/24" ],
+    "AllowedHosts": [ "app.example.com" ]
   }
 }
 ```
+
+`AllowedHosts` is optional. Only when it has entries is `X-Forwarded-Host` trusted, and only for those hosts, because many proxies pass a client-supplied `X-Forwarded-Host` through, which lets a caller poison the host used in links such as the Plex callback or password-reset emails.
 
 ```csharp
 builder.Services.AddCheapForwardedHeaders(builder.Configuration);

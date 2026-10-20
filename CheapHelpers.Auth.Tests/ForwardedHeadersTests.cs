@@ -10,6 +10,8 @@ public class ForwardedHeadersTests
 {
     private const string ProxyAddress = "10.0.0.5";
     private const string ClientAddress = "203.0.113.7";
+    private const string ForwardedHost = "app.example.com";
+    private const string RequestHost = "localhost";
 
     [Fact]
     public async Task A_known_proxy_rewrites_the_remote_address()
@@ -35,7 +37,27 @@ public class ForwardedHeadersTests
         Assert.Equal(ProxyAddress, remoteAddress);
     }
 
+    [Theory]
+    [InlineData(null, RequestHost)]
+    [InlineData(ForwardedHost, ForwardedHost)]
+    public async Task X_forwarded_host_is_applied_only_for_configured_allowed_hosts(string? allowedHost, string expectedHost)
+    {
+        Dictionary<string, string?> settings = new() { ["Proxy:KnownProxies:0"] = ProxyAddress };
+        if (allowedHost is not null)
+            settings["Proxy:AllowedHosts:0"] = allowedHost;
+
+        var httpContext = await SendThroughProxyAsync(settings);
+
+        Assert.Equal(expectedHost, httpContext.Request.Host.Value);
+    }
+
     private static async Task<string?> GetRemoteAddressAsync(Dictionary<string, string?> settings)
+    {
+        var httpContext = await SendThroughProxyAsync(settings);
+        return httpContext.Connection.RemoteIpAddress?.ToString();
+    }
+
+    private static async Task<HttpContext> SendThroughProxyAsync(Dictionary<string, string?> settings)
     {
         var cancellationToken = TestContext.Current.CancellationToken;
 
@@ -48,12 +70,12 @@ public class ForwardedHeadersTests
             webApp => webApp.UseForwardedHeaders(),
             cancellationToken);
 
-        var httpContext = await app.GetTestServer().SendAsync(requestContext =>
+        return await app.GetTestServer().SendAsync(requestContext =>
         {
             requestContext.Connection.RemoteIpAddress = IPAddress.Parse(ProxyAddress);
+            requestContext.Request.Host = new HostString(RequestHost);
             requestContext.Request.Headers["X-Forwarded-For"] = ClientAddress;
+            requestContext.Request.Headers["X-Forwarded-Host"] = ForwardedHost;
         }, cancellationToken);
-
-        return httpContext.Connection.RemoteIpAddress?.ToString();
     }
 }

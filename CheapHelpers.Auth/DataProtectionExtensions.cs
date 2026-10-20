@@ -9,6 +9,10 @@ namespace CheapHelpers.Auth;
 /// <summary>
 /// Registers ASP.NET Core Data Protection with a key ring persisted to disk.
 /// </summary>
+/// <remarks>
+/// New in 4.0.0 and never shipped in another shape: no released package used an earlier default path or return
+/// type of <see cref="AddCheapDataProtection"/>, so there is no key folder or caller to migrate.
+/// </remarks>
 public static class DataProtectionExtensions
 {
     private const string KeysPathKey = "KeysPath";
@@ -101,10 +105,22 @@ public static class DataProtectionExtensions
         var safe = string.Join('_', applicationName.Split(invalid)).Trim();
 
         // Names made only of separators or dots ("/", "..") would become "_" or a traversal; use a plain folder instead
-        return safe.Trim('_', '.').Length == 0 ? DefaultAppFolder : safe;
+        if (safe.Trim('_', '.').Length == 0)
+            return DefaultAppFolder;
+
+        // Windows refuses device names as folders, also with an extension ("CON", "con.txt"); a prefix sidesteps them
+        var stem = safe.Split('.')[0];
+        return ReservedWindowsNames.Contains(stem, StringComparer.OrdinalIgnoreCase) ? "_" + safe : safe;
     }
 
     private const string DefaultAppFolder = "app";
+
+    private static readonly string[] ReservedWindowsNames =
+    [
+        "CON", "PRN", "AUX", "NUL",
+        "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+    ];
 
     /// <summary>
     /// Creates the folder owner-only when it does not exist. An existing folder keeps its mode, because it may be

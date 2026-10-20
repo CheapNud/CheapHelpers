@@ -119,6 +119,9 @@ public class DataProtectionTests
     [InlineData("..", "app")]
     [InlineData("/", "app")]
     [InlineData("My App", "My App")]
+    [InlineData("CON", "_CON")]
+    [InlineData("nul.txt", "_nul.txt")]
+    [InlineData("COM10", "COM10")]
     public void Application_names_map_to_one_safe_folder_component(string applicationName, string expected)
     {
         Assert.Equal(expected, DataProtectionExtensions.SafeFolderName(applicationName));

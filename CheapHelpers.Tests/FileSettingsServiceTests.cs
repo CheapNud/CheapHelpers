@@ -57,6 +57,39 @@ public sealed class FileSettingsServiceTests : IDisposable
         Assert.Equal(CorruptJson, await File.ReadAllTextAsync(SettingsPath, TestContext.Current.CancellationToken));
     }
 
+    private const string BrokenFile = "{ \"count\": 1, ";
+
+    private FileSettingsService CreateServiceOverBrokenFile(CorruptValueHandling handling)
+    {
+        File.WriteAllText(SettingsPath, BrokenFile);
+        return new FileSettingsService(new SettingsServiceOptions { Folder = _folder.FullName, OnCorruptValue = handling });
+    }
+
+    [Fact]
+    public async Task Unparseable_file_throws_in_throw_mode_naming_the_path_and_stays_in_place()
+    {
+        using var service = CreateServiceOverBrokenFile(CorruptValueHandling.Throw);
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.GetAsync<int>("count"));
+
+        Assert.Contains(SettingsPath, error.Message);
+        Assert.Equal(BrokenFile, await File.ReadAllTextAsync(SettingsPath, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task Unparseable_file_is_moved_aside_in_return_default_mode_and_survives_a_save()
+    {
+        using var service = CreateServiceOverBrokenFile(CorruptValueHandling.ReturnDefault);
+
+        Assert.Equal(5, await service.GetAsync("count", 5));
+        await service.SetAsync("count", 2);
+
+        var aside = Assert.Single(_folder.GetFiles("settings.json.corrupt-*"));
+        Assert.Matches(@"^settings\.json\.corrupt-\d{14}$", aside.Name);
+        Assert.Equal(BrokenFile, await File.ReadAllTextAsync(aside.FullName, TestContext.Current.CancellationToken));
+        Assert.Contains("\"count\": 2", await File.ReadAllTextAsync(SettingsPath, TestContext.Current.CancellationToken));
+    }
+
     [Fact]
     public async Task Writing_another_key_after_a_failed_read_keeps_the_unreadable_value()
     {

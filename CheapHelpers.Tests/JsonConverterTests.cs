@@ -114,6 +114,22 @@ public sealed class JsonConverterTests
         Assert.Equal(Small.Zero, JsonSerializer.Deserialize<Small>("-1", Options));
     }
 
+    [Flags]
+    public enum Rights
+    {
+        None = 0,
+        Read = 1,
+        Write = 2
+    }
+
+    [Fact]
+    public void Undeclared_ordinals_fall_back_unless_the_enum_is_flags()
+    {
+        Assert.Equal(Provider.None, JsonSerializer.Deserialize<Provider>("99", Options));
+        Assert.Equal(Provider.None, JsonSerializer.Deserialize<Provider>("\"99\"", Options));
+        Assert.Equal(Rights.Read | Rights.Write, JsonSerializer.Deserialize<Rights>("3", Options));
+    }
+
     [Theory]
     [InlineData("\"openai\"", Provider.OpenAi)]
     [InlineData("2", Provider.Whisper)]

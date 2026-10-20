@@ -8,6 +8,7 @@ namespace CheapHelpers.Json;
 /// <summary>
 /// Enum converter that reads an ordinal, a name in any casing, or a retired name from <paramref name="legacyNames"/>,
 /// and turns anything else into <paramref name="fallback"/> instead of throwing. Writes the enum name.
+/// For an enum without <see cref="FlagsAttribute"/>, a value that is not a declared member also counts as unknown.
 /// </summary>
 /// <remarks>
 /// A renamed or removed enum member otherwise makes the whole object fail to deserialise,
@@ -18,6 +19,8 @@ namespace CheapHelpers.Json;
 public class TolerantEnumConverter<TEnum>(TEnum fallback = default, IReadOnlyDictionary<string, TEnum>? legacyNames = null) : JsonConverter<TEnum>
     where TEnum : struct, Enum
 {
+    private static readonly bool IsFlags = typeof(TEnum).IsDefined(typeof(FlagsAttribute), inherit: false);
+
     private readonly Dictionary<string, TEnum>? _legacyNames = legacyNames is null
         ? null
         : new Dictionary<string, TEnum>(legacyNames, StringComparer.OrdinalIgnoreCase);
@@ -36,11 +39,11 @@ public class TolerantEnumConverter<TEnum>(TEnum fallback = default, IReadOnlyDic
                 // Parsing the raw text checks the ordinal against the enum's own underlying type, so an out-of-range value
                 // falls back instead of being truncated, and unsigned 64-bit ordinals still read.
                 var ordinal = Encoding.UTF8.GetString(reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan);
-                return Enum.TryParse<TEnum>(ordinal, out var numbered) ? numbered : fallback;
+                return TryParseKnown(ordinal, out var numbered) ? numbered : fallback;
 
             case JsonTokenType.String:
                 var name = reader.GetString();
-                if (Enum.TryParse<TEnum>(name, ignoreCase: true, out var parsed))
+                if (TryParseKnown(name, out var parsed))
                     return parsed;
                 if (name is not null && _legacyNames?.TryGetValue(name, out var legacy) == true)
                     return legacy;
@@ -60,7 +63,7 @@ public class TolerantEnumConverter<TEnum>(TEnum fallback = default, IReadOnlyDic
     public override TEnum ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         var name = reader.GetString();
-        if (Enum.TryParse<TEnum>(name, ignoreCase: true, out var parsed))
+        if (TryParseKnown(name, out var parsed))
             return parsed;
         if (name is not null && _legacyNames?.TryGetValue(name, out var legacy) == true)
             return legacy;
@@ -70,4 +73,8 @@ public class TolerantEnumConverter<TEnum>(TEnum fallback = default, IReadOnlyDic
     /// <inheritdoc />
     public override void WriteAsPropertyName(Utf8JsonWriter writer, TEnum enumValue, JsonSerializerOptions options) =>
         writer.WritePropertyName(enumValue.ToString());
+
+    /// <summary>Parses a name or ordinal in any casing; outside a [Flags] enum the result must be a declared member.</summary>
+    private static bool TryParseKnown(string? text, out TEnum parsed) =>
+        Enum.TryParse(text, ignoreCase: true, out parsed) && (IsFlags || Enum.IsDefined(parsed));
 }

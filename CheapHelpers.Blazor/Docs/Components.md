@@ -840,7 +840,7 @@ Reference in `_Host.cshtml`:
 <script src="_content/CheapHelpers.Blazor/js/boot.js"></script>
 ```
 
-The dialog gets default styles (a small dark box in the bottom right corner). Any inline style you put on the div overrides the matching default.
+The dialog gets default styles (a small dark box in the bottom right corner) from an injected zero-specificity rule, so any stylesheet rule or inline style on the element overrides them.
 
 ---
 

@@ -24,21 +24,14 @@ window.registerConnectionRestoredCallback = function (dotNetRef, methodName) {
     const maximumJitterFraction = 0.2;
     const reconnectModalId = 'reconnect-modal';
 
-    // Applied only where the element has no inline value, so an app that styles the div itself wins.
-    const defaultModalStyles = {
-        position: 'fixed',
-        bottom: '16px',
-        right: '16px',
-        zIndex: '9999',
-        alignItems: 'center',
-        gap: '12px',
-        padding: '10px 16px',
-        borderRadius: '8px',
-        border: '1px solid rgba(255,255,255,0.15)',
-        background: 'rgba(30,30,30,0.95)',
-        color: '#e0e0e0',
-        fontSize: '0.85rem',
-    };
+    const defaultStyleElementId = 'cheaphelpers-reconnect-style';
+    // :where() has zero specificity, so any app rule on the element (even a bare `div`) or an
+    // inline style overrides these defaults.
+    const defaultStyles =
+        ':where(#reconnect-modal) { position: fixed; bottom: 16px; right: 16px; z-index: 9999; display: flex; ' +
+        'align-items: center; gap: 12px; padding: 10px 16px; border-radius: 8px; ' +
+        'border: 1px solid rgba(255,255,255,0.15); background: rgba(30,30,30,0.95); color: #e0e0e0; font-size: 0.85rem; } ' +
+        ':where(#reconnect-modal button) { cursor: pointer; color: inherit; }';
 
     let hasWarnedMissingModal = false;
 
@@ -47,12 +40,15 @@ window.registerConnectionRestoredCallback = function (dotNetRef, methodName) {
         return interval + interval * maximumJitterFraction * Math.random();
     };
 
-    const applyDefaultStyles = element => {
-        for (const [property, value] of Object.entries(defaultModalStyles)) {
-            if (!element.style[property]) {
-                element.style[property] = value;
-            }
+    const injectDefaultStyles = () => {
+        if (document.getElementById(defaultStyleElementId)) {
+            return;
         }
+
+        const styleElement = document.createElement('style');
+        styleElement.id = defaultStyleElementId;
+        styleElement.textContent = defaultStyles;
+        document.head.appendChild(styleElement);
     };
 
     const showReconnectDialog = () => {
@@ -67,13 +63,13 @@ window.registerConnectionRestoredCallback = function (dotNetRef, methodName) {
         }
 
         reconnectModal.innerHTML = '<span>Connection lost.</span><button type="button">Refresh</button>';
-        const refreshButton = reconnectModal.querySelector('button');
-        refreshButton.style.cursor = 'pointer';
-        refreshButton.style.color = 'inherit';
-        refreshButton.addEventListener('click', () => location.reload());
+        reconnectModal.querySelector('button').addEventListener('click', () => location.reload());
 
-        applyDefaultStyles(reconnectModal);
-        reconnectModal.style.display = 'flex';
+        injectDefaultStyles();
+        // The markup hides the element inline; only lift that, so an app's own display value stays.
+        if (!reconnectModal.style.display || reconnectModal.style.display === 'none') {
+            reconnectModal.style.display = 'flex';
+        }
     };
 
     const hideReconnectDialog = () => {

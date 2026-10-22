@@ -819,7 +819,6 @@ app.Run();
 
 The library includes several JavaScript files in `wwwroot/js/`:
 
-- **boot.js** - Blazor boot configuration
 - **infiniteScroll.js** - Infinite scroll functionality
 - **pdfThumbnails.js** - PDF thumbnail generation
 - **site.js** - General utilities
@@ -830,6 +829,18 @@ Reference in `_Host.cshtml`:
 ```html
 <script src="_content/CheapHelpers.Blazor/js/site.js"></script>
 ```
+
+### boot.js
+
+`boot.js` starts Blazor and handles reconnection. Retries run silently with a growing delay for about two minutes, so short drops show nothing. When the server answers but the circuit is gone, the page reloads at once. Only when every retry fails does the `reconnect-modal` element show "Connection lost." with a Refresh button; the page does not reload on its own. Load the framework script with `autostart="false"`, add the empty element, then the boot script:
+
+```html
+<script src="_framework/blazor.web.js" autostart="false"></script>
+<div id="reconnect-modal" style="display: none;"></div>
+<script src="_content/CheapHelpers.Blazor/js/boot.js"></script>
+```
+
+The dialog gets default styles (a small dark box in the bottom right corner). Any inline style you put on the div overrides the matching default.
 
 ---
 

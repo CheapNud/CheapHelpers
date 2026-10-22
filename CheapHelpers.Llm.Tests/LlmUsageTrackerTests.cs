@@ -147,6 +147,20 @@ public sealed class LlmUsageTrackerTests
     }
 
     [Fact]
+    public void A_throwing_subscriber_does_not_fail_record_or_stop_the_others()
+    {
+        var tracker = new LlmUsageTracker();
+        var fires = 0;
+        tracker.Changed += () => throw new InvalidOperationException("subscriber failed");
+        tracker.Changed += () => Interlocked.Increment(ref fires);
+
+        tracker.Record(UsagePurpose.Chat, Usage(10, 5));
+
+        Assert.Equal(1, fires);
+        Assert.Equal(1, Assert.Single(tracker.Snapshot().ByPurpose).Calls);
+    }
+
+    [Fact]
     public void Concurrent_records_do_not_lose_counts()
     {
         var tracker = new LlmUsageTracker();

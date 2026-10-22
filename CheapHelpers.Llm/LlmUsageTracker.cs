@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace CheapHelpers.Llm;
 
@@ -23,7 +24,10 @@ public sealed class LlmUsageTracker
 
     private readonly ConcurrentDictionary<string, Bucket> _byPurpose = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Fires after every recorded call so a UI can refresh. Subscribers must marshal to their own thread.</summary>
+    /// <summary>
+    /// Fires after every recorded call so a UI can refresh. Subscribers must marshal to their own thread.
+    /// A subscriber that throws is logged and skipped, so it cannot fail the LLM call or stop the others.
+    /// </summary>
     public event Action? Changed;
 
     /// <summary>
@@ -49,7 +53,7 @@ public sealed class LlmUsageTracker
             string.IsNullOrWhiteSpace(purpose) ? UsagePurpose.Chat : purpose,
             _ => new Bucket());
         bucket.Add(usage);
-        Changed?.Invoke();
+        RaiseChanged();
     }
 
     /// <summary>Per-purpose totals plus a grand total, ordered by total tokens descending.</summary>
@@ -76,7 +80,23 @@ public sealed class LlmUsageTracker
     public void Reset()
     {
         _byPurpose.Clear();
-        Changed?.Invoke();
+        RaiseChanged();
+    }
+
+    private void RaiseChanged()
+    {
+        if (Changed is not { } changed) return;
+        foreach (var subscriber in changed.GetInvocationList().Cast<Action>())
+        {
+            try
+            {
+                subscriber();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"LlmUsageTracker.Changed subscriber threw: {ex}");
+            }
+        }
     }
 
     private sealed class Bucket

@@ -18,9 +18,9 @@ public static class CultureEndpointExtensions
 
     /// <summary>
     /// Maps <c>GET /Culture/Set?culture=&amp;redirectUri=</c> as an anonymous endpoint. When
-    /// <see cref="RequestLocalizationOptions"/> is configured in DI, only its supported UI cultures are
-    /// stored; otherwise any culture .NET knows is stored. Unknown cultures are ignored. The cookie is
-    /// essential and lasts a year. Only local redirect paths are followed; anything else redirects to <c>/</c>.
+    /// <see cref="RequestLocalizationOptions"/> is configured in DI, only its supported UI cultures (or its
+    /// supported cultures when the UI list is empty) are stored; otherwise any culture .NET knows is
+    /// stored. Unknown cultures are ignored. The cookie is essential and lasts a year. Only local redirect paths are followed; anything else redirects to <c>/</c>.
     /// </summary>
     public static IEndpointRouteBuilder MapCheapCultureEndpoint(this IEndpointRouteBuilder endpoints)
     {
@@ -56,7 +56,9 @@ public static class CultureEndpointExtensions
         // UseRequestLocalization registers nothing here and falls through to the lookup below)
         if (services.GetServices<IConfigureOptions<RequestLocalizationOptions>>().Any())
         {
-            var supported = services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value.SupportedUICultures;
+            var options = services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value;
+            // An app that cleared the UI list but kept SupportedCultures still means that list
+            var supported = options.SupportedUICultures is { Count: > 0 } ? options.SupportedUICultures : options.SupportedCultures;
             if (supported is { Count: > 0 })
                 return supported.FirstOrDefault(c => string.Equals(c.Name, culture, StringComparison.OrdinalIgnoreCase))?.Name;
         }

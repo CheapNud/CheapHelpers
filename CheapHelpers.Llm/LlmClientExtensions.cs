@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
@@ -12,6 +14,7 @@ public static partial class LlmClientExtensions
     private const string RequiredKeyword = "required";
     private const string AdditionalPropertiesKeyword = "additionalProperties";
     private const string RefKeyword = "$ref";
+    private const string DescriptionKeyword = "description";
     private const int MaxSchemaNameLength = 64;
 
     private static readonly JsonSchemaExporterOptions SchemaOptions = new()
@@ -29,6 +32,8 @@ public static partial class LlmClientExtensions
                 node[RequiredKeyword] = new JsonArray([.. propertyNames]);
                 node[AdditionalPropertiesKeyword] = false;
             }
+            if (schema is JsonObject described && !described.ContainsKey(RefKeyword) && !described.ContainsKey(DescriptionKeyword) && DescriptionOf(context) is { } description)
+                described[DescriptionKeyword] = description;
             return schema;
         },
     };
@@ -60,6 +65,24 @@ public static partial class LlmClientExtensions
 
         return JsonSerializer.Deserialize<T>(response.StructuredJson, schemaOptions)
             ?? throw new InvalidOperationException($"The structured reply deserialised to null (finish reason: {response.FinishReason ?? "none"}).");
+    }
+
+    /// <summary>
+    /// The [Description] text for a schema node: the property first, then the record constructor
+    /// parameter behind it (a positional record puts the attribute there), then the node's type.
+    /// </summary>
+    private static string? DescriptionOf(JsonSchemaExporterContext context)
+    {
+        return (context.PropertyInfo is { } property
+                ? Read(property.AttributeProvider) ?? Read(property.AssociatedParameter?.AttributeProvider)
+                : null)
+            ?? Read(context.TypeInfo.Type);
+
+        static string? Read(ICustomAttributeProvider? provider) =>
+            provider?.GetCustomAttributes(typeof(DescriptionAttribute), inherit: false) is [DescriptionAttribute { Description: var text }, ..]
+                && !string.IsNullOrWhiteSpace(text)
+                ? text
+                : null;
     }
 
     /// <summary>

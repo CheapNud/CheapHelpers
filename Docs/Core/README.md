@@ -105,6 +105,7 @@ var caption = AppVersion.Display; // "1.2.3 (abc1234)"; AppVersion.Version and A
 ```csharp
 var options = TolerantJsonConverters.AddAll(new JsonSerializerOptions()); // "42" reads as 42, an unknown enum name as the default
 ```
+With `AddAll` and a `DictionaryKeyPolicy`, the keys of dictionaries written through the lenient string or tolerant enum converters follow the policy, including a `[JsonExtensionData]` dictionary. Set the policy only when every such key may be renamed.
 
 ### Async Event Fan-out
 **`DelegateExtensions.InvokeSafelyAsync`** - Awaits every handler of a `Func<T, Task>` event; one that throws is logged and the rest still run

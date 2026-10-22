@@ -1,4 +1,6 @@
+using System.Net;
 using System.Text.Json;
+using Anthropic;
 using Anthropic.Models.Messages;
 
 namespace CheapHelpers.Llm.Tests;
@@ -22,6 +24,8 @@ public sealed class AnthropicLlmClientTests
          "stop_reason":"tool_use","stop_sequence":null,
          "usage":{"input_tokens":50,"output_tokens":20}}
         """;
+
+    private const string LocalUrl = "http://localhost/";
 
     private static LlmOptions Options(long maxSessionTokens = 0) => new()
     {
@@ -275,6 +279,46 @@ public sealed class AnthropicLlmClientTests
 
         options.TimeoutSeconds = 90;
         Assert.NotSame(first, factory.Get());
+    }
+
+    [Fact]
+    public async Task Factory_disposes_the_clients_it_owns_when_replaced_and_when_disposed()
+    {
+        var options = Options();
+        var factory = new AnthropicClientFactory(new TestOptionsMonitor<LlmOptions>(options));
+
+        var first = (AnthropicClient)factory.Get();
+        options.TimeoutSeconds = 90;
+        var second = (AnthropicClient)factory.Get();
+        options.MaxRetries = 5;
+        var third = (AnthropicClient)factory.Get();
+
+        Assert.NotSame(first, second);
+        Assert.NotSame(second, third);
+        Assert.Same(third, factory.Get());
+        // A disposed HttpClient throws before it sends anything
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => first.HttpClient.GetAsync(LocalUrl, TestContext.Current.CancellationToken));
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => second.HttpClient.GetAsync(LocalUrl, TestContext.Current.CancellationToken));
+
+        factory.Dispose();
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => third.HttpClient.GetAsync(LocalUrl, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task Factory_never_disposes_an_injected_HttpClient()
+    {
+        var options = Options();
+        var server = new FakeLlmServer().Reply("{}");
+        using var httpClient = server.CreateClient();
+        var factory = new AnthropicClientFactory(new TestOptionsMonitor<LlmOptions>(options), httpClient);
+
+        var first = factory.Get();
+        options.TimeoutSeconds = 90;
+        Assert.NotSame(first, factory.Get());
+        factory.Dispose();
+
+        using var reply = await httpClient.PostAsync(LocalUrl, new StringContent("x"), TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, reply.StatusCode);
     }
 
     [Fact]

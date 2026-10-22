@@ -5,7 +5,7 @@ Barcode generation and reading on ZXing.Net with no native image dependency, so 
 ## Package Information
 
 - **Package**: CheapHelpers.Barcodes
-- **Version**: 3.9.0
+- **Version**: 4.0.0
 - **Target Framework**: .NET 11.0 (net11.0)
 - **NuGet**: [CheapHelpers.Barcodes](https://www.nuget.org/packages/CheapHelpers.Barcodes)
 

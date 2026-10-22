@@ -60,7 +60,7 @@ The string counterpart of `StatusChip`, for a status that arrives as text instea
 ```
 
 **Parameters:**
-- `Value` (required) - The status text
+- `Value` (required) - The status text; a null value renders an empty chip
 - `ColorMap` (required) - Maps the status text to its semantic colour
 - `Label` - Optional label override. By default the value is humanised: `Rma_Created` becomes "Rma Created".
 

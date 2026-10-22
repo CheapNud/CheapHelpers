@@ -2,31 +2,35 @@
 
 @* String counterpart of StatusChip for statuses that arrive as text (API payloads, database strings).
    Same fixed colour semantics as StatusChip. *@
-<MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@(ColorMap?.Invoke(Value) ?? Color.Default)">
+<MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@ChipColor">
     @FormatLabel(Value)
 </MudChip>
 
 @code {
     /// <summary>
-    /// The status text, e.g. "Rma_Created"
+    /// The status text, e.g. "Rma_Created". A null value renders an empty chip in the default colour.
     /// </summary>
     [EditorRequired]
     [Parameter]
-    public string Value { get; set; } = string.Empty;
+    public string? Value { get; set; }
 
     /// <summary>
-    /// Maps each status string to its semantic colour
+    /// Maps each status string to its semantic colour; not called for a null value
     /// </summary>
     [EditorRequired]
     [Parameter]
     public Func<string, Color> ColorMap { get; set; } = default!;
 
     /// <summary>
-    /// Optional label override; defaults to humanising the value (Rma_Created → "Rma Created")
+    /// Optional label override; defaults to humanising the value (Rma_Created → "Rma Created"). Not called for a null or whitespace value.
     /// </summary>
     [Parameter]
     public Func<string, string>? Label { get; set; }
 
-    private string FormatLabel(string status) =>
-        Label?.Invoke(status) ?? status.Replace('_', ' ').Humanize(LetterCasing.Title);
+    private Color ChipColor => Value is null ? Color.Default : ColorMap?.Invoke(Value) ?? Color.Default;
+
+    private string FormatLabel(string? status) =>
+        string.IsNullOrWhiteSpace(status)
+            ? string.Empty
+            : Label?.Invoke(status) ?? status.Replace('_', ' ').Humanize(LetterCasing.Title);
 }

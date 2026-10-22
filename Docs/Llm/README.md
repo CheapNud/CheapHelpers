@@ -100,6 +100,8 @@ var rating = await llm.GenerateAsync<Rating>(new LlmRequest
 
 The compatible client sends the schema as a strict `response_format` of type `json_schema`; the Anthropic client sends it as a tool named after the type and forces that tool through `tool_choice`. Both put the reply in `LlmResponse.StructuredJson`. `GenerateAsync<T>` throws `InvalidOperationException`, naming the finish reason, when the model gave no JSON (for example when it hit `MaxTokens`). The default serializer options are `JsonSerializerDefaults.Web`; pass your own as `jsonOptions`.
 
+A `[Description]` on the result type, its properties or its record parameters is sent to the model as the schema `description`, so units, formats and allowed values written there reach the model. Members without it get no description.
+
 To send a hand-written schema, set `LlmRequest.ResponseSchema = new LlmJsonSchema(name, schemaElement)` and read `response.StructuredJson`.
 
 ### Usage cap

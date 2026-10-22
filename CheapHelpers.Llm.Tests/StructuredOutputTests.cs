@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text.Json;
 
 namespace CheapHelpers.Llm.Tests;
@@ -7,6 +8,16 @@ public sealed class StructuredOutputTests
     public sealed record Verdict(string Name, int Score, string? Note);
     public sealed record Marker;
     public sealed record Wrapper(Marker Inner);
+
+    [Description("A rating of one product.")]
+    public sealed record Rated([Description("Score from 1 to 5.")] int Score, string Product, Reviewer By);
+
+    [Description("The person who wrote the review.")]
+    public sealed class Reviewer
+    {
+        [Description("Display name, at most 40 characters.")]
+        public string Name { get; set; } = "";
+    }
 
     private static OpenAiCompatibleLlmClient Client(FakeLlmServer server) =>
         TestClients.Compatible(server, new LlmOptions { ApiKey = "k", BaseUrl = "https://openrouter.ai/api/v1" });
@@ -48,6 +59,38 @@ public sealed class StructuredOutputTests
         var inner = body.RootElement.GetProperty("response_format").GetProperty("json_schema").GetProperty("schema").GetProperty("properties").GetProperty("inner");
         Assert.False(inner.GetProperty("additionalProperties").GetBoolean());
         Assert.Empty(inner.GetProperty("required").EnumerateArray());
+    }
+
+    private static async Task<JsonElement> RatedSchema()
+    {
+        var server = new FakeLlmServer().Reply(TestClients.CompatReply("""{"score":4,"product":"kettle","by":{"name":"ann"}}"""));
+        var request = new LlmRequest { Messages = [LlmMessage.User("rate the kettle")] };
+
+        await Client(server).GenerateAsync<Rated>(request, cancellationToken: TestContext.Current.CancellationToken);
+
+        return request.ResponseSchema!.Schema;
+    }
+
+    [Fact]
+    public async Task Description_attributes_on_the_type_record_parameters_and_properties_reach_the_schema()
+    {
+        var schema = await RatedSchema();
+
+        var properties = schema.GetProperty("properties");
+        Assert.Equal("A rating of one product.", schema.GetProperty("description").GetString());
+        Assert.Equal("Score from 1 to 5.", properties.GetProperty("score").GetProperty("description").GetString());
+        Assert.Equal("The person who wrote the review.", properties.GetProperty("by").GetProperty("description").GetString());
+        Assert.Equal("Display name, at most 40 characters.", properties.GetProperty("by").GetProperty("properties").GetProperty("name").GetProperty("description").GetString());
+    }
+
+    [Fact]
+    public async Task Members_without_a_description_get_none_and_the_schema_stays_strict()
+    {
+        var schema = await RatedSchema();
+
+        Assert.False(schema.GetProperty("properties").GetProperty("product").TryGetProperty("description", out _));
+        Assert.False(schema.GetProperty("additionalProperties").GetBoolean());
+        Assert.Equal(["score", "product", "by"], schema.GetProperty("required").EnumerateArray().Select(name => name.GetString()));
     }
 
     [Fact]

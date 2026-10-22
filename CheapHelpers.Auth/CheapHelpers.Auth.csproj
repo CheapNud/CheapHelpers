@@ -2,8 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net11.0</TargetFramework>
-    <!-- Stays at 3.9.0 like every other package here; the 4.0.0 release bumps them all together -->
-    <Version>3.9.0</Version>
+    <Version>4.0.0</Version>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 

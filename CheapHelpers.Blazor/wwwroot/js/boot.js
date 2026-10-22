@@ -13,64 +13,111 @@ window.registerConnectionRestoredCallback = function (dotNetRef, methodName) {
     window.connectionCallbacks.push({ dotNetRef, methodName });
 };
 
+// Reconnection: retries run silently with exponential backoff (about two minutes in total), so
+// short drops such as a mobile tab switch never show any UI. A circuit the server no longer knows
+// reloads the page at once. Only when every retry fails does #reconnect-modal show a short
+// "Connection lost." message with a Refresh button; the page never reloads on its own then.
 (() => {
     const maximumRetryCount = 8;
-    const retryIntervalMilliseconds = 1000 * 3;
-    // Fast reconnects (mobile tab switches background the socket and restore it in under a
-    // second) must resolve invisibly — the modal only appears when we're still down after the
-    // grace period. Popping UI for a sub-second blip is worse than the blip.
-    const modalGraceMilliseconds = 1000 * 3;
-    const reconnectModal = document.getElementById('reconnect-modal');
+    const baseIntervalMilliseconds = 1000 * 3;
+    const maximumIntervalMilliseconds = 1000 * 30;
+    const maximumJitterFraction = 0.2;
+    const reconnectModalId = 'reconnect-modal';
+
+    const defaultStyleElementId = 'cheaphelpers-reconnect-style';
+    // :where() has zero specificity, so any app rule on the element (even a bare `div`) or an
+    // inline style overrides these defaults.
+    const defaultStyles =
+        ':where(#reconnect-modal) { position: fixed; bottom: 16px; right: 16px; z-index: 9999; display: flex; ' +
+        'align-items: center; gap: 12px; padding: 10px 16px; border-radius: 8px; ' +
+        'border: 1px solid rgba(255,255,255,0.15); background: rgba(30,30,30,0.95); color: #e0e0e0; font-size: 0.85rem; } ' +
+        ':where(#reconnect-modal button) { cursor: pointer; color: inherit; }';
+
+    let hasWarnedMissingModal = false;
+
+    const retryInterval = attempt => {
+        const interval = Math.min(baseIntervalMilliseconds * 2 ** attempt, maximumIntervalMilliseconds);
+        return interval + interval * maximumJitterFraction * Math.random();
+    };
+
+    const injectDefaultStyles = () => {
+        if (document.getElementById(defaultStyleElementId)) {
+            return;
+        }
+
+        const styleElement = document.createElement('style');
+        styleElement.id = defaultStyleElementId;
+        styleElement.textContent = defaultStyles;
+        document.head.appendChild(styleElement);
+    };
+
+    const showReconnectDialog = () => {
+        // Looked up now rather than at load, so markup rendered after this script still works.
+        const reconnectModal = document.getElementById(reconnectModalId);
+        if (!reconnectModal) {
+            if (!hasWarnedMissingModal) {
+                hasWarnedMissingModal = true;
+                console.warn(`Blazor reconnection failed and no #${reconnectModalId} element exists to show it.`);
+            }
+            return;
+        }
+
+        reconnectModal.innerHTML = '<span>Connection lost.</span><button type="button">Refresh</button>';
+        reconnectModal.querySelector('button').addEventListener('click', () => location.reload());
+
+        injectDefaultStyles();
+        // The markup hides the element inline; only lift that, so an app's own display value stays.
+        if (!reconnectModal.style.display || reconnectModal.style.display === 'none') {
+            reconnectModal.style.display = 'flex';
+        }
+    };
+
+    const hideReconnectDialog = () => {
+        const reconnectModal = document.getElementById(reconnectModalId);
+        if (reconnectModal) {
+            reconnectModal.style.display = 'none';
+            reconnectModal.innerHTML = '';
+        }
+    };
 
     const startReconnectionProcess = () => {
         let isCanceled = false;
 
-        const modalTimer = setTimeout(() => {
-            if (!isCanceled && reconnectModal) {
-                reconnectModal.style.display = 'block';
-            }
-        }, modalGraceMilliseconds);
-
         (async () => {
-            for (let i = 0; i < maximumRetryCount; i++) {
-                if (reconnectModal) {
-                    reconnectModal.innerText = `Attempting to reconnect: ${i + 1} of ${maximumRetryCount}`;
-                }
-
-                // Attempt FIRST — the common case reconnects on try one with no wait;
-                // onConnectionUp then cancels the pending modal.
+            for (let attempt = 0; attempt < maximumRetryCount; attempt++) {
+                // Attempt first: the common case reconnects on the first try with no wait.
                 try {
                     const result = await Blazor.reconnect();
                     if (!result) {
-                        // The server was reached, but the connection was rejected; reload the page.
+                        // The server answered but the circuit is gone; only a reload recovers.
                         location.reload();
-                        return;
                     }
 
-                    // Successfully reconnected to the server.
                     return;
                 } catch {
-                    // Didn't reach the server; wait, then try again.
+                    // Did not reach the server; wait, then try again.
                 }
-
-                await new Promise(resolve => setTimeout(resolve, retryIntervalMilliseconds));
 
                 if (isCanceled) {
                     return;
                 }
+
+                if (attempt < maximumRetryCount - 1) {
+                    await new Promise(resolve => setTimeout(resolve, retryInterval(attempt)));
+
+                    if (isCanceled) {
+                        return;
+                    }
+                }
             }
 
-            // Retried too many times; reload the page.
-            location.reload();
+            showReconnectDialog();
         })();
 
         return {
             cancel: () => {
                 isCanceled = true;
-                clearTimeout(modalTimer);
-                if (reconnectModal) {
-                    reconnectModal.style.display = 'none';
-                }
+                hideReconnectDialog();
             },
         };
     };

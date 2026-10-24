@@ -27,7 +27,7 @@ public sealed class AnthropicRequestTranslatorTests
         Assert.Equal("You are a helpful assistant.", block.Text);
         Assert.NotNull(block.CacheControl);
         Assert.Single(p.Messages);
-        Assert.Equal<ApiEnum<string, Role>>(Role.User, p.Messages[0].Role);
+        Assert.Equal<ApiEnum<string, MessageParamRole>>(MessageParamRole.User, p.Messages[0].Role);
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public sealed class AnthropicRequestTranslatorTests
         var results = Assert.IsType<ImmutableArray<ContentBlockParam>>(p.Messages[2].Content.Value);
         var result = Assert.IsType<ToolResultBlockParam>(Assert.Single(results).Value);
         Assert.Equal("tu_1", result.ToolUseID);
-        Assert.Equal<ApiEnum<string, Role>>(Role.User, p.Messages[2].Role);
+        Assert.Equal<ApiEnum<string, MessageParamRole>>(MessageParamRole.User, p.Messages[2].Role);
     }
 
     [Fact]
@@ -168,9 +168,8 @@ public sealed class AnthropicRequestTranslatorTests
         var p = Translate(request, "high");
 
         Assert.Equal(Effort.High, p.OutputConfig!.Effort!.Value());
-#pragma warning disable CS0618 // asserting the deprecated field stays unset
-        Assert.Null(p.Temperature);
-#pragma warning restore CS0618
+        // MessageCreateParams has no Temperature since SDK 13, so it cannot be set here; the
+        // client test on the posted body checks that no temperature goes out.
     }
 
     [Fact]
@@ -198,7 +197,7 @@ public sealed class AnthropicRequestTranslatorTests
 
         var p = Translate(request);
 
-        Assert.Equal<ApiEnum<string, Role>>(Role.User, p.Messages[0].Role);
+        Assert.Equal<ApiEnum<string, MessageParamRole>>(MessageParamRole.User, p.Messages[0].Role);
         Assert.Equal(3, p.Messages.Count);
         var blocks = Assert.IsType<ImmutableArray<ContentBlockParam>>(p.Messages[0].Content.Value);
         Assert.Equal(AnthropicRequestTranslator.TrimmedConversationPlaceholder, Assert.IsType<TextBlockParam>(Assert.Single(blocks).Value).Text);

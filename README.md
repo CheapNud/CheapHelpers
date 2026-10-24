@@ -1,4 +1,4 @@
-# CheapHelpers
+﻿# CheapHelpers
 
 A collection of production-ready C# utilities, extensions, and services for .NET 11.0 development. Simplify common development tasks with battle-tested helpers for Blazor, Entity Framework, networking, email, PDF generation, billing, reporting, and more.
 
@@ -116,7 +116,7 @@ services.AddCheapApiKeys<MyUser>(options =>
     options.DefaultRateLimitPerMinute = 100;
 });
 
-// Generate — full key only returned once
+// Generate â€” full key only returned once
 var result = await apiKeyService.GenerateAsync(
     userId, "Production API",
     scopes: ["read", "write"],
@@ -151,7 +151,7 @@ var invoice = await billingService.GenerateInvoiceAsync(
 ```csharp
 using CheapHelpers.Services.DataExchange.Ubl;
 
-// Simple API — fluent builder, no UBL knowledge needed
+// Simple API â€” fluent builder, no UBL knowledge needed
 var invoice = InvoiceBuilder.Create("INV-2026-000001")
     .From("My Company", vatNumber: "BE0123456789")
     .To("Acme Corp", vatNumber: "BE9876543210")
@@ -248,7 +248,7 @@ Delete your `CheapAccountController<TUser, TContext>` subclass and its `[Route]`
 
 CheapHelpers.Blazor 4.0.1 fixes a startup crash in published apps that have a `wwwroot` file with the same relative name as one of the package's assets, for example `js/site.js`. The static asset manifest format that 4.0.0 shipped with caused it. Apps on 4.0.0 can rename the clashing file or upgrade. In 4.0.2 the boot script no longer shows a retry counter and no longer reloads the page on its own; once the retries fail, the `reconnect-modal` element shows a Refresh button.
 
-CheapHelpers.Llm 4.1.0 moves to Anthropic SDK 13.x, so apps that reference the Anthropic package themselves or pass `ProviderBlocks` must take 13.x too; the `ILlmClient` surface is unchanged.
+CheapHelpers.Llm 4.0.2 moves to Anthropic SDK 13.x, so apps that reference the Anthropic package themselves or pass `ProviderBlocks` must take 13.x too; the `ILlmClient` surface is unchanged.
 
 To force a password change, let `AfterSignIn` return `routes.ChangePasswordRoute + "?forced=true"` when your own check says the user needs a new password. The change-password page then shows a warning that a new password is required. Keeping the user on that page until the password is changed stays in your app, for example in middleware that redirects other requests.
 
@@ -302,32 +302,32 @@ CheapHelpers/                      Core utilities, extensions, scheduling, threa
 CheapHelpers.Models/               Entities, DTOs, enums, UBL invoice models
 CheapHelpers.EF/                   Entity Framework, CheapContext, repositories
 CheapHelpers.Auth/                 Plex, OAuth/OIDC, shared secret, forwarded headers, Data Protection
-  ├── ApiKeys/                     API key generation, validation, rate-limiting middleware
-  ├── OAuth/                       Google, Microsoft, GitHub, Apple, OpenID Connect options
-  └── Plex/                        Plex PIN sign-in service
+  â”œâ”€â”€ ApiKeys/                     API key generation, validation, rate-limiting middleware
+  â”œâ”€â”€ OAuth/                       Google, Microsoft, GitHub, Apple, OpenID Connect options
+  â””â”€â”€ Plex/                        Plex PIN sign-in service
 CheapHelpers.Services/
-  ├── Billing/                     Usage metering, invoice generation, billing cycles
-  ├── DataExchange/
-  │   ├── Csv/                     CSV import/export
-  │   ├── Excel/                   Excel generation (ClosedXML)
-  │   ├── Json/                    JSON file service
-  │   ├── Pdf/                     PDF generation (iText) + optimization (iLovePDF)
-  │   ├── Ubl/                     UBL Order/Invoice/CreditNote (UblSharp, PEPPOL BIS 3.0)
-  │   └── Xml/                     XML serialization
-  ├── Email/                       MailKit, Microsoft Graph, SendGrid + Fluid templates
-  ├── Geocoding/                   Mapbox, Azure Maps, Google Maps, PTV Maps
-  ├── Notifications/               Multi-channel (InApp, Email, SMS, Push) + RabbitMQ
-  ├── Polling/                     HTTP polling with exponential backoff
-  ├── Reporting/                   Report generation, storage, distribution, scheduling
-  └── Storage/                     Azure Blob Storage
+  â”œâ”€â”€ Billing/                     Usage metering, invoice generation, billing cycles
+  â”œâ”€â”€ DataExchange/
+  â”‚   â”œâ”€â”€ Csv/                     CSV import/export
+  â”‚   â”œâ”€â”€ Excel/                   Excel generation (ClosedXML)
+  â”‚   â”œâ”€â”€ Json/                    JSON file service
+  â”‚   â”œâ”€â”€ Pdf/                     PDF generation (iText) + optimization (iLovePDF)
+  â”‚   â”œâ”€â”€ Ubl/                     UBL Order/Invoice/CreditNote (UblSharp, PEPPOL BIS 3.0)
+  â”‚   â””â”€â”€ Xml/                     XML serialization
+  â”œâ”€â”€ Email/                       MailKit, Microsoft Graph, SendGrid + Fluid templates
+  â”œâ”€â”€ Geocoding/                   Mapbox, Azure Maps, Google Maps, PTV Maps
+  â”œâ”€â”€ Notifications/               Multi-channel (InApp, Email, SMS, Push) + RabbitMQ
+  â”œâ”€â”€ Polling/                     HTTP polling with exponential backoff
+  â”œâ”€â”€ Reporting/                   Report generation, storage, distribution, scheduling
+  â””â”€â”€ Storage/                     Azure Blob Storage
 CheapHelpers.Blazor/
-  ├── Components/                  NotificationBell, CultureSelector
-  ├── Extensions/                  DI, account, culture and notification endpoint mapping
-  ├── Helpers/                     AuthenticatorHelper, AccountTabDefinition
-  ├── Hybrid/                      WebView bridge, push notifications, app bar
-  ├── Pages/Account/               Full account module (login, register, 2FA, GDPR)
-  ├── Services/                    UserService, ExternalUserProvisioner, RabbitMQ consumer
-  └── Shared/                      LoginDisplay, PlexSignInCard, UploadFile, ImagePanel, Selectors
+  â”œâ”€â”€ Components/                  NotificationBell, CultureSelector
+  â”œâ”€â”€ Extensions/                  DI, account, culture and notification endpoint mapping
+  â”œâ”€â”€ Helpers/                     AuthenticatorHelper, AccountTabDefinition
+  â”œâ”€â”€ Hybrid/                      WebView bridge, push notifications, app bar
+  â”œâ”€â”€ Pages/Account/               Full account module (login, register, 2FA, GDPR)
+  â”œâ”€â”€ Services/                    UserService, ExternalUserProvisioner, RabbitMQ consumer
+  â””â”€â”€ Shared/                      LoginDisplay, PlexSignInCard, UploadFile, ImagePanel, Selectors
 CheapHelpers.Networking/           Network scanner, mDNS discovery, device detectors
 CheapHelpers.MediaProcessing/      FFmpeg integration, hardware detection (Win/Linux)
 CheapHelpers.MAUI/                 iOS APNS, Android FCM, status bar helpers

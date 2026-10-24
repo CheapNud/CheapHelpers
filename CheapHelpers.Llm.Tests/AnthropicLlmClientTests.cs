@@ -79,7 +79,7 @@ public sealed class AnthropicLlmClientTests
 
         await client.GenerateAsync(new LlmRequest
         {
-            Messages = [LlmMessage.System("sys"), LlmMessage.User("hi")],
+            Messages = [LlmMessage.System("sys"), LlmMessage.User("hi"), LlmMessage.Assistant("ok"), LlmMessage.User("again")],
             Temperature = 0.5,
         }, TestContext.Current.CancellationToken);
 
@@ -89,6 +89,7 @@ public sealed class AnthropicLlmClientTests
         Assert.False(root.TryGetProperty("temperature", out _));
         Assert.Equal("ephemeral", root.GetProperty("system")[0].GetProperty("cache_control").GetProperty("type").GetString());
         Assert.Equal("user", root.GetProperty("messages")[0].GetProperty("role").GetString());
+        Assert.Equal("assistant", root.GetProperty("messages")[1].GetProperty("role").GetString());
     }
 
     [Fact]

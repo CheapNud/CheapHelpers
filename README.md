@@ -248,6 +248,8 @@ Delete your `CheapAccountController<TUser, TContext>` subclass and its `[Route]`
 
 CheapHelpers.Blazor 4.0.1 fixes a startup crash in published apps that have a `wwwroot` file with the same relative name as one of the package's assets, for example `js/site.js`. The static asset manifest format that 4.0.0 shipped with caused it. Apps on 4.0.0 can rename the clashing file or upgrade. In 4.0.2 the boot script no longer shows a retry counter and no longer reloads the page on its own; once the retries fail, the `reconnect-modal` element shows a Refresh button.
 
+CheapHelpers.Llm 4.0.2 moves to Anthropic SDK 13.x, so apps that reference the Anthropic package themselves or pass `ProviderBlocks` must take 13.x too; the `ILlmClient` surface is unchanged.
+
 To force a password change, let `AfterSignIn` return `routes.ChangePasswordRoute + "?forced=true"` when your own check says the user needs a new password. The change-password page then shows a warning that a new password is required. Keeping the user on that page until the password is changed stays in your app, for example in middleware that redirects other requests.
 
 Passkeys appear on the login page and in the Security tab of the account page once the app sets `Stores.SchemaVersion = IdentitySchemaVersions.Version3` in its Identity options. Add one EF migration for the new `AspNetUserPasskeys` table. Nothing else is needed, because the package loads its passkey script on every page itself.

@@ -105,10 +105,10 @@ internal static class AnthropicRequestTranslator
     private static List<MessageParam> ToMessages(IReadOnlyList<LlmMessage> messages)
     {
         var output = new List<MessageParam>();
-        Role? currentRole = null;
+        MessageParamRole? currentRole = null;
         List<ContentBlockParam>? currentBlocks = null;
 
-        void Append(Role role, IEnumerable<ContentBlockParam> blocks)
+        void Append(MessageParamRole role, IEnumerable<ContentBlockParam> blocks)
         {
             // Consecutive same-role turns are merged into one message: the API merges them
             // server-side anyway, and one user turn per tool-result batch is the documented shape.
@@ -124,7 +124,12 @@ internal static class AnthropicRequestTranslator
         void Flush()
         {
             if (currentRole is not null && currentBlocks is { Count: > 0 })
-                output.Add(new MessageParam { Role = currentRole.Value, Content = currentBlocks });
+            {
+                if (currentRole == MessageParamRole.User)
+                    output.Add(new UserMessageParam(currentBlocks));
+                else
+                    output.Add(new AssistantMessageParam(currentBlocks));
+            }
             currentRole = null;
             currentBlocks = null;
         }
@@ -137,15 +142,15 @@ internal static class AnthropicRequestTranslator
                     break;
 
                 case "user":
-                    Append(Role.User, [new TextBlockParam { Text = message.Content?.ToString() ?? string.Empty }]);
+                    Append(MessageParamRole.User, [new TextBlockParam { Text = message.Content?.ToString() ?? string.Empty }]);
                     break;
 
                 case "assistant":
-                    Append(Role.Assistant, message.ProviderBlocks ?? ReconstructAssistant(message));
+                    Append(MessageParamRole.Assistant, message.ProviderBlocks ?? ReconstructAssistant(message));
                     break;
 
                 case "tool":
-                    Append(Role.User,
+                    Append(MessageParamRole.User,
                     [
                         new ToolResultBlockParam
                         {
@@ -160,14 +165,8 @@ internal static class AnthropicRequestTranslator
         Flush();
 
         // The API requires the first message to be a user turn; a trimmed window can start on an assistant one.
-        if (output.Count > 0 && output[0].Role == Role.Assistant)
-        {
-            output.Insert(0, new MessageParam
-            {
-                Role = Role.User,
-                Content = new List<ContentBlockParam> { new TextBlockParam { Text = TrimmedConversationPlaceholder } },
-            });
-        }
+        if (output.Count > 0 && output[0].TryPickAssistant(out _))
+            output.Insert(0, new UserMessageParam(new List<ContentBlockParam> { new TextBlockParam { Text = TrimmedConversationPlaceholder } }));
 
         return output;
     }

@@ -131,5 +131,5 @@ Chunks carry text fragments, tool call fragments (`ToolCallDeltas`, tied togethe
 
 ## Dependencies
 
-- Anthropic (12.58.0), the official SDK behind the native client
+- Anthropic (13.3.0), the official SDK behind the native client
 - Microsoft.Extensions.Http (10.0.13), for the typed `HttpClient` of the compatible client

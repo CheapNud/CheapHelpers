@@ -30,6 +30,7 @@ public sealed class AnthropicLlmClient(
             logger.LogWarning("Session token budget {MaxSessionTokens} reached, skipping call (purpose={Purpose})", config.MaxSessionTokens, request.Purpose);
             return new LlmResponse();
         }
+        request = LlmText.ApplyInputRules(request, config);
 
         var parameters = AnthropicRequestTranslator.ToMessageParams(request, config, logger);
         logger.LogDebug("Anthropic messages | model={Model} | messages={Messages} | tools={Tools}", parameters.Model, parameters.Messages.Count, parameters.Tools?.Count ?? 0);
@@ -61,6 +62,7 @@ public sealed class AnthropicLlmClient(
             logger.LogWarning("Session token budget {MaxSessionTokens} reached, skipping stream (purpose={Purpose})", config.MaxSessionTokens, request.Purpose);
             yield break;
         }
+        request = LlmText.ApplyInputRules(request, config);
 
         var parameters = AnthropicRequestTranslator.ToMessageParams(request, config, logger);
         logger.LogDebug("Anthropic messages (stream) | model={Model} | messages={Messages}", parameters.Model, parameters.Messages.Count);

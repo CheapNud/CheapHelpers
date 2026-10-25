@@ -56,6 +56,22 @@ public sealed class LlmRequest
     /// </summary>
     [JsonIgnore]
     public LlmJsonSchema? ResponseSchema { get; set; }
+
+    // New properties must be copied here too, or they are lost when the input rules rewrite a request.
+    internal LlmRequest WithMessages(IReadOnlyList<LlmMessage> messages) => new()
+    {
+        Model = Model,
+        Messages = [.. messages],
+        Tools = Tools,
+        Temperature = Temperature,
+        MaxTokens = MaxTokens,
+        Stream = Stream,
+        StreamOptions = StreamOptions,
+        ReasoningEffort = ReasoningEffort,
+        Reasoning = Reasoning,
+        Purpose = Purpose,
+        ResponseSchema = ResponseSchema,
+    };
 }
 
 /// <summary>A named JSON Schema for structured output. The schema root must be an object.</summary>

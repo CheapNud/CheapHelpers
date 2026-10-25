@@ -131,6 +131,23 @@ public sealed class AnthropicLlmClientTests
     }
 
     [Fact]
+    public async Task Generate_strips_zero_width_spaces_from_user_text_when_enabled()
+    {
+        var options = Options();
+        options.StripInvisibleCharacters = true;
+        var (client, server, _) = Make(options);
+        server.Reply(ToolUseReply);
+
+        await client.GenerateAsync(new LlmRequest { Messages = [LlmMessage.User("hel​lo​ world")] }, TestContext.Current.CancellationToken);
+
+        var body = Assert.Single(server.PostedBodies);
+        // Ordinal: a culture-aware search ignores zero-width characters and would match anywhere.
+        Assert.DoesNotContain("​", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("\\u200B", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("hello world", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Generate_with_a_cancelled_token_throws_before_sending()
     {
         var (client, server, _) = Make();

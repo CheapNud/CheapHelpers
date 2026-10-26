@@ -4,8 +4,8 @@ namespace CheapHelpers.Llm.Tests;
 
 public sealed class LlmTextTests
 {
-    // Zero-width space, zero-width non-joiner, word joiner, right-to-left override, BOM, soft hyphen, tag character.
-    private const string Dirty = "one​ two‌ three⁠ four‮ five﻿ six­ seven\U000E0041";
+    // Zero-width space, word joiner, right-to-left override, BOM, soft hyphen, invisible times, tag character.
+    private const string Dirty = "one\u200B two\u2060 three\u202E four\uFEFF five\u00AD six\u2062 seven\U000E0041";
     private const string Clean = "one two three four five six seven";
     private const string Family = "\U0001F468‍\U0001F469‍\U0001F467";
 
@@ -19,6 +19,14 @@ public sealed class LlmTextTests
     public void StripInvisible_keeps_the_zero_width_joiner_and_returns_the_same_instance()
     {
         Assert.Same(Family, LlmText.StripInvisible(Family));
+    }
+
+    [Fact]
+    public void StripInvisible_keeps_the_zero_width_non_joiner()
+    {
+        // Persian spells with U+200C; stripping it would change the word.
+        const string persian = "\u0645\u06CC\u200C\u062E\u0648\u0627\u0647\u0645";
+        Assert.Same(persian, LlmText.StripInvisible(persian));
     }
 
     [Fact]

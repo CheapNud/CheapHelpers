@@ -7,11 +7,12 @@ namespace CheapHelpers.Llm;
 /// <summary>Text hygiene for untrusted input sent to a model.</summary>
 public static class LlmText
 {
+    private const int ZeroWidthNonJoiner = 0x200C;
     private const int ZeroWidthJoiner = 0x200D;
     private const string UserRole = "user";
     private const string ToolRole = "tool";
 
-    /// <summary>Removes Unicode format characters (zero-width, bidi controls, soft hyphen, BOM, tag characters); the zero-width joiner stays so emoji sequences survive.</summary>
+    /// <summary>Removes Unicode format characters (zero-width, bidi controls, soft hyphen, BOM, tag characters); the zero-width joiner and non-joiner stay, so emoji sequences and scripts that spell with them survive.</summary>
     public static string StripInvisible(string text)
     {
         if (string.IsNullOrEmpty(text))
@@ -51,7 +52,7 @@ public static class LlmText
     }
 
     private static bool IsInvisible(Rune rune) =>
-        rune.Value != ZeroWidthJoiner && Rune.GetUnicodeCategory(rune) == UnicodeCategory.Format;
+        rune.Value is not (ZeroWidthNonJoiner or ZeroWidthJoiner) && Rune.GetUnicodeCategory(rune) == UnicodeCategory.Format;
 
     // A message deserialised with System.Text.Json (a reloaded chat history) holds its text as a JsonElement.
     // Multimodal content-part arrays are left alone and not counted; callers clean those parts with StripInvisible.

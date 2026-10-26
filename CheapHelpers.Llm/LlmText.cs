@@ -7,12 +7,15 @@ namespace CheapHelpers.Llm;
 /// <summary>Text hygiene for untrusted input sent to a model.</summary>
 public static class LlmText
 {
+    private const int ArabicNumberSignFirst = 0x0600;
+    private const int ArabicNumberSignLast = 0x0605;
+    private const int ArabicEndOfAyah = 0x06DD;
     private const int ZeroWidthNonJoiner = 0x200C;
     private const int ZeroWidthJoiner = 0x200D;
     private const string UserRole = "user";
     private const string ToolRole = "tool";
 
-    /// <summary>Removes Unicode format characters (zero-width, bidi controls, soft hyphen, BOM, tag characters); the zero-width joiner and non-joiner stay, so emoji sequences and scripts that spell with them survive.</summary>
+    /// <summary>Removes Unicode format characters (zero-width, bidi controls, soft hyphen, BOM, tag characters). The zero-width joiner and non-joiner stay, so joined emoji and scripts that spell with them survive; tag-based subdivision flags do not. The Arabic number signs (U+0600 to U+0605, U+06DD) stay because they render.</summary>
     public static string StripInvisible(string text)
     {
         if (string.IsNullOrEmpty(text))
@@ -33,9 +36,18 @@ public static class LlmText
         return builder?.ToString() ?? text;
     }
 
-    /// <summary>Enforces <see cref="LlmOptions.MaxInputCharacters"/> and <see cref="LlmOptions.StripInvisibleCharacters"/>; returns the same request when nothing changed.</summary>
+    /// <summary>Enforces <see cref="LlmOptions.StripInvisibleCharacters"/> and then <see cref="LlmOptions.MaxInputCharacters"/>; returns the same request when nothing changed.</summary>
     internal static LlmRequest ApplyInputRules(LlmRequest request, LlmOptions config)
     {
+        if (config.StripInvisibleCharacters)
+        {
+            var messages = request.Messages.Select(Clean).ToList();
+            // LlmMessage has reference equality, so this is false only when a message was replaced.
+            if (!messages.SequenceEqual(request.Messages))
+                request = request.WithMessages(messages);
+        }
+
+        // Counted after stripping, so the limit applies to the text that is sent.
         if (config.MaxInputCharacters > 0)
         {
             var characters = request.Messages.Sum(message => (long)(TextOf(message.Content)?.Length ?? 0));
@@ -43,16 +55,12 @@ public static class LlmText
                 throw new ArgumentException($"Request message text is {characters} characters, over the limit of {config.MaxInputCharacters}.", nameof(request));
         }
 
-        if (!config.StripInvisibleCharacters)
-            return request;
-
-        var messages = request.Messages.Select(Clean).ToList();
-        // LlmMessage has reference equality, so this is true only when no message was replaced.
-        return messages.SequenceEqual(request.Messages) ? request : request.WithMessages(messages);
+        return request;
     }
 
     private static bool IsInvisible(Rune rune) =>
-        rune.Value is not (ZeroWidthNonJoiner or ZeroWidthJoiner) && Rune.GetUnicodeCategory(rune) == UnicodeCategory.Format;
+        rune.Value is not (ZeroWidthNonJoiner or ZeroWidthJoiner or ArabicEndOfAyah or (>= ArabicNumberSignFirst and <= ArabicNumberSignLast))
+        && Rune.GetUnicodeCategory(rune) == UnicodeCategory.Format;
 
     // A message deserialised with System.Text.Json (a reloaded chat history) holds its text as a JsonElement.
     // Multimodal content-part arrays are left alone and not counted; callers clean those parts with StripInvisible.

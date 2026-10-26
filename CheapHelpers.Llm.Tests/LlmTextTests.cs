@@ -30,6 +30,14 @@ public sealed class LlmTextTests
     }
 
     [Fact]
+    public void StripInvisible_keeps_the_arabic_number_signs()
+    {
+        // U+0600 and U+06DD are format characters that render; a number sign before a digit and the end of ayah mark.
+        const string arabic = "؀١ ۝٢";
+        Assert.Same(arabic, LlmText.StripInvisible(arabic));
+    }
+
+    [Fact]
     public void StripInvisible_returns_plain_text_and_empty_unchanged()
     {
         const string plain = "plain ascii text";
@@ -87,5 +95,17 @@ public sealed class LlmTextTests
         Assert.Equal("request", ex.ParamName);
         Assert.Contains("10", ex.Message);
         Assert.Contains("11", ex.Message);
+    }
+
+    [Fact]
+    public void ApplyInputRules_counts_characters_after_stripping()
+    {
+        // Ten visible characters padded with five zero-width spaces: over the raw limit, within it once cleaned.
+        var request = new LlmRequest { Messages = [LlmMessage.User("0123456789​​​​​")] };
+        var config = new LlmOptions { StripInvisibleCharacters = true, MaxInputCharacters = 10 };
+
+        var applied = LlmText.ApplyInputRules(request, config);
+
+        Assert.Equal("0123456789", applied.Messages[0].Content);
     }
 }

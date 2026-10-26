@@ -40,11 +40,11 @@ builder.Services.AddCheapLlm(options =>
 | `MaxRetries` | `2` | Retries after a timeout or a 5xx reply |
 | `MaxSessionTokens` | `0` | Session token cap; `0` is unlimited |
 | `StripInvisibleCharacters` | `false` | Removes Unicode format characters from user and tool-result text before sending |
-| `MaxInputCharacters` | `0` | Rejects a request whose message text is longer before any call; `0` is unlimited |
+| `MaxInputCharacters` | `0` | Rejects a request whose message text is longer before any call, counted after stripping; `0` is unlimited |
 | `Referer` | `null` | `HTTP-Referer` header for OpenRouter app attribution |
 | `AppTitle` | `null` | `X-Title` header for OpenRouter app attribution |
 
-Pasted or scraped text can carry thousands of invisible characters that confuse the model and inflate the token count. `StripInvisibleCharacters` cleans user and tool-result text (system and assistant text are left alone, and the zero-width joiner and non-joiner stay, so emoji sequences and scripts that spell with them survive), and `MaxInputCharacters` throws an `ArgumentException` for oversized input before anything is sent. Both cover plain-text content only; multimodal content arrays pass through as they are. `LlmText.StripInvisible` is public for callers who want to clean text earlier.
+Pasted or scraped text can carry thousands of invisible characters that confuse the model and inflate the token count. `StripInvisibleCharacters` cleans user and tool-result text (system and assistant text are left alone), and `MaxInputCharacters` throws an `ArgumentException` for oversized input before anything is sent; it counts the text after stripping. The zero-width joiner and non-joiner stay, so joined emoji and scripts that spell with them survive; tag-based subdivision flags (England, Scotland, Wales) collapse to the plain black flag. The Arabic number signs (U+0600 to U+0605, U+06DD) stay because they render. Both cover plain-text content only; multimodal content arrays pass through as they are. `LlmText.StripInvisible` is public for callers who want to clean text earlier.
 
 Until you set them, `BaseUrl` and `Model` follow the preset of the current `Provider` (OpenRouter and `mistralai/mistral-large-4-0` by default), so a key set for one provider never goes to another provider's endpoint.
 

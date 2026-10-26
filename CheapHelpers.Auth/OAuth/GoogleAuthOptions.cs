@@ -16,9 +16,9 @@ public class GoogleAuthOptions : OAuthProviderOptions
 
     /// <summary>
     /// Restrict login to a specific Google Workspace domain (e.g., "example.com").
-    /// When set, only users from this domain can authenticate. Enforced both client-side
-    /// (via the <c>hd</c> parameter) and server-side (email domain verification).
-    /// Null allows any Google account.
+    /// When set, the sign-in is accepted only when the account's <c>hd</c> claim matches this domain
+    /// and the email is at this domain. The <c>hd</c> parameter on the redirect only pre-selects
+    /// the account on Google's sign-in screen. Null allows any Google account.
     /// </summary>
     public string? HostedDomain { get; set; }
 }

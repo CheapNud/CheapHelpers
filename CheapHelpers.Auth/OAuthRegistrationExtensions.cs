@@ -51,6 +51,7 @@ public static class OAuthRegistrationExtensions
                 opt.ClientSecret = googleOptions.ClientSecret;
                 opt.SignInScheme = ExternalCookieScheme;
                 opt.CallbackPath = "/signin-google";
+                opt.ClaimActions.MapJsonKey("hd", "hd");
 
                 foreach (var scope in googleOptions.Scopes)
                     opt.Scope.Add(scope);
@@ -307,7 +308,8 @@ public static class OAuthRegistrationExtensions
             return Results.Challenge(properties, [authenticationScheme]);
         }).AllowAnonymous();
 
-        endpoints.MapGet(providerOptions.CallbackPath, (HttpContext httpContext) =>
+        // The explicit return type keeps MapGet off the RequestDelegate overload, which would discard the redirect result.
+        endpoints.MapGet(providerOptions.CallbackPath, Task<IResult> (HttpContext httpContext) =>
             HandleOAuthCallbackAsync(httpContext, providerOptions))
             .AllowAnonymous();
     }
@@ -345,10 +347,15 @@ public static class OAuthRegistrationExtensions
             return Results.Redirect($"{providerOptions.LoginPath}?error={Uri.EscapeDataString("Authentication failed — no user identifier received.")}");
         }
 
-        // Google: server-side hosted domain enforcement
-        if (providerOptions is GoogleAuthOptions { HostedDomain: not null } googleOpts && email is not null)
+        // Google: hosted domain is enforced on the server; the hd parameter on the redirect is only a login-screen hint.
+        if (providerOptions is GoogleAuthOptions { HostedDomain: not null } googleOpts)
         {
-            if (!email.EndsWith($"@{googleOpts.HostedDomain}", StringComparison.OrdinalIgnoreCase))
+            var hostedDomainClaim = externalPrincipal.FindFirstValue("hd");
+            var allowed = !string.IsNullOrEmpty(email)
+                && string.Equals(hostedDomainClaim, googleOpts.HostedDomain, StringComparison.OrdinalIgnoreCase)
+                && email.EndsWith($"@{googleOpts.HostedDomain}", StringComparison.OrdinalIgnoreCase);
+
+            if (!allowed)
             {
                 logger.LogWarning("Google OAuth: {Email} rejected — not in hosted domain {Domain}", email, googleOpts.HostedDomain);
                 await httpContext.SignOutAsync(ExternalCookieScheme);

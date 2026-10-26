@@ -5,7 +5,7 @@ Authentication building blocks for ASP.NET Core: Plex and OAuth sign-in, API key
 ## Package Information
 
 - **Package**: CheapHelpers.Auth
-- **Version**: 4.0.0
+- **Version**: 4.0.1
 - **Target Framework**: .NET 11.0 (net11.0)
 - **NuGet**: [CheapHelpers.Auth](https://www.nuget.org/packages/CheapHelpers.Auth)
 
@@ -64,6 +64,8 @@ builder.Services.AddAppleAuth(apple =>
 
 app.MapOAuthEndpoints(); // /auth/google-start, /auth/google-callback, ...
 ```
+
+`HostedDomain` accepts only accounts whose Google `hd` claim matches the domain and whose email is at that domain.
 
 Apple returns the user's name and email only on the first sign-in, so store them through `IExternalUserProvisioner` then. CheapHelpers.Blazor registers a provisioner that creates or links a `CheapUser` with `AddExternalUserProvisioning<TUser>()`.
 

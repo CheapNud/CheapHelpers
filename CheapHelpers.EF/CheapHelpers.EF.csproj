@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net11.0</TargetFramework>
-    <Version>4.0.0</Version>
+    <Version>4.0.1</Version>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
@@ -35,13 +35,13 @@
     <!-- No FrameworkReference here on purpose: Microsoft.AspNetCore.App has no Android runtime
          pack (NETSDK1082), and keeping it out lets MAUI apps consume this package.
          Framework-dependent Identity wiring lives in CheapHelpers.Blazor. -->
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.14" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.13" />
-    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="10.0.13" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.14" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="10.0.14" />
     <!-- Lifts the transitive floor from Microsoft.Data.SqlClient; CVE-2026-84008 and CVE-2026-70162 are fixed in 10.0.13 -->
-    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
   </ItemGroup>
 
   <ItemGroup>

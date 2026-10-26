@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net11.0</TargetFramework>
-    <Version>4.0.0</Version>
+    <Version>4.0.1</Version>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
@@ -34,7 +34,7 @@
   <ItemGroup>
     <!-- Microsoft.Extensions.DependencyInjection.Abstractions is not listed on purpose: on net11.0 it ships
          in the shared framework and an explicit reference raises NU1510 -->
-    <PackageReference Include="System.IO.Hashing" Version="10.0.13" />
+    <PackageReference Include="System.IO.Hashing" Version="10.0.14" />
     <PackageReference Include="ZXing.Net" Version="0.16.11" />
   </ItemGroup>
 

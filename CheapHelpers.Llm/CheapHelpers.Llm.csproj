@@ -39,7 +39,7 @@
     <!-- Microsoft.Extensions.DependencyInjection.Abstractions, Options and Logging.Abstractions are not listed on
          purpose: on net11.0 they ship in the shared framework and an explicit reference raises NU1510 -->
     <PackageReference Include="Anthropic" Version="13.3.0" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.13" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.14" />
   </ItemGroup>
 
 </Project>

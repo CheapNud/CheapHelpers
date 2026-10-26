@@ -250,7 +250,7 @@ CheapHelpers.Blazor 4.0.1 fixes a startup crash in published apps that have a `w
 
 CheapHelpers.Llm 4.0.2 moves to Anthropic SDK 13.x, so apps that reference the Anthropic package themselves or pass `ProviderBlocks` must take 13.x too; the `ILlmClient` surface is unchanged. CheapHelpers.Llm 4.0.3 adds opt-in input hygiene (`StripInvisibleCharacters`, `MaxInputCharacters`).
 
-CheapHelpers.Auth 4.0.1 enforces `HostedDomain` on the server with Google's `hd` claim and rejects sign-ins that carry no email; CheapHelpers.Blazor 4.0.4 only moves to that Auth version.
+CheapHelpers.Auth 4.0.1 enforces `HostedDomain` on the server with Google's `hd` claim and rejects sign-ins that carry no email; CheapHelpers.Blazor 4.0.4 only moves to that Auth version. The other packages move their Microsoft dependencies to 10.0.14.
 
 To force a password change, let `AfterSignIn` return `routes.ChangePasswordRoute + "?forced=true"` when your own check says the user needs a new password. The change-password page then shows a warning that a new password is required. Keeping the user on that page until the password is changed stays in your app, for example in middleware that redirects other requests.
 

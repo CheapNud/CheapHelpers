@@ -5,7 +5,7 @@ Barcode generation and reading on ZXing.Net with no native image dependency, so 
 ## Package Information
 
 - **Package**: CheapHelpers.Barcodes
-- **Version**: 4.0.0
+- **Version**: 4.0.1
 - **Target Framework**: .NET 11.0 (net11.0)
 - **NuGet**: [CheapHelpers.Barcodes](https://www.nuget.org/packages/CheapHelpers.Barcodes)
 
@@ -55,4 +55,4 @@ var read = barcodes.ReadBarcode(File.ReadAllBytes("label.jpg"));
 ## Dependencies
 
 - ZXing.Net (0.16.11)
-- System.IO.Hashing (10.0.13), for the PNG chunk checksums
+- System.IO.Hashing (10.0.14), for the PNG chunk checksums

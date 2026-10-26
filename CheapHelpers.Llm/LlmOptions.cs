@@ -53,6 +53,12 @@ public sealed class LlmOptions
     /// <summary>Session token cap across all purposes; once reached the clients skip calls until the tracker resets. 0 is unlimited.</summary>
     public long MaxSessionTokens { get; set; }
 
+    /// <summary>Removes Unicode format characters from user and tool-result text before sending; off by default.</summary>
+    public bool StripInvisibleCharacters { get; set; }
+
+    /// <summary>Rejects a request whose message text exceeds this many characters before any call is made, counted after stripping; 0 is unlimited.</summary>
+    public int MaxInputCharacters { get; set; }
+
     /// <summary>Optional HTTP-Referer header for the OpenAI-compatible client (OpenRouter app attribution).</summary>
     public string? Referer { get; set; }
 

@@ -48,6 +48,7 @@ public sealed class OpenAiCompatibleLlmClient(
             logger.LogWarning("Session token budget {MaxSessionTokens} reached, skipping call (purpose={Purpose})", config.MaxSessionTokens, request.Purpose);
             return new LlmResponse();
         }
+        request = LlmText.ApplyInputRules(request, config);
 
         var endpoint = Endpoint(config);
         var wireRequest = ToWireRequest(request, config, stream: false);
@@ -120,6 +121,7 @@ public sealed class OpenAiCompatibleLlmClient(
             logger.LogWarning("Session token budget {MaxSessionTokens} reached, skipping stream (purpose={Purpose})", config.MaxSessionTokens, request.Purpose);
             yield break;
         }
+        request = LlmText.ApplyInputRules(request, config);
 
         var endpoint = Endpoint(config);
         var body = Serialize(ToWireRequest(request, config, stream: true), responseSchema: null);

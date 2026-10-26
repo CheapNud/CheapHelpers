@@ -192,4 +192,35 @@ public sealed class OpenAiCompatibleLlmClientTests
 
         Assert.Empty(server.Requests);
     }
+
+    [Fact]
+    public async Task Generate_strips_zero_width_spaces_from_user_text_when_enabled()
+    {
+        var server = new FakeLlmServer().Reply(TestClients.CompatReply("ok"));
+        var options = Options();
+        options.StripInvisibleCharacters = true;
+        var client = TestClients.Compatible(server, options);
+
+        await client.GenerateAsync(new LlmRequest { Messages = [LlmMessage.User("hel​lo​ world")] }, TestContext.Current.CancellationToken);
+
+        var body = Assert.Single(server.PostedBodies);
+        // Ordinal: a culture-aware search ignores zero-width characters and would match anywhere.
+        Assert.DoesNotContain("​", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("\\u200B", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("hello world", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Generate_over_the_input_character_limit_throws_before_sending()
+    {
+        var server = new FakeLlmServer();
+        var options = Options();
+        options.MaxInputCharacters = 5;
+        var client = TestClients.Compatible(server, options);
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            client.GenerateAsync(new LlmRequest { Messages = [LlmMessage.User("longer than five")] }, TestContext.Current.CancellationToken));
+
+        Assert.Empty(server.Requests);
+    }
 }

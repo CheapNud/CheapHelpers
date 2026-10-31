@@ -98,26 +98,16 @@ namespace CheapHelpers.Helpers.Encryption
         }
 
         /// <summary>
-        /// Encrypts data with a RANDOM IV - RECOMMENDED for most use cases.
+        /// Encrypts with a fresh random IV for each call, for values whose ciphertext must not repeat.
         /// </summary>
         /// <param name="plainText">Text to encrypt</param>
         /// <returns>Base64 encoded string containing IV + encrypted data</returns>
         /// <remarks>
-        /// <para><strong>RECOMMENDED DEFAULT:</strong> This method provides cryptographically secure encryption by generating a unique, random IV for each encryption operation.</para>
-        /// <para><strong>Security Benefits:</strong></para>
         /// <list type="bullet">
+        /// <item><description>Each call generates a new random IV</description></item>
         /// <item><description>Each encryption produces a different ciphertext, even for identical plaintext</description></item>
-        /// <item><description>Prevents pattern analysis attacks</description></item>
-        /// <item><description>Follows cryptographic best practices (NIST guidelines)</description></item>
-        /// <item><description>Suitable for encrypting sensitive user data (passwords, API keys, personal information)</description></item>
         /// </list>
-        /// <para><strong>Use this method for:</strong></para>
-        /// <list type="bullet">
-        /// <item><description>Encrypting sensitive data (default choice)</description></item>
-        /// <item><description>Long-term data storage</description></item>
-        /// <item><description>User credentials and personal information</description></item>
-        /// <item><description>Any scenario where security is prioritized over deterministic output</description></item>
-        /// </list>
+        /// <para>The key comes from the machine name and the user name, so this is obfuscation, not protection for secrets.</para>
         /// <para>The IV is automatically prepended to the ciphertext and extracted during decryption by <see cref="DecryptWithRandomIV"/>.</para>
         /// <para>Note: For deterministic encryption (same plaintext = same ciphertext) for URL parameters or cache keys, use <see cref="EncryptDeterministic"/> instead.</para>
         /// </remarks>
@@ -152,7 +142,7 @@ namespace CheapHelpers.Helpers.Encryption
         }
 
         /// <summary>
-        /// Decrypts data that was encrypted with <see cref="EncryptWithRandomIV"/> - RECOMMENDED for most use cases.
+        /// Decrypts data that was encrypted with <see cref="EncryptWithRandomIV"/>.
         /// </summary>
         /// <param name="cipherText">Base64 encoded string containing IV + encrypted data</param>
         /// <returns>Decrypted plain text string</returns>

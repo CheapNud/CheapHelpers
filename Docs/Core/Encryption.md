@@ -6,7 +6,7 @@ AES-256 obfuscation with a key derived from the machine name and the user name.
 
 The `EncryptionHelper` class provides AES-256-CBC encryption and decryption methods with two approaches:
 - **Deterministic** (`EncryptDeterministic`/`DecryptDeterministic`) - for URL parameters and cache keys
-- **Random IV** (`EncryptWithRandomIV`/`DecryptWithRandomIV`) - for sensitive data (RECOMMENDED)
+- **Random IV** (`EncryptWithRandomIV`/`DecryptWithRandomIV`) - for values whose ciphertext must not repeat
 
 ## Namespace
 
@@ -24,9 +24,9 @@ The key is the same for every build of the library on that machine for that user
 
 ## Methods
 
-### EncryptWithRandomIV (RECOMMENDED)
+### EncryptWithRandomIV
 
-Encrypts data with a cryptographically secure random IV for each operation.
+Encrypts data with a fresh random IV for each call.
 
 **Signature:**
 ```csharp
@@ -38,23 +38,21 @@ public static string EncryptWithRandomIV(string plainText)
 
 **Returns:** Base64 encoded string containing IV + encrypted data
 
-**Security Benefits:**
+**Behaviour:**
+- Each call generates a new random IV
 - Each encryption produces different ciphertext for identical plaintext
-- Prevents pattern analysis attacks
-- Follows NIST cryptographic best practices
-- Suitable for encrypting sensitive data
 
 **Example:**
 ```csharp
-string password = "MySecretPassword123";
-string encrypted = EncryptionHelper.EncryptWithRandomIV(password);
+string orderId = "order-42";
+string encrypted = EncryptionHelper.EncryptWithRandomIV(orderId);
 
 // Same input produces different output each time
-string encrypted2 = EncryptionHelper.EncryptWithRandomIV(password);
+string encrypted2 = EncryptionHelper.EncryptWithRandomIV(orderId);
 // encrypted != encrypted2
 
 // Store in database
-userRecord.EncryptedPassword = encrypted;
+orderRecord.EncryptedOrderId = encrypted;
 ```
 
 ### DecryptWithRandomIV
@@ -75,8 +73,8 @@ public static string DecryptWithRandomIV(string cipherText)
 
 **Example:**
 ```csharp
-string encrypted = userRecord.EncryptedPassword;
-string password = EncryptionHelper.DecryptWithRandomIV(encrypted);
+string encrypted = orderRecord.EncryptedOrderId;
+string orderId = EncryptionHelper.DecryptWithRandomIV(encrypted);
 ```
 
 ### EncryptDeterministic
@@ -188,10 +186,10 @@ public class SecureCacheService
             TimeSpan.FromHours(1));
     }
 
-    public void StoreSecureData(string key, string sensitiveData)
+    public void StoreSecureData(string key, string cachedValue)
     {
-        // Encrypt the data with random IV (RECOMMENDED)
-        string encrypted = EncryptionHelper.EncryptWithRandomIV(sensitiveData);
+        // Encrypt the value with a random IV
+        string encrypted = EncryptionHelper.EncryptWithRandomIV(cachedValue);
 
         // Use deterministic encryption for cache key if needed
         string cacheKey = EncryptionHelper.EncryptDeterministic(key);
@@ -219,21 +217,21 @@ If you have existing data encrypted with the static IV method and want to migrat
 ```csharp
 public class EncryptionMigration
 {
-    public async Task MigrateUserData()
+    public async Task MigrateOrderData()
     {
-        var users = await database.GetAllUsersAsync();
+        var orders = await database.GetAllOrdersAsync();
 
-        foreach (var user in users)
+        foreach (var order in orders)
         {
-            if (IsStaticIvEncryption(user.EncryptedApiKey))
+            if (IsStaticIvEncryption(order.EncryptedOrderId))
             {
                 // Decrypt with deterministic method
-                string plainText = EncryptionHelper.DecryptDeterministic(user.EncryptedApiKey);
+                string plainText = EncryptionHelper.DecryptDeterministic(order.EncryptedOrderId);
 
                 // Re-encrypt with new method
-                user.EncryptedApiKey = EncryptionHelper.EncryptWithRandomIV(plainText);
+                order.EncryptedOrderId = EncryptionHelper.EncryptWithRandomIV(plainText);
 
-                await database.UpdateAsync(user);
+                await database.UpdateAsync(order);
             }
         }
     }
@@ -251,11 +249,11 @@ public class EncryptionMigration
 
 ## Tips and Best Practices
 
-1. **Default to Random IV**: Always use `EncryptWithRandomIV` for encrypting sensitive data unless you have a specific requirement for deterministic encryption.
+1. **Default to Random IV**: Use `EncryptWithRandomIV` unless you need the same ciphertext for the same plaintext.
 
 2. **Key Rotation**: Since the key is machine-specific and deterministic, rotating keys requires:
    - Decrypting all data with the old key
-   - Changing system characteristics (if possible) or implementing custom key storage
+   - Changing the machine name or user name, or implementing custom key storage
    - Re-encrypting with the new key
 
 3. **Error Handling**: Always wrap decrypt operations in try-catch:
@@ -281,15 +279,8 @@ public class EncryptionMigration
 
 6. **Do Not Mix Methods**: Data encrypted with `EncryptDeterministic` cannot be decrypted with `DecryptWithRandomIV` and vice versa.
 
-7. **Machine Dependency**: Encrypted data can only be decrypted on the same machine (same system characteristics). For multi-server deployments, implement custom key storage.
+7. **Machine Dependency**: Encrypted data can only be decrypted on the same machine (same machine name and user name). For multi-server deployments, implement custom key storage.
 
 8. **Performance**: Encryption operations are CPU-intensive. For high-throughput scenarios:
    - Cache decrypted values when possible
-   - Consider encrypting only truly sensitive fields
    - Use async patterns to avoid blocking threads
-
-9. **Compliance**: For PCI DSS, GDPR, HIPAA compliance:
-    - Use `EncryptWithRandomIV` for all personal/sensitive data
-    - Implement proper key management
-    - Maintain audit logs of encryption/decryption operations
-    - Consider additional layers of security (network encryption, disk encryption)

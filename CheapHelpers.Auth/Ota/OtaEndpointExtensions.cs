@@ -15,6 +15,7 @@ public static class OtaEndpointExtensions
     private const string AssetContentType = "application/octet-stream";
     private const string UnavailableMessage = "Release source unavailable";
     private const string TextContentType = "text/plain";
+    private const string LatestPath = "/releases/latest";
 
     /// <summary>
     /// Maps <c>GET {prefix}/releases</c>, <c>GET {prefix}/releases/latest?arch=&amp;since=</c> and
@@ -44,14 +45,18 @@ public static class OtaEndpointExtensions
         group.MapGet("/releases", async (IOtaReleaseSource source, CancellationToken cancellationToken) =>
             Results.Ok(await source.GetReleasesAsync(cancellationToken)));
 
-        group.MapGet("/releases/latest", async (string? arch, string? since, OtaUpdateChecker checker, CancellationToken cancellationToken) =>
+        group.MapGet(LatestPath, async (string? arch, string? since, OtaUpdateChecker checker, HttpContext httpContext) =>
         {
             if (string.IsNullOrWhiteSpace(arch))
                 return Results.BadRequest();
 
+            // The links carry the prefix this request came in on, so a path base or a parent group is included
+            var requestPath = (httpContext.Request.PathBase + httpContext.Request.Path).Value!.TrimEnd('/');
+            var mountedPrefix = requestPath[..^LatestPath.Length];
+
             try
             {
-                var latest = await checker.LatestAsync(since, arch, routePrefix, cancellationToken);
+                var latest = await checker.LatestAsync(since, arch, mountedPrefix, httpContext.RequestAborted);
                 return latest is null ? Results.NotFound() : Results.Ok(latest);
             }
             catch (ArgumentException)

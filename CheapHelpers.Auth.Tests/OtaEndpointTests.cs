@@ -48,6 +48,17 @@ public class OtaEndpointTests
     }
 
     [Fact]
+    public async Task Latest_links_carry_a_parent_group_prefix()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var app = await StartAsync(new FakeReleaseSource(Releases), cancellationToken, webApp => webApp.MapGroup("/edge").MapCheapOtaReleaseEndpoints());
+
+        var body = await app.GetTestClient().GetStringAsync($"/edge{Prefix}/releases/latest?arch=armv7", cancellationToken);
+
+        Assert.Contains("\"download_url\":\"/edge/api/ota/releases/1.2.0/agent-armv7\"", body);
+    }
+
+    [Fact]
     public async Task Latest_answers_404_without_releases_and_400_for_an_unknown_or_missing_architecture()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
@@ -171,7 +182,7 @@ public class OtaEndpointTests
         Assets = { ["armv7"] = Binary, ["aarch64"] = "agent-aarch64" },
     };
 
-    private static Task<WebApplication> StartAsync(FakeReleaseSource source, CancellationToken cancellationToken) =>
+    private static Task<WebApplication> StartAsync(FakeReleaseSource source, CancellationToken cancellationToken, Action<WebApplication>? mapEndpoints = null) =>
         TestWebApp.StartAsync(
             builder =>
             {
@@ -185,7 +196,7 @@ public class OtaEndpointTests
                 });
                 builder.Services.AddSingleton<IOtaReleaseSource>(source);
             },
-            webApp => webApp.MapCheapOtaReleaseEndpoints(),
+            mapEndpoints ?? (webApp => webApp.MapCheapOtaReleaseEndpoints()),
             cancellationToken);
 
     /// <summary>Serves fixed releases and in-memory assets, or throws as an unreachable forge would.</summary>

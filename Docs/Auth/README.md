@@ -188,6 +188,8 @@ app.MapGet("/api/devices/update", async (HttpContext http, OtaUpdateChecker chec
 });
 ```
 
+The two paths in the answer are relative to the host, so pass the path base in `routePrefix` when the app runs under one. The `latest` endpoint takes its prefix from the request, which includes a path base or a parent group.
+
 ### Wire contract
 
 | Endpoint | Query | Status codes |

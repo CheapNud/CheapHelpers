@@ -6,21 +6,24 @@
 <div class="@Class">
     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
         <MudText Typo="Typo.body2">@_displayTitle</MudText>
-        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.OpenInNew" Href="@Url" Target="_blank">Open</MudButton>
+        @if (_url is not null)
+        {
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.OpenInNew" Href="@_url" Target="_blank">Open</MudButton>
+        }
     </MudStack>
     @switch (_kind)
     {
         case FileKind.Image:
             @* Not Fluid: its height:auto rule overrides Height. The max-width keeps it inside narrow screens and ObjectFit keeps the aspect. *@
-            <MudImage Src="@Url" Alt="@Title" ObjectFit="@ObjectFit" Height="@Height" Fluid="false" Style="max-width:100%" Class="rounded" @onclick="OnClick" />
+            <MudImage Src="@_url" Alt="@Title" ObjectFit="@ObjectFit" Height="@Height" Fluid="false" Style="max-width:100%" Class="rounded" @onclick="OnClick" />
             break;
         case FileKind.Video:
             @* MudBlazor has no video component *@
-            <video controls style="max-width:100%;height:@(Height)px"><source src="@Url" type="@_videoType" /></video>
+            <video controls style="max-width:100%;height:@(Height)px"><source src="@_url" type="@_videoType" /></video>
             break;
         case FileKind.Pdf:
             @* MudBlazor has no frame component *@
-            <iframe src="@Url" title="@Title" style="width:100%;height:@(Height)px;border:0"></iframe>
+            <iframe src="@_url" title="@Title" style="width:100%;height:@(Height)px;border:0"></iframe>
             break;
     }
 </div>
@@ -33,12 +36,13 @@
     private enum FileKind { Other, Image, Video, Pdf }
 
     private FileKind _kind;
+    private string? _url;
     private string _contentType = string.Empty;
     private string _videoType = string.Empty;
     private string _displayTitle = string.Empty;
 
     /// <summary>
-    /// The address of the file; rendered only as an attribute value, never as markup.
+    /// The address of the file; rendered only as an attribute value, never as markup, and only when it is http(s) or relative.
     /// </summary>
     [EditorRequired]
     [Parameter]
@@ -84,17 +88,39 @@
     protected override void OnParametersSet()
     {
         // A SAS URL carries its signature in the query string, so cut it off before reading the extension
-        var path = Url.Split(['?', '#'], 2)[0];
+        _url = IsSafeUrl(Url) ? Url : null;
+        var path = (_url ?? string.Empty).Split(['?', '#'], 2)[0];
         _contentType = string.IsNullOrWhiteSpace(ContentType) ? MimeUtility.GetMimeMapping(path) : ContentType;
         // Chromium skips a video/quicktime source, but most .mov uploads are H.264 and play when announced as MP4
         _videoType = string.Equals(_contentType, QuickTimeContentType, StringComparison.OrdinalIgnoreCase) ? KnownMimeTypes.Mp4 : _contentType;
         _displayTitle = Title ?? Uri.UnescapeDataString(Path.GetFileName(path));
         _kind = _contentType switch
         {
+            _ when _url is null => FileKind.Other,
             _ when _contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) => FileKind.Image,
             _ when _contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) => FileKind.Video,
             _ when _contentType.StartsWith(PdfContentType, StringComparison.OrdinalIgnoreCase) => FileKind.Pdf,
             _ => FileKind.Other,
         };
+    }
+
+    // A javascript: or data: URL in href or src runs script, so only http(s) and relative URLs get through
+    private static bool IsSafeUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return false;
+        }
+
+        var colon = url.IndexOf(':');
+        var delimiter = url.IndexOfAny(['/', '?', '#']);
+        if (colon < 0 || (delimiter >= 0 && delimiter < colon))
+        {
+            return true;
+        }
+
+        var scheme = url[..colon];
+        return scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+            || scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase);
     }
 }

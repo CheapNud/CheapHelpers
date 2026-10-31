@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
 
+@* The title line and Open button from FileDisplay are intended: a phone may refuse to show a PDF inline. *@
 <div class="@Class" style="@Style">
     @if (!string.IsNullOrWhiteSpace(url))
     {

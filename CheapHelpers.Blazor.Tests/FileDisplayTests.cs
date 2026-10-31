@@ -89,6 +89,26 @@ public class FileDisplayTests : BunitContext
         AssertOpenLink(cut, FileUrl);
     }
 
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData(" JavaScript:alert(1)")]
+    [InlineData("data:application/pdf;base64,AAAA")]
+    public void Renders_no_link_or_frame_for_a_script_url(string url)
+    {
+        var cut = RenderFile(url, "application/pdf");
+
+        Assert.Empty(cut.FindAll("a"));
+        Assert.Empty(cut.FindAll("iframe"));
+    }
+
+    [Fact]
+    public void Keeps_a_relative_url()
+    {
+        var cut = RenderFile("files/scan.pdf", null);
+
+        Assert.Equal("files/scan.pdf", cut.Find("iframe").GetAttribute("src"));
+    }
+
     [Fact]
     public void Renders_the_title_as_text_not_markup()
     {

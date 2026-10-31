@@ -16,7 +16,7 @@
             break;
         case FileKind.Video:
             @* MudBlazor has no video component *@
-            <video controls style="max-width:100%;height:@(Height)px"><source src="@Url" type="@_contentType" /></video>
+            <video controls style="max-width:100%;height:@(Height)px"><source src="@Url" type="@_videoType" /></video>
             break;
         case FileKind.Pdf:
             @* MudBlazor has no frame component *@
@@ -28,11 +28,13 @@
 @code {
     private const int DefaultHeight = 400;
     private const string PdfContentType = "application/pdf";
+    private const string QuickTimeContentType = "video/quicktime";
 
     private enum FileKind { Other, Image, Video, Pdf }
 
     private FileKind _kind;
     private string _contentType = string.Empty;
+    private string _videoType = string.Empty;
     private string _displayTitle = string.Empty;
 
     /// <summary>
@@ -84,6 +86,8 @@
         // A SAS URL carries its signature in the query string, so cut it off before reading the extension
         var path = Url.Split(['?', '#'], 2)[0];
         _contentType = string.IsNullOrWhiteSpace(ContentType) ? MimeUtility.GetMimeMapping(path) : ContentType;
+        // Chromium skips a video/quicktime source, but most .mov uploads are H.264 and play when announced as MP4
+        _videoType = string.Equals(_contentType, QuickTimeContentType, StringComparison.OrdinalIgnoreCase) ? KnownMimeTypes.Mp4 : _contentType;
         _displayTitle = Title ?? Uri.UnescapeDataString(Path.GetFileName(path));
         _kind = _contentType switch
         {

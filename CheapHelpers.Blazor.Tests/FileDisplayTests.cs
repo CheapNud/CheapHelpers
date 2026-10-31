@@ -43,6 +43,14 @@ public class FileDisplayTests : BunitContext
     }
 
     [Fact]
+    public void Announces_a_quicktime_video_as_mp4()
+    {
+        var cut = RenderFile("https://example.test/files/clip.mov", null);
+
+        Assert.Equal("video/mp4", cut.Find("video source").GetAttribute("type"));
+    }
+
+    [Fact]
     public void Renders_a_frame_for_a_pdf()
     {
         var cut = RenderFile(FileUrl, "application/pdf");

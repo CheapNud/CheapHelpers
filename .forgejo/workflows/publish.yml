@@ -40,6 +40,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Point Source Link at the GitHub mirror
+        run: git remote set-url origin https://github.com/CheapNud/CheapHelpers.git
       - name: Pack base packages
         run: dotnet pack CheapHelpers.CI.slnx --configuration ${{ env.CONFIGURATION }} -p:EnableWindowsTargeting=true --output ./nupkgs
       - name: Publish base packages to NuGet.org
@@ -72,6 +74,8 @@ jobs:
         shell: cmd
     steps:
       - uses: actions/checkout@v4
+      - name: Point Source Link at the GitHub mirror
+        run: git remote set-url origin https://github.com/CheapNud/CheapHelpers.git
       - name: Restore MAUI
         run: dotnet restore CheapHelpers.MAUI/CheapHelpers.MAUI.csproj
       - name: Pack MAUI
@@ -93,6 +97,8 @@ jobs:
         shell: cmd
     steps:
       - uses: actions/checkout@v4
+      - name: Point Source Link at the GitHub mirror
+        run: git remote set-url origin https://github.com/CheapNud/CheapHelpers.git
       - name: Wait for NuGet indexing
         # ping as sleep: timeout /t needs an interactive console the runner lacks
         run: |

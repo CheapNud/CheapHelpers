@@ -19,8 +19,8 @@
     <Product>CheapHelpers</Product>
     <Description>LLM client for Anthropic and OpenAI-compatible providers with structured output and a usage cap</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</PackageProjectUrl>
-    <RepositoryUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>llm;anthropic;openrouter;openai;dotnet</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

@@ -19,8 +19,8 @@
     <Product>CheapHelpers</Product>
     <Description>Test doubles for apps on CheapHelpers: in-memory SQLite database, recording HTTP handler, header-driven test authentication, captured logs and a test web host</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</PackageProjectUrl>
-    <RepositoryUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>testing;xunit;sqlite;testhost;dotnet</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

@@ -20,8 +20,8 @@
     <Product>CheapHelpers</Product>
     <Description>MAUI platform implementations for Blazor Hybrid features: iOS APNS, Android FCM push notifications, local notifications, status bar configuration (iOS/Android/Windows), and platform-specific services for CheapHelpers.Blazor</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</PackageProjectUrl>
-    <RepositoryUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>maui;blazor-hybrid;push-notifications;apns;fcm;ios;android;windows;local-notifications;device-registration;status-bar</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

@@ -269,8 +269,8 @@ Ensure you have the correct package references:
 
 ## License
 
-MIT License - See [LICENSE.txt](https://git.cheapludes.be/cheapnud/CheapHelpers/raw/branch/master/LICENSE.txt)
+MIT License - See [LICENSE.txt](https://github.com/CheapNud/CheapHelpers/blob/master/LICENSE.txt)
 
 ## Contributing
 
-Contributions welcome! See the [repository](https://git.cheapludes.be/cheapnud/CheapHelpers)
+Contributions welcome! See the [repository](https://github.com/CheapNud/CheapHelpers)

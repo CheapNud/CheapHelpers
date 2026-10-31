@@ -18,7 +18,8 @@ public class SqliteTestDatabaseTests
             await writer.SaveChangesAsync(cancellationToken);
         }
 
-        await using var reader = await database.CreateDbContextAsync(cancellationToken);
+        IDbContextFactory<NotesContext> factory = database;
+        await using var reader = await factory.CreateDbContextAsync(cancellationToken);
         var note = await reader.Notes.SingleAsync(cancellationToken);
         Assert.Equal(NoteText, note.Text);
     }

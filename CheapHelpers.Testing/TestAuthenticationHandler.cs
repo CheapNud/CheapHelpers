@@ -30,11 +30,10 @@ public sealed class TestAuthenticationHandler(
     private const char PairSeparator = '=';
 
     /// <inheritdoc />
-    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
-    {
-        // The base class fixes the return type to Task<AuthenticateResult> and reading a header does no I/O
-        return Task.FromResult(Authenticate(Request.Headers.Authorization.ToString()));
-    }
+#pragma warning disable CS1998 // the override has to return a Task, and reading a header has nothing to await
+    protected override async Task<AuthenticateResult> HandleAuthenticateAsync() =>
+#pragma warning restore CS1998
+        Authenticate(Request.Headers.Authorization.ToString());
 
     private static AuthenticateResult Authenticate(string header)
     {

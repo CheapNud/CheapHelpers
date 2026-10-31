@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
@@ -31,6 +32,7 @@ public sealed class ForgeReleaseSource(HttpClient http, IOptions<OtaOptions> opt
         }) ?? [];
 
     /// <inheritdoc />
+    /// <exception cref="HttpRequestException">The forge cannot be reached or answers with a server error.</exception>
     public async Task<Stream?> OpenAssetAsync(string version, string assetName, CancellationToken cancellationToken = default)
     {
         // The version lands in the URL, so anything that is not a plain version never reaches the forge
@@ -42,8 +44,12 @@ public sealed class ForgeReleaseSource(HttpClient http, IOptions<OtaOptions> opt
         if (!tagResponse.IsSuccessStatusCode)
             return null;
 
+        // A draft is unpublished, so its binaries are never served even when the token can see it
         var release = await tagResponse.Content.ReadFromJsonAsync<ForgeRelease>(cancellationToken);
-        var downloadUrl = release?.Assets?.FirstOrDefault(asset => asset.Name == assetName)?.BrowserDownloadUrl;
+        if (release is null || release.Draft)
+            return null;
+
+        var downloadUrl = release.Assets?.FirstOrDefault(asset => asset.Name == assetName)?.BrowserDownloadUrl;
         if (string.IsNullOrEmpty(downloadUrl))
             return null;
 
@@ -83,7 +89,7 @@ public sealed class ForgeReleaseSource(HttpClient http, IOptions<OtaOptions> opt
     private OtaRelease? ToRelease(ForgeRelease forgeRelease)
     {
         var tag = forgeRelease.TagName;
-        if (tag is null || !tag.StartsWith(_options.TagPrefix, StringComparison.Ordinal))
+        if (forgeRelease.Draft || tag is null || !tag.StartsWith(_options.TagPrefix, StringComparison.Ordinal))
             return null;
 
         var version = tag[_options.TagPrefix.Length..];
@@ -103,7 +109,14 @@ public sealed class ForgeReleaseSource(HttpClient http, IOptions<OtaOptions> opt
         if (!string.IsNullOrEmpty(_options.ForgeToken) && sameHost)
             request.Headers.Authorization = new AuthenticationHeaderValue(TokenScheme, _options.ForgeToken);
 
-        return await http.SendAsync(request, completion, cancellationToken);
+        var response = await http.SendAsync(request, completion, cancellationToken);
+        if (response.StatusCode < HttpStatusCode.InternalServerError)
+            return response;
+
+        // A forge that is down must surface as unavailable, not as a missing release or asset
+        var status = response.StatusCode;
+        response.Dispose();
+        throw new HttpRequestException($"The forge answered {(int)status} for {uri.GetLeftPart(UriPartial.Path)}", null, status);
     }
 
     private static Uri WithTrailingSlash(string url) => new(url.TrimEnd('/') + "/");
@@ -111,6 +124,7 @@ public sealed class ForgeReleaseSource(HttpClient http, IOptions<OtaOptions> opt
     private sealed record ForgeRelease(
         [property: JsonPropertyName("tag_name")] string? TagName,
         [property: JsonPropertyName("body")] string? Body,
+        [property: JsonPropertyName("draft")] bool Draft,
         [property: JsonPropertyName("assets")] List<ForgeAsset>? Assets);
 
     private sealed record ForgeAsset(

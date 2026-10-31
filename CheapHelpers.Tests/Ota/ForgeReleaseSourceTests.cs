@@ -138,6 +138,38 @@ public class ForgeReleaseSourceTests
     }
 
     [Fact]
+    public async Task Draft_releases_are_neither_listed_nor_served()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var draft = new { tag_name = "v2.0.0", body = "", draft = true, assets = new[] { new { name = Binary, browser_download_url = DownloadUrl } } };
+        var handler = new RecordingHttpHandler()
+            .Reply(JsonSerializer.Serialize(new object[] { draft, new { tag_name = "v1.0.0", body = "", draft = false } }))
+            .Reply(JsonSerializer.Serialize(draft));
+        var source = CreateSource(handler);
+
+        var releases = await source.GetReleasesAsync(cancellationToken);
+        var asset = await source.OpenAssetAsync("2.0.0", Binary, cancellationToken);
+
+        Assert.Equal("1.0.0", Assert.Single(releases).Version);
+        Assert.Null(asset);
+        Assert.Equal(2, handler.Requests.Count);
+    }
+
+    [Fact]
+    public async Task A_server_error_on_an_asset_call_throws_instead_of_reporting_a_miss()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var handler = new RecordingHttpHandler()
+            .Reply("down", HttpStatusCode.BadGateway, "text/plain")
+            .Reply(ReleaseWithAssetJson())
+            .Reply("down", HttpStatusCode.ServiceUnavailable, "text/plain");
+        var source = CreateSource(handler);
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => source.OpenAssetAsync("1.2.0", Binary, cancellationToken));
+        await Assert.ThrowsAsync<HttpRequestException>(() => source.OpenAssetAsync("1.2.0", Binary, cancellationToken));
+    }
+
+    [Fact]
     public async Task A_server_error_on_the_list_call_throws()
     {
         var cancellationToken = TestContext.Current.CancellationToken;

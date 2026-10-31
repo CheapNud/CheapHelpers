@@ -1,8 +1,9 @@
 ﻿using Azure;
 using Azure.AI.Vision.ImageAnalysis;
-using CheapHelpers.Services.Vision;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;
+
+namespace CheapHelpers.Services.Vision;
 
 /// <summary>
 /// Azure Cognitive Services Vision API implementation using correct 1.0.0 API

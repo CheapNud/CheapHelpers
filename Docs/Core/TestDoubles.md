@@ -16,11 +16,15 @@ Assert.Equal("hello", handler.RequestBodies[0]);
 
 ## CapturedLogs
 
-A logger provider that keeps every line in memory, every level included. A line reads `{category}: {message}` followed by the state pairs and each active scope's pairs in brackets, for example `Orders: Shipped 7 [OrderId=7] [RequestId=42]`.
+A logger provider that keeps every line in memory, every level included. A line reads `{category}: {message}` followed by the state pairs and each active scope's pairs in brackets, for example `Orders: Shipped 7 [OrderId=7] [RequestId=42]`. Register it by hand; both calls come from the app's own logging package, which this package does not reference.
 
 ```csharp
 var logs = new CapturedLogs();
-builder.Logging.AddCapturedLogs(logs);
+using var factory = LoggerFactory.Create(logging =>
+{
+    logging.AddProvider(logs);
+    logging.SetMinimumLevel(LogLevel.Trace);
+});
 // after the call under test
 Assert.Contains(logs.Lines, line => line.StartsWith("Orders: Shipped"));
 ```

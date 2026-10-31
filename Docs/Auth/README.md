@@ -131,7 +131,7 @@ Callers send `X-Shared-Secret: <secret>` or `Authorization: Bearer <secret>`. `H
 
 ## Test authentication
 
-A header-driven authentication scheme for integration tests, in the `CheapHelpers.Auth.Testing` namespace. It signs a request in as whoever the `Authorization: Test <userId>[;key=value]*` header names. The user id becomes the `NameIdentifier` and `sub` claims, every `key=value` pair becomes a claim. No header gives no result, so an endpoint that requires a user answers 401.
+A header-driven authentication scheme for integration tests, in the `CheapHelpers.Auth.Testing` namespace. It signs a request in as whoever the `Authorization: Test <userId>[;key=value]*` header names. The user id becomes the `NameIdentifier` and `sub` claims, every `key=value` pair becomes a claim. No header gives no result, so an endpoint that requires a user answers 401. In the Production environment the scheme fails every request, so a registration left in by mistake cannot sign anyone in.
 
 ```csharp
 using CheapHelpers.Auth.Testing;

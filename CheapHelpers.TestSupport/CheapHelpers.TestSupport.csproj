@@ -22,4 +22,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.14" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CheapHelpers\CheapHelpers.csproj" />
+  </ItemGroup>
+
 </Project>

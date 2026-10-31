@@ -216,7 +216,6 @@ if (result.Success)
 ## Dependencies
 
 - **Microsoft.Extensions.Caching.Memory** (9.0.10) - Memory caching infrastructure
-- **Microsoft.Extensions.Logging** (10.0.14) - Logging builder extensions used by `CapturedLogs`
 - **MimeMapping** (3.1.0) - MIME type detection
 - **MoreLinq** (4.4.0) - Additional LINQ methods
 - **Newtonsoft.Json** (13.0.4) - JSON serialization

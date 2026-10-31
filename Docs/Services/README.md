@@ -5,7 +5,6 @@ Business services including email with templates, PDF generation, Azure integrat
 ## Package Information
 
 - **Package**: CheapHelpers.Services
-- **Version**: 4.0.4
 - **Target Framework**: .NET 11.0 (net11.0)
 - **NuGet**: [CheapHelpers.Services](https://www.nuget.org/packages/CheapHelpers.Services)
 

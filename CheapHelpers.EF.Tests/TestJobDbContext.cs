@@ -1,7 +1,8 @@
+using CheapHelpers.EF.Jobs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace CheapHelpers.Jobs.Tests;
+namespace CheapHelpers.EF.Tests;
 
 public sealed class TestJobDbContext(DbContextOptions<TestJobDbContext> options) : DbContext(options)
 {

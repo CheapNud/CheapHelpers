@@ -1,4 +1,4 @@
-namespace CheapHelpers.Jobs;
+namespace CheapHelpers.EF.Jobs;
 
 /// <summary>Settings for the job queue and its worker.</summary>
 public sealed class JobQueueOptions

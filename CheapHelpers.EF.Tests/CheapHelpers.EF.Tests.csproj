@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CheapHelpers.Jobs\CheapHelpers.Jobs.csproj" />
+    <ProjectReference Include="..\CheapHelpers.EF\CheapHelpers.EF.csproj" />
   </ItemGroup>
 
   <ItemGroup>

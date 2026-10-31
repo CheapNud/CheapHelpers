@@ -1,4 +1,4 @@
-namespace CheapHelpers.Jobs;
+namespace CheapHelpers.EF.Jobs;
 
 /// <summary>Number of jobs per status.</summary>
 /// <param name="Pending">Jobs waiting to run.</param>

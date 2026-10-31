@@ -1,9 +1,10 @@
+using CheapHelpers.EF.Jobs;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 
-namespace CheapHelpers.Jobs.Tests;
+namespace CheapHelpers.EF.Tests;
 
 /// <summary>A queue and worker over an in-memory SQLite database, a fake clock and a recording processor.</summary>
 public sealed class JobQueueHarness : IDisposable

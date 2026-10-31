@@ -1,10 +1,11 @@
+using CheapHelpers.EF.Jobs;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
-namespace CheapHelpers.Jobs.Tests;
+namespace CheapHelpers.EF.Tests;
 
 public sealed class JobRegistrationTests
 {

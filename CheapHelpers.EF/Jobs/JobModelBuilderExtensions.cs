@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace CheapHelpers.Jobs;
+namespace CheapHelpers.EF.Jobs;
 
 /// <summary>Maps the job table into the app's own DbContext.</summary>
 public static class JobModelBuilderExtensions

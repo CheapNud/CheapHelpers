@@ -78,6 +78,8 @@ jobs:
       - name: Read the version from the tag
         run: echo VERSION=%GITHUB_REF_NAME:~1%>> %GITHUB_ENV%
       - name: Pack MAUI
+        # Restore needs no -p:Version: pack asks each referenced project for its version, so
+        # project-reference dependencies get the tag even though project.assets.json says 0.0.0-local
         run: dotnet pack CheapHelpers.MAUI/CheapHelpers.MAUI.csproj --configuration ${{ env.CONFIGURATION }} --no-restore -p:Version=%VERSION% --output ./nupkgs
       - name: Publish MAUI to NuGet.org
         run: dotnet nuget push nupkgs\*.nupkg --api-key %NUGET_API_KEY% --source %NUGET_SOURCE% --skip-duplicate --no-symbols
@@ -106,6 +108,7 @@ jobs:
       - name: Read the version from the tag
         run: echo VERSION=%GITHUB_REF_NAME:~1%>> %GITHUB_ENV%
       - name: Pack MediaProcessing
+        # Restore needs no -p:Version: see Pack MAUI
         run: dotnet pack CheapHelpers.MediaProcessing/CheapHelpers.MediaProcessing.csproj --configuration ${{ env.CONFIGURATION }} --no-restore -p:EnableWindowsTargeting=true -p:Version=%VERSION% --output ./nupkgs
       - name: Publish MediaProcessing to NuGet.org
         run: dotnet nuget push nupkgs\CheapHelpers.MediaProcessing.*.nupkg --api-key %NUGET_API_KEY% --source %NUGET_SOURCE% --skip-duplicate --no-symbols

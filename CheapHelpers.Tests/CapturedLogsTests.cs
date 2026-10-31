@@ -10,7 +10,8 @@ public class CapturedLogsTests
     public void Captures_trace_with_state_and_scope_pairs()
     {
         var logs = new CapturedLogs();
-        using (var factory = LoggerFactory.Create(logging => logging.AddCapturedLogs(logs)))
+        // Without the filter the factory's default minimum level (Information) would drop Trace and Debug before they reach the provider
+        using (var factory = LoggerFactory.Create(logging => logging.AddProvider(logs).AddFilter<CapturedLogs>(null, LogLevel.Trace)))
         {
             var logger = factory.CreateLogger(Category);
             using (logger.BeginScope(new Dictionary<string, object?> { ["RequestId"] = 42 }))

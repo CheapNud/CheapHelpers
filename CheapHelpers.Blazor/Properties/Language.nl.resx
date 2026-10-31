@@ -753,4 +753,13 @@
   <data name="Rename" xml:space="preserve">
     <value>Hernoemen</value>
   </data>
+  <data name="Analyze" xml:space="preserve">
+    <value>Analyseren</value>
+  </data>
+  <data name="AnalyzeDone" xml:space="preserve">
+    <value>Beschrijving en labels opgeslagen</value>
+  </data>
+  <data name="AnalyzeErrorMessage" xml:space="preserve">
+    <value>De afbeelding kon niet geanalyseerd worden</value>
+  </data>
 </root>

@@ -39,11 +39,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="CheapHelpers.Blazor.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.AI.Vision.ImageAnalysis" Version="1.0.0" />
     <PackageReference Include="BlazorDownloadFile" Version="2.4.0.2" />
     <PackageReference Include="BlazorZXingJs" Version="0.5.13" />
     <PackageReference Include="File.TypeChecker" Version="4.4.0" />

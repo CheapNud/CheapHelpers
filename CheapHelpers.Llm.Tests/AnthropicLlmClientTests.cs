@@ -371,4 +371,55 @@ public sealed class AnthropicLlmClientTests
         Assert.Equal("lights", toolUse.Name);
         Assert.Equal(50 + 8, tracker.TotalTokens);
     }
+
+    private const string WorkspaceHeader = "anthropic-workspace-id";
+    private const string WorkspaceIdVariable = "ANTHROPIC_WORKSPACE_ID";
+    private const string ProfileVariable = "ANTHROPIC_PROFILE";
+    private const string ConfigDirVariable = "ANTHROPIC_CONFIG_DIR";
+
+    [Fact]
+    public async Task Generate_sends_no_workspace_header_when_the_workspace_variable_is_set()
+    {
+        var saved = Environment.GetEnvironmentVariable(WorkspaceIdVariable);
+        try
+        {
+            Environment.SetEnvironmentVariable(WorkspaceIdVariable, "wrkspc_from_machine");
+            var (client, server, _) = Make();
+            server.Reply(ToolUseReply);
+
+            await client.GenerateAsync(new LlmRequest { Messages = [LlmMessage.User("x")] }, TestContext.Current.CancellationToken);
+
+            Assert.False(Assert.Single(server.Requests).Headers.Contains(WorkspaceHeader));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(WorkspaceIdVariable, saved);
+        }
+    }
+
+    // The SDK copies workspace_id from a local profile into this header, but only when the client
+    // was given no credential. It throws for a named profile it cannot find, so a call that goes
+    // through shows the profile lookup never ran.
+    [Fact]
+    public async Task Generate_skips_the_local_profile_and_sends_no_workspace_header()
+    {
+        var savedProfile = Environment.GetEnvironmentVariable(ProfileVariable);
+        var savedConfigDir = Environment.GetEnvironmentVariable(ConfigDirVariable);
+        try
+        {
+            Environment.SetEnvironmentVariable(ProfileVariable, "missing-profile");
+            Environment.SetEnvironmentVariable(ConfigDirVariable, Path.Combine(AppContext.BaseDirectory, "no-anthropic-config"));
+            var (client, server, _) = Make();
+            server.Reply(ToolUseReply);
+
+            await client.GenerateAsync(new LlmRequest { Messages = [LlmMessage.User("x")] }, TestContext.Current.CancellationToken);
+
+            Assert.False(Assert.Single(server.Requests).Headers.Contains(WorkspaceHeader));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(ProfileVariable, savedProfile);
+            Environment.SetEnvironmentVariable(ConfigDirVariable, savedConfigDir);
+        }
+    }
 }

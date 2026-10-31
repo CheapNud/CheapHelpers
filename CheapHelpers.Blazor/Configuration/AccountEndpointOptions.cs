@@ -13,4 +13,10 @@ public sealed class AccountEndpointOptions<TUser> where TUser : CheapUser
     /// Return a redirect path to override <see cref="Pages.Account.AccountRouteOptions.HomeRoute"/>, or null to keep it.
     /// </summary>
     public Func<TUser, HttpContext, Task<string?>>? AfterSignIn { get; set; }
+
+    /// <summary>
+    /// Runs after the change-password endpoint changed the password and refreshed the cookie.
+    /// Return a redirect path to override <see cref="Pages.Account.AccountRouteOptions.HomeRoute"/>, or null to keep it.
+    /// </summary>
+    public Func<TUser, HttpContext, Task<string?>>? AfterPasswordChanged { get; set; }
 }

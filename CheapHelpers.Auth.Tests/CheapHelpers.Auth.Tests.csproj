@@ -21,9 +21,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CheapHelpers.Auth\CheapHelpers.Auth.csproj" />
+    <ProjectReference Include="..\CheapHelpers.Testing\CheapHelpers.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <Using Include="CheapHelpers.Testing" />
     <Using Include="Xunit" />
   </ItemGroup>
 

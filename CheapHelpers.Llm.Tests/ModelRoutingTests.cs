@@ -64,11 +64,11 @@ public sealed class ModelRoutingTests
 
     private static async Task<JsonElement> PostWire(string baseUrl, string? effort, string? requestEffort = null)
     {
-        var server = new FakeLlmServer().Reply(TestClients.CompatReply("ok"));
+        var server = new RecordingHttpHandler().Reply(TestClients.CompatReply("ok"));
         var client = TestClients.Compatible(server, new LlmOptions { ApiKey = "k", BaseUrl = baseUrl, ReasoningEffort = effort });
 
         await client.GenerateAsync(new LlmRequest { Messages = [LlmMessage.User("hi")], ReasoningEffort = requestEffort }, TestContext.Current.CancellationToken);
 
-        return JsonDocument.Parse(Assert.Single(server.PostedBodies)).RootElement;
+        return JsonDocument.Parse(Assert.Single(server.RequestBodies)!).RootElement;
     }
 }

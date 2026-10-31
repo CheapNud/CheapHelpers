@@ -10,6 +10,8 @@ public static class ImageHelpers
     private const int MinDimension = 1;
     private const string IccProfileField = "icc-profile-data";
     private const string SrgbProfile = "srgb";
+    private const int NoHeightLimit = 10_000_000;
+    private const double PaperWhite = 255;
 
     /// <summary>
     /// Encodes an 8-bit pixel buffer as PNG, optionally shrunk so its longest side is at most <paramref name="maxLongestSide"/>
@@ -84,6 +86,28 @@ public static class ImageHelpers
 
         using var image = Image.NewFromStream(imageStream);
         return SaveUprightJpeg(image, maxLongestSide);
+    }
+
+    /// <summary>
+    /// Turns a scanned drawing (a 1-bit TIFF, for one) into an 8-bit greyscale PNG no wider than <paramref name="maxWidth"/>; never enlarges
+    /// </summary>
+    /// <param name="imageBytes">The encoded drawing</param>
+    /// <param name="maxWidth">Width of the output in pixels; the height follows the aspect ratio</param>
+    /// <returns>The PNG bytes</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxWidth"/> is below 1</exception>
+    /// <exception cref="VipsException">The bytes are not an image libvips can read</exception>
+    /// <remarks>Shrinking happens in greyscale with a real resampling kernel, so one-pixel lines become grey lines instead of dropping out. For bulk runs over many drawings set <c>NetVips.Cache.Max = 0</c> once at startup, otherwise the operation cache keeps their buffers alive.</remarks>
+    public static byte[] DrawingToPng(byte[] imageBytes, int maxWidth)
+    {
+        ArgumentNullException.ThrowIfNull(imageBytes);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxWidth, MinDimension);
+
+        // libvips caps the height at the width when none is given, which would shrink tall drawings
+        using var thumb = Image.ThumbnailBuffer(imageBytes, maxWidth, height: NoHeightLimit, size: Enums.Size.Down);
+        // Thumbnail already hands back 8-bit pixels for 16-bit scans; a transparent background becomes paper white, not black
+        using var flat = thumb.HasAlpha() ? thumb.Flatten(background: [PaperWhite]) : thumb.Copy();
+        using var grey = flat.Bands > 1 ? flat.Colourspace(Enums.Interpretation.Bw) : flat.Copy();
+        return grey.PngsaveBuffer();
     }
 
     private static byte[] SaveUprightJpeg(Image image, int? maxLongestSide)

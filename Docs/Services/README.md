@@ -106,7 +106,7 @@ builder.Services.AddWhisperSpeechToText();
 ```
 
 ### Image Helpers
-`ImageHelpers.EncodePng` turns a raw 8-bit pixel buffer (RGB, BGR, RGBA or BGRA) into a PNG, optionally shrunk so its longest side fits a cap. `ImageHelpers.NormalizePhoto` turns an uploaded photo upright and re-encodes it as JPEG without EXIF or other metadata, and returns null for formats libvips cannot load, such as BMP, so the caller can store the original.
+`ImageHelpers.EncodePng` turns a raw 8-bit pixel buffer (RGB, BGR, RGBA or BGRA) into a PNG, optionally shrunk so its longest side fits a cap. `ImageHelpers.NormalizePhoto` turns an uploaded photo upright and re-encodes it as JPEG without EXIF or other metadata, and returns null for formats libvips cannot load, such as BMP, so the caller can store the original. `ImageHelpers.DrawingToPng` turns a scanned drawing such as a 1-bit TIFF into an 8-bit greyscale PNG no wider than a given width, shrinking with a real kernel so thin lines survive; it never enlarges.
 
 **Key Classes:**
 - `ImageHelpers`, `PixelBandOrder`
@@ -119,7 +119,12 @@ byte[] png = ImageHelpers.EncodePng(frame, width, height, PixelBandOrder.Bgra, m
 
 // An uploaded photo; null means libvips cannot load it, so keep the original
 byte[] jpeg = ImageHelpers.NormalizePhoto(uploadBytes) ?? uploadBytes;
+
+// A scanned 1-bit TIFF drawing as a greyscale PNG at most 1600 pixels wide
+byte[] drawing = ImageHelpers.DrawingToPng(tiffBytes, maxWidth: 1600);
 ```
+
+For bulk runs over many drawings, set `NetVips.Cache.Max = 0` once at startup so the operation cache does not keep their buffers alive.
 
 ## Quick Start
 

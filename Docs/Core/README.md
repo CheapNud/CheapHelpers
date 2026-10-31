@@ -182,8 +182,8 @@ var user = await cache.GetOrAddAsync("user_123", async key =>
 ```csharp
 using CheapHelpers.Helpers.Encryption;
 
-// Encrypt sensitive data
-string encrypted = EncryptionHelper.EncryptWithRandomIV("MyPassword123");
+// Obfuscate a value (not for secrets, see Encryption.md)
+string encrypted = EncryptionHelper.EncryptWithRandomIV("order-42");
 
 // Decrypt
 string decrypted = EncryptionHelper.DecryptWithRandomIV(encrypted);

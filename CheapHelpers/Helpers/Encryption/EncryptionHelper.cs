@@ -1,58 +1,32 @@
 ﻿using System;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace CheapHelpers.Helpers.Encryption
 {
+    /// <summary>
+    /// AES-256 obfuscation with a key derived from the machine name and the user name.
+    /// The key is the same for every build of the library on that machine for that user, and anyone
+    /// who knows those two values can rebuild it. Use it for obfuscation (encrypted route values,
+    /// cache keys), not for secrets; for secrets use ASP.NET Core Data Protection or
+    /// <see cref="CheapHelpers.Security.PassphraseEnvelope"/>.
+    /// </summary>
+    /// <remarks>
+    /// Versions before this one also mixed in the OS version and the assembly name, so their ciphertext does not decrypt here.
+    /// </remarks>
     public static class EncryptionHelper
     {
-        private static readonly Lazy<(byte[] Key, byte[] IV)> _keyIvPair = new(() => GenerateKeyAndIV());
+        private const int Pbkdf2Iterations = 10000;
 
-        /// <summary>
-        /// Generates a machine-specific key and IV for AES encryption.
-        ///
-        /// SECURITY WARNING: This method is DETERMINISTIC by design - it generates the same
-        /// key and IV for the same machine every time. This design choice allows data encrypted
-        /// on one session to be decrypted in another session on the same machine without
-        /// external key storage.
-        ///
-        /// SECURITY IMPLICATIONS:
-        /// - The encryption key can be predicted by anyone who knows the machine name, username,
-        ///   OS version, and assembly name. These values provide limited entropy.
-        /// - If an attacker has access to encrypted data AND can determine these system values,
-        ///   they can reconstruct the encryption key.
-        /// - This approach is suitable for obfuscation and protection against casual access,
-        ///   but NOT for protecting highly sensitive data against determined attackers.
-        ///
-        /// RECOMMENDATIONS:
-        /// - For sensitive data requiring strong security, use EncryptWithRandomIV() which
-        ///   generates a unique IV for each encryption operation.
-        /// - Consider storing encryption keys in secure key storage (e.g., Azure Key Vault,
-        ///   Windows DPAPI, or hardware security modules) for production scenarios.
-        /// - Evaluate whether the deterministic behavior is required for your use case.
-        /// </summary>
-        /// <returns>Tuple containing the key and IV</returns>
-        private static (byte[] Key, byte[] IV) GenerateKeyAndIV()
+        private static readonly Lazy<(byte[] Key, byte[] IV)> _keyIvPair = new(() => DeriveKeyAndIV(Environment.MachineName, Environment.UserName));
+
+        /// <summary>Derives the AES key and the fixed IV from the machine name and the user name.</summary>
+        internal static (byte[] Key, byte[] IV) DeriveKeyAndIV(string machineName, string userName)
         {
-            // SECURITY NOTE: This is deterministic by design - same machine = same key
-            // The predictable nature is intentional to support decrypt-without-key-storage scenarios
-            // but limits the security against attackers who can determine system characteristics
+            // The separator keeps "ab" + "c" and "a" + "bc" from producing the same seed
+            var seedHash = HashHelper.CalculateSHA256HashBytes(machineName + "\n" + userName);
 
-            // Create a deterministic but machine-specific seed
-            var seed = new StringBuilder();
-            seed.Append(Environment.MachineName);
-            seed.Append(Environment.UserName);
-            seed.Append(Environment.OSVersion.ToString());
-            seed.Append(System.Reflection.Assembly.GetExecutingAssembly().FullName);
-
-            // Hash the seed to create consistent key material
-            var seedHash = HashHelper.CalculateSHA256HashBytes(seed.ToString());
-
-            // Use PBKDF2 to derive key and IV from the seed
-            // 10000 iterations provide some computational cost but can still be brute-forced
-            // if the seed entropy is low (which it is, given the predictable inputs)
-            using var pbkdf2 = new Rfc2898DeriveBytes(seedHash, seedHash, 10000, HashAlgorithmName.SHA256);
+            using var pbkdf2 = new Rfc2898DeriveBytes(seedHash, seedHash, Pbkdf2Iterations, HashAlgorithmName.SHA256);
 
             var key = pbkdf2.GetBytes(32); // 256-bit key for AES-256
             var iv = pbkdf2.GetBytes(16);  // 128-bit IV
@@ -124,26 +98,16 @@ namespace CheapHelpers.Helpers.Encryption
         }
 
         /// <summary>
-        /// Encrypts data with a RANDOM IV - RECOMMENDED for most use cases.
+        /// Encrypts with a fresh random IV for each call, for values whose ciphertext must not repeat.
         /// </summary>
         /// <param name="plainText">Text to encrypt</param>
         /// <returns>Base64 encoded string containing IV + encrypted data</returns>
         /// <remarks>
-        /// <para><strong>RECOMMENDED DEFAULT:</strong> This method provides cryptographically secure encryption by generating a unique, random IV for each encryption operation.</para>
-        /// <para><strong>Security Benefits:</strong></para>
         /// <list type="bullet">
+        /// <item><description>Each call generates a new random IV</description></item>
         /// <item><description>Each encryption produces a different ciphertext, even for identical plaintext</description></item>
-        /// <item><description>Prevents pattern analysis attacks</description></item>
-        /// <item><description>Follows cryptographic best practices (NIST guidelines)</description></item>
-        /// <item><description>Suitable for encrypting sensitive user data (passwords, API keys, personal information)</description></item>
         /// </list>
-        /// <para><strong>Use this method for:</strong></para>
-        /// <list type="bullet">
-        /// <item><description>Encrypting sensitive data (default choice)</description></item>
-        /// <item><description>Long-term data storage</description></item>
-        /// <item><description>User credentials and personal information</description></item>
-        /// <item><description>Any scenario where security is prioritized over deterministic output</description></item>
-        /// </list>
+        /// <para>The key comes from the machine name and the user name, so this is obfuscation, not protection for secrets.</para>
         /// <para>The IV is automatically prepended to the ciphertext and extracted during decryption by <see cref="DecryptWithRandomIV"/>.</para>
         /// <para>Note: For deterministic encryption (same plaintext = same ciphertext) for URL parameters or cache keys, use <see cref="EncryptDeterministic"/> instead.</para>
         /// </remarks>
@@ -178,7 +142,7 @@ namespace CheapHelpers.Helpers.Encryption
         }
 
         /// <summary>
-        /// Decrypts data that was encrypted with <see cref="EncryptWithRandomIV"/> - RECOMMENDED for most use cases.
+        /// Decrypts data that was encrypted with <see cref="EncryptWithRandomIV"/>.
         /// </summary>
         /// <param name="cipherText">Base64 encoded string containing IV + encrypted data</param>
         /// <returns>Decrypted plain text string</returns>

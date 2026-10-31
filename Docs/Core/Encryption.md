@@ -1,12 +1,12 @@
 # EncryptionHelper
 
-AES-256 encryption utilities with machine-specific key generation.
+AES-256 obfuscation with a key derived from the machine name and the user name.
 
 ## Overview
 
 The `EncryptionHelper` class provides AES-256-CBC encryption and decryption methods with two approaches:
 - **Deterministic** (`EncryptDeterministic`/`DecryptDeterministic`) - for URL parameters and cache keys
-- **Random IV** (`EncryptWithRandomIV`/`DecryptWithRandomIV`) - for sensitive data (RECOMMENDED)
+- **Random IV** (`EncryptWithRandomIV`/`DecryptWithRandomIV`) - for values whose ciphertext must not repeat
 
 ## Namespace
 
@@ -18,17 +18,15 @@ using CheapHelpers.Helpers.Encryption;
 
 The encryption key is **machine-specific** and **deterministic**, generated from:
 - Machine name
-- Username
-- OS version
-- Assembly name
+- User name
 
-This design allows encrypted data to be decrypted across sessions on the same machine without external key storage, but limits security against attackers who can determine these system characteristics.
+The key is the same for every build of the library on that machine for that user, and anyone who knows both values can rebuild it. It is not for secrets: use ASP.NET Core Data Protection or `PassphraseEnvelope` for those.
 
 ## Methods
 
-### EncryptWithRandomIV (RECOMMENDED)
+### EncryptWithRandomIV
 
-Encrypts data with a cryptographically secure random IV for each operation.
+Encrypts data with a fresh random IV for each call.
 
 **Signature:**
 ```csharp
@@ -40,23 +38,21 @@ public static string EncryptWithRandomIV(string plainText)
 
 **Returns:** Base64 encoded string containing IV + encrypted data
 
-**Security Benefits:**
+**Behaviour:**
+- Each call generates a new random IV
 - Each encryption produces different ciphertext for identical plaintext
-- Prevents pattern analysis attacks
-- Follows NIST cryptographic best practices
-- Suitable for encrypting sensitive data
 
 **Example:**
 ```csharp
-string password = "MySecretPassword123";
-string encrypted = EncryptionHelper.EncryptWithRandomIV(password);
+string orderId = "order-42";
+string encrypted = EncryptionHelper.EncryptWithRandomIV(orderId);
 
 // Same input produces different output each time
-string encrypted2 = EncryptionHelper.EncryptWithRandomIV(password);
+string encrypted2 = EncryptionHelper.EncryptWithRandomIV(orderId);
 // encrypted != encrypted2
 
 // Store in database
-userRecord.EncryptedPassword = encrypted;
+orderRecord.EncryptedOrderId = encrypted;
 ```
 
 ### DecryptWithRandomIV
@@ -77,8 +73,8 @@ public static string DecryptWithRandomIV(string cipherText)
 
 **Example:**
 ```csharp
-string encrypted = userRecord.EncryptedPassword;
-string password = EncryptionHelper.DecryptWithRandomIV(encrypted);
+string encrypted = orderRecord.EncryptedOrderId;
+string orderId = EncryptionHelper.DecryptWithRandomIV(encrypted);
 ```
 
 ### EncryptDeterministic
@@ -146,29 +142,13 @@ string userId = EncryptionHelper.DecryptDeterministic(encryptedId);
 
 **Key Derivation:** PBKDF2-HMAC-SHA256
 - **Iterations:** 10,000
-- **Salt:** SHA256 hash of system characteristics
+- **Salt:** SHA256 hash of machine name and user name
+
+## Compatibility
+
+Ciphertext from versions that mixed in the OS version and the assembly name does not decrypt with this version. Decrypt it before upgrading, or treat it as lost.
 
 ## Common Use Cases
-
-### Storing Sensitive User Data
-
-```csharp
-public class UserService
-{
-    public async Task SaveUserCredentials(User user, string apiKey)
-    {
-        // RECOMMENDED: Use random IV for sensitive data
-        user.EncryptedApiKey = EncryptionHelper.EncryptWithRandomIV(apiKey);
-        await database.SaveAsync(user);
-    }
-
-    public async Task<string> GetUserApiKey(int userId)
-    {
-        var user = await database.GetUserAsync(userId);
-        return EncryptionHelper.DecryptWithRandomIV(user.EncryptedApiKey);
-    }
-}
-```
 
 ### Encrypted URL Parameters (Deterministic)
 
@@ -206,10 +186,10 @@ public class SecureCacheService
             TimeSpan.FromHours(1));
     }
 
-    public void StoreSecureData(string key, string sensitiveData)
+    public void StoreSecureData(string key, string cachedValue)
     {
-        // Encrypt the data with random IV (RECOMMENDED)
-        string encrypted = EncryptionHelper.EncryptWithRandomIV(sensitiveData);
+        // Encrypt the value with a random IV
+        string encrypted = EncryptionHelper.EncryptWithRandomIV(cachedValue);
 
         // Use deterministic encryption for cache key if needed
         string cacheKey = EncryptionHelper.EncryptDeterministic(key);
@@ -230,75 +210,6 @@ public class SecureCacheService
 }
 ```
 
-### Configuration File Encryption
-
-```csharp
-public class ConfigManager
-{
-    public void SaveEncryptedConfig(string key, string value)
-    {
-        var encrypted = EncryptionHelper.EncryptWithRandomIV(value);
-
-        var config = new Dictionary<string, string>
-        {
-            [key] = encrypted
-        };
-
-        File.WriteAllText("config.json", JsonConvert.SerializeObject(config));
-    }
-
-    public string LoadEncryptedConfig(string key)
-    {
-        var json = File.ReadAllText("config.json");
-        var config = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
-
-        if (config.TryGetValue(key, out string encrypted))
-        {
-            return EncryptionHelper.DecryptWithRandomIV(encrypted);
-        }
-
-        return null;
-    }
-}
-```
-
-### Database Field Encryption
-
-```csharp
-public class PaymentMethodRepository
-{
-    public async Task SavePaymentMethod(PaymentMethod payment)
-    {
-        // Encrypt sensitive fields before saving
-        payment.EncryptedCardNumber = EncryptionHelper.EncryptWithRandomIV(
-            payment.CardNumber);
-
-        payment.EncryptedCVV = EncryptionHelper.EncryptWithRandomIV(
-            payment.CVV);
-
-        // Clear plaintext data
-        payment.CardNumber = null;
-        payment.CVV = null;
-
-        await database.SaveAsync(payment);
-    }
-
-    public async Task<PaymentMethod> GetPaymentMethod(int id)
-    {
-        var payment = await database.GetAsync(id);
-
-        // Decrypt when needed
-        payment.CardNumber = EncryptionHelper.DecryptWithRandomIV(
-            payment.EncryptedCardNumber);
-
-        payment.CVV = EncryptionHelper.DecryptWithRandomIV(
-            payment.EncryptedCVV);
-
-        return payment;
-    }
-}
-```
-
 ## Migration from Static to Random IV
 
 If you have existing data encrypted with the static IV method and want to migrate to random IV:
@@ -306,21 +217,21 @@ If you have existing data encrypted with the static IV method and want to migrat
 ```csharp
 public class EncryptionMigration
 {
-    public async Task MigrateUserData()
+    public async Task MigrateOrderData()
     {
-        var users = await database.GetAllUsersAsync();
+        var orders = await database.GetAllOrdersAsync();
 
-        foreach (var user in users)
+        foreach (var order in orders)
         {
-            if (IsStaticIvEncryption(user.EncryptedApiKey))
+            if (IsStaticIvEncryption(order.EncryptedOrderId))
             {
                 // Decrypt with deterministic method
-                string plainText = EncryptionHelper.DecryptDeterministic(user.EncryptedApiKey);
+                string plainText = EncryptionHelper.DecryptDeterministic(order.EncryptedOrderId);
 
                 // Re-encrypt with new method
-                user.EncryptedApiKey = EncryptionHelper.EncryptWithRandomIV(plainText);
+                order.EncryptedOrderId = EncryptionHelper.EncryptWithRandomIV(plainText);
 
-                await database.UpdateAsync(user);
+                await database.UpdateAsync(order);
             }
         }
     }
@@ -338,20 +249,14 @@ public class EncryptionMigration
 
 ## Tips and Best Practices
 
-1. **Default to Random IV**: Always use `EncryptWithRandomIV` for encrypting sensitive data unless you have a specific requirement for deterministic encryption.
+1. **Default to Random IV**: Use `EncryptWithRandomIV` unless you need the same ciphertext for the same plaintext.
 
 2. **Key Rotation**: Since the key is machine-specific and deterministic, rotating keys requires:
    - Decrypting all data with the old key
-   - Changing system characteristics (if possible) or implementing custom key storage
+   - Changing the machine name or user name, or implementing custom key storage
    - Re-encrypting with the new key
 
-3. **Production Security**: For production applications with high security requirements, consider:
-   - Azure Key Vault for key storage
-   - Windows DPAPI for Windows-specific applications
-   - Hardware Security Modules (HSMs)
-   - Key Management Services (KMS)
-
-4. **Error Handling**: Always wrap decrypt operations in try-catch:
+3. **Error Handling**: Always wrap decrypt operations in try-catch:
    ```csharp
    try
    {
@@ -364,25 +269,18 @@ public class EncryptionMigration
    }
    ```
 
-5. **Empty Strings**: Both methods return empty string for null or empty input without throwing exceptions.
+4. **Empty Strings**: Both methods return empty string for null or empty input without throwing exceptions.
 
-6. **Base64 Encoding**: Encrypted data is Base64 encoded, making it safe for:
+5. **Base64 Encoding**: Encrypted data is Base64 encoded, making it safe for:
    - URL parameters (with URL encoding)
    - JSON serialization
    - Database storage
    - XML attributes
 
-7. **Do Not Mix Methods**: Data encrypted with `EncryptDeterministic` cannot be decrypted with `DecryptWithRandomIV` and vice versa.
+6. **Do Not Mix Methods**: Data encrypted with `EncryptDeterministic` cannot be decrypted with `DecryptWithRandomIV` and vice versa.
 
-8. **Machine Dependency**: Encrypted data can only be decrypted on the same machine (same system characteristics). For multi-server deployments, implement custom key storage.
+7. **Machine Dependency**: Encrypted data can only be decrypted on the same machine (same machine name and user name). For multi-server deployments, implement custom key storage.
 
-9. **Performance**: Encryption operations are CPU-intensive. For high-throughput scenarios:
+8. **Performance**: Encryption operations are CPU-intensive. For high-throughput scenarios:
    - Cache decrypted values when possible
-   - Consider encrypting only truly sensitive fields
    - Use async patterns to avoid blocking threads
-
-10. **Compliance**: For PCI DSS, GDPR, HIPAA compliance:
-    - Use `EncryptWithRandomIV` for all personal/sensitive data
-    - Implement proper key management
-    - Maintain audit logs of encryption/decryption operations
-    - Consider additional layers of security (network encryption, disk encryption)

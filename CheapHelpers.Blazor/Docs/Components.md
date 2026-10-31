@@ -151,16 +151,19 @@ Language/culture selection component.
 
 ---
 
+### FileDisplay
+
+Renders a file from a URL by its content type: an image, a video player, a PDF frame, or only a text line for anything else, with an Open button on every kind. Without a content type (or with `application/octet-stream`) it falls back to the extension of the URL path, ignoring any query string. Set `Thumbnail="true"` to drop the title line; PDF and other files then show as an icon with a small Open link instead of a frame.
+
+```razor
+<FileDisplay Url="@fileUrl" ContentType="application/pdf" Title="Invoice" />
+```
+
+---
+
 ### ImagePanel & ImageComponent
 
-Image display components with Azure AI Vision integration.
-
-**Features:**
-- Image upload and display
-- Azure Computer Vision API integration for analysis
-- Caption generation
-- Object detection
-- Dialog-based image viewer
+`ImageComponent` loads a blob SAS URL for a `FileAttachment` (or takes a plain `Uri`) and renders it through `FileDisplay`. `ImagePanel` lists attachments with controls to change their display order, toggle visibility and delete them.
 
 ---
 
@@ -820,7 +823,6 @@ app.Run();
 The library includes several JavaScript files in `wwwroot/js/`:
 
 - **infiniteScroll.js** - Infinite scroll functionality
-- **pdfThumbnails.js** - PDF thumbnail generation
 - **site.js** - General utilities
 - **textEditor.js** - Text editor enhancements
 

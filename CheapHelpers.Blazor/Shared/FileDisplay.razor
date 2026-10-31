@@ -1,0 +1,149 @@
+@* Renders a file from a URL by its content type: an image, a video player, a PDF frame,
+   or only the title line. Every kind gets an Open button, because phone browsers may refuse
+   to render a PDF inline. Thumbnail="true" drops that line and shows a PDF or other file as an icon
+   with an Open link, so a list of PDFs does not load every file in a frame. *@
+@using MimeMapping
+
+<div class="@Class">
+    @if (!Thumbnail)
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+            <MudText Typo="Typo.body2">@_displayTitle</MudText>
+            @if (_url is not null)
+            {
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.OpenInNew" Href="@_url" Target="_blank">Open</MudButton>
+            }
+        </MudStack>
+    }
+    else if (_kind is FileKind.Pdf or FileKind.Other)
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+            <MudIcon Icon="@(_kind is FileKind.Pdf ? Icons.Material.Filled.PictureAsPdf : Icons.Material.Filled.InsertDriveFile)" Size="Size.Large" />
+            @if (_url is not null)
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" Size="Size.Small" Href="@_url" Target="_blank" aria-label="Open" />
+            }
+        </MudStack>
+    }
+    @switch (_kind)
+    {
+        case FileKind.Image:
+            @* Not Fluid: its height:auto rule overrides Height. The max-width keeps it inside narrow screens and ObjectFit keeps the aspect. *@
+            <MudImage Src="@_url" Alt="@Title" ObjectFit="@ObjectFit" Height="@Height" Fluid="false" Style="max-width:100%" Class="rounded" @onclick="OnClick" />
+            break;
+        case FileKind.Video:
+            @* MudBlazor has no video component *@
+            <video controls style="max-width:100%;height:@(Height)px"><source src="@_url" type="@_videoType" /></video>
+            break;
+        case FileKind.Pdf when !Thumbnail:
+            @* MudBlazor has no frame component *@
+            <iframe src="@_url" title="@Title" style="width:100%;height:@(Height)px;border:0"></iframe>
+            break;
+    }
+</div>
+
+@code {
+    private const int DefaultHeight = 400;
+    private const string PdfContentType = "application/pdf";
+    private const string QuickTimeContentType = "video/quicktime";
+    private const string OctetStreamContentType = "application/octet-stream";
+
+    private enum FileKind { Other, Image, Video, Pdf }
+
+    private FileKind _kind;
+    private string? _url;
+    private string _contentType = string.Empty;
+    private string _videoType = string.Empty;
+    private string _displayTitle = string.Empty;
+
+    /// <summary>
+    /// The address of the file; rendered only as an attribute value, never as markup, and only when it is http(s) or relative.
+    /// </summary>
+    [EditorRequired]
+    [Parameter]
+    public string Url { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The MIME type of the file; when null the type comes from the extension of the URL path.
+    /// </summary>
+    [Parameter]
+    public string? ContentType { get; set; }
+
+    /// <summary>
+    /// Alt text and the text line above the file; defaults to the file name from the URL path.
+    /// </summary>
+    [Parameter]
+    public string? Title { get; set; }
+
+    /// <summary>
+    /// Thumbnail mode: no title line; a PDF or other file shows as an icon with an Open link instead of a frame.
+    /// </summary>
+    [Parameter]
+    public bool Thumbnail { get; set; }
+
+    /// <summary>
+    /// Height in pixels of the image, video or PDF frame.
+    /// </summary>
+    [Parameter]
+    public int Height { get; set; } = DefaultHeight;
+
+    /// <summary>
+    /// CSS classes for the outer element.
+    /// </summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    /// <summary>
+    /// How an image fills its box.
+    /// </summary>
+    [Parameter]
+    public ObjectFit ObjectFit { get; set; } = ObjectFit.Contain;
+
+    /// <summary>
+    /// Raised when an image is clicked; other kinds ignore it.
+    /// </summary>
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        // A SAS URL carries its signature in the query string, so cut it off before reading the extension
+        _url = IsSafeUrl(Url) ? Url : null;
+        var path = (_url ?? string.Empty).Split(['?', '#'], 2)[0];
+        // A generic octet-stream type says nothing about the file, so the extension decides as if no type was given
+        var noUsefulType = string.IsNullOrWhiteSpace(ContentType) || string.Equals(ContentType, OctetStreamContentType, StringComparison.OrdinalIgnoreCase);
+        _contentType = noUsefulType ? MimeUtility.GetMimeMapping(path) : ContentType!;
+        // Chromium skips a video/quicktime source, but most .mov uploads are H.264 and play when announced as MP4
+        _videoType = string.Equals(_contentType, QuickTimeContentType, StringComparison.OrdinalIgnoreCase) ? KnownMimeTypes.Mp4 : _contentType;
+        _displayTitle = Title ?? Uri.UnescapeDataString(Path.GetFileName(path));
+        _kind = _contentType switch
+        {
+            _ when _url is null => FileKind.Other,
+            _ when _contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) => FileKind.Image,
+            _ when _contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) => FileKind.Video,
+            _ when _contentType.StartsWith(PdfContentType, StringComparison.OrdinalIgnoreCase) => FileKind.Pdf,
+            _ => FileKind.Other,
+        };
+    }
+
+    // A javascript: or data: URL in href or src runs script, so only http(s) and relative URLs get through
+    private static bool IsSafeUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return false;
+        }
+
+        var colon = url.IndexOf(':');
+        var delimiter = url.IndexOfAny(['/', '?', '#']);
+        if (colon < 0 || (delimiter >= 0 && delimiter < colon))
+        {
+            return true;
+        }
+
+        var scheme = url[..colon];
+        return scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+            || scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase);
+    }
+}

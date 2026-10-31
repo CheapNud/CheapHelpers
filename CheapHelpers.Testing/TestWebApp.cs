@@ -2,13 +2,15 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 
-namespace CheapHelpers.Auth.Tests;
+namespace CheapHelpers.Testing;
 
 /// <summary>
 /// Starts a minimal app on the in-memory test server.
 /// </summary>
-internal static class TestApp
+public static class TestWebApp
 {
+    /// <summary>Builds a slim app on the test server, lets the caller configure it, and starts it.</summary>
+    /// <remarks>Get a client with <c>app.GetTestClient()</c> and dispose the app when the test ends.</remarks>
     public static async Task<WebApplication> StartAsync(
         Action<WebApplicationBuilder> configureBuilder,
         Action<WebApplication> configureApp,

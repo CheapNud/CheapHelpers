@@ -65,7 +65,7 @@ public class ChangePasswordHookTests
     {
         var cancellationToken = TestContext.Current.CancellationToken;
 
-        await using var app = await TestApp.StartAsync(
+        await using var app = await TestWebApp.StartAsync(
             builder =>
             {
                 builder.Services.AddTestIdentity();

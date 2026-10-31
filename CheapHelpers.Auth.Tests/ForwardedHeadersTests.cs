@@ -61,7 +61,7 @@ public class ForwardedHeadersTests
     {
         var cancellationToken = TestContext.Current.CancellationToken;
 
-        await using var app = await TestApp.StartAsync(
+        await using var app = await TestWebApp.StartAsync(
             builder =>
             {
                 builder.Configuration.AddInMemoryCollection(settings);

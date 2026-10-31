@@ -36,9 +36,9 @@ public sealed class AnthropicLlmClientTests
         MaxSessionTokens = maxSessionTokens,
     };
 
-    private static (AnthropicLlmClient Client, FakeLlmServer Server, LlmUsageTracker Tracker) Make(LlmOptions? options = null)
+    private static (AnthropicLlmClient Client, RecordingHttpHandler Server, LlmUsageTracker Tracker) Make(LlmOptions? options = null)
     {
-        var server = new FakeLlmServer();
+        var server = new RecordingHttpHandler();
         var tracker = new LlmUsageTracker();
         return (TestClients.Anthropic(server, options ?? Options(), tracker), server, tracker);
     }
@@ -83,7 +83,7 @@ public sealed class AnthropicLlmClientTests
             Temperature = 0.5,
         }, TestContext.Current.CancellationToken);
 
-        using var body = JsonDocument.Parse(Assert.Single(server.PostedBodies));
+        using var body = JsonDocument.Parse(Assert.Single(server.RequestBodies)!);
         var root = body.RootElement;
         Assert.Equal("claude-haiku-5-5", root.GetProperty("model").GetString());
         Assert.False(root.TryGetProperty("temperature", out _));
@@ -105,7 +105,7 @@ public sealed class AnthropicLlmClientTests
             ResponseSchema = new LlmJsonSchema("Rating", schema),
         }, TestContext.Current.CancellationToken);
 
-        using var body = JsonDocument.Parse(Assert.Single(server.PostedBodies));
+        using var body = JsonDocument.Parse(Assert.Single(server.RequestBodies)!);
         var toolChoice = body.RootElement.GetProperty("tool_choice");
         Assert.Equal("tool", toolChoice.GetProperty("type").GetString());
         Assert.Equal("Rating", toolChoice.GetProperty("name").GetString());
@@ -126,7 +126,7 @@ public sealed class AnthropicLlmClientTests
 
         var response = await client.GenerateAsync(new LlmRequest { Messages = [LlmMessage.User("hi")] }, TestContext.Current.CancellationToken);
 
-        Assert.Empty(server.PostedBodies);
+        Assert.Empty(server.RequestBodies);
         Assert.Null(response.TextContent);
     }
 
@@ -140,7 +140,7 @@ public sealed class AnthropicLlmClientTests
 
         await client.GenerateAsync(new LlmRequest { Messages = [LlmMessage.User("hel​lo​ world")] }, TestContext.Current.CancellationToken);
 
-        var body = Assert.Single(server.PostedBodies);
+        var body = Assert.Single(server.RequestBodies);
         // Ordinal: a culture-aware search ignores zero-width characters and would match anywhere.
         Assert.DoesNotContain("​", body, StringComparison.Ordinal);
         Assert.DoesNotContain("\\u200B", body, StringComparison.OrdinalIgnoreCase);
@@ -246,7 +246,7 @@ public sealed class AnthropicLlmClientTests
             Tools = [LlmToolDefinition.Create("lights", "toggle", null)],
         }, TestContext.Current.CancellationToken)) { }
 
-        using var body = JsonDocument.Parse(Assert.Single(server.PostedBodies));
+        using var body = JsonDocument.Parse(Assert.Single(server.RequestBodies)!);
         Assert.True(body.RootElement.GetProperty("stream").GetBoolean());
         var tools = body.RootElement.GetProperty("tools");
         Assert.Equal("ephemeral", tools[tools.GetArrayLength() - 1].GetProperty("cache_control").GetProperty("type").GetString());
@@ -326,7 +326,7 @@ public sealed class AnthropicLlmClientTests
     public async Task Factory_never_disposes_an_injected_HttpClient()
     {
         var options = Options();
-        var server = new FakeLlmServer().Reply("{}");
+        var server = new RecordingHttpHandler().Reply("{}");
         using var httpClient = server.CreateClient();
         var factory = new AnthropicClientFactory(new TestOptionsMonitor<LlmOptions>(options), httpClient);
 

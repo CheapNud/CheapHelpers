@@ -11,7 +11,8 @@
     @switch (_kind)
     {
         case FileKind.Image:
-            <MudImage Src="@Url" Alt="@Title" ObjectFit="@ObjectFit" Height="@Height" Fluid="true" Class="rounded" @onclick="OnClick" />
+            @* Not Fluid: its height:auto rule overrides Height. The max-width keeps it inside narrow screens and ObjectFit keeps the aspect. *@
+            <MudImage Src="@Url" Alt="@Title" ObjectFit="@ObjectFit" Height="@Height" Fluid="false" Style="max-width:100%" Class="rounded" @onclick="OnClick" />
             break;
         case FileKind.Video:
             @* MudBlazor has no video component *@

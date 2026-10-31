@@ -115,6 +115,33 @@ namespace CheapHelpers.Blazor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Analyze.
+        /// </summary>
+        internal static string Analyze {
+            get {
+                return ResourceManager.GetString("Analyze", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Caption and tags saved.
+        /// </summary>
+        internal static string AnalyzeDone {
+            get {
+                return ResourceManager.GetString("AnalyzeDone", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The image could not be analyzed.
+        /// </summary>
+        internal static string AnalyzeErrorMessage {
+            get {
+                return ResourceManager.GetString("AnalyzeErrorMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Archive.
         /// </summary>
         internal static string Archive {

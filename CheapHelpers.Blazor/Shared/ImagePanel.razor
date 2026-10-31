@@ -1,10 +1,12 @@
 ﻿@using System.IO
-@using Azure.AI.Vision.ImageAnalysis
 @using CheapHelpers.EF
+@using CheapHelpers.Blazor.Helpers
 @using CheapHelpers.Extensions
 @using CheapHelpers.Models.Entities
 @using CheapHelpers.Services.Storage
 @using CheapHelpers.Services.Storage.Configuration
+@using CheapHelpers.Services.Vision
+@using Microsoft.Extensions.DependencyInjection
 @using Microsoft.Extensions.Hosting
 @using Microsoft.AspNetCore.Components.Web
 @using System.Net.Http.Headers
@@ -28,9 +30,25 @@
                                         Image="image"
                                         Alt="@GetImageAltText(image)">
                         </ImageComponent>
+                        @if (!string.IsNullOrWhiteSpace(image.Description))
+                        {
+                            <MudText Typo="Typo.body2" Class="mud-text-secondary" Align="Align.Center">@image.Description</MudText>
+                        }
+                        @{
+                            var tags = image.GetTags();
+                        }
+                        @if (tags.Count > 0)
+                        {
+                            <MudChipSet T="string" ReadOnly="true">
+                                @foreach (var tag in tags)
+                                {
+                                    <MudChip T="string" Value="@tag" Text="@tag" Size="Size.Small" Variant="Variant.Text" />
+                                }
+                            </MudChipSet>
+                        }
                     </MudStack>
 
-                    @if (CanDelete || CanEdit)
+                    @if (CanDelete || CanEdit || CanAnalyze)
                     {
                         <MudGrid Class="px-3 mt-2" Spacing="2">
                             @if (CanEdit)
@@ -56,6 +74,20 @@
                                                    Value="@image.Visible"
                                                    Label="@Loc["Visible"]"
                                                    Color="Color.Primary" />
+                                    </MudTooltip>
+                                </MudItem>
+                            }
+                            @if (CanAnalyze)
+                            {
+                                <MudItem>
+                                    <MudTooltip Text="@Loc["Analyze"]">
+                                        <MudIconButton Class="mt-3"
+                                                       OnClick="() => AnalyzeImageAsync(image)"
+                                                       Icon="@Icons.Material.Filled.AutoAwesome"
+                                                       Size="Size.Small"
+                                                       aria-label="@Loc["Analyze"].Value"
+                                                       Disabled="@IsProcessing">
+                                        </MudIconButton>
                                     </MudTooltip>
                                 </MudItem>
                             }
@@ -107,6 +139,7 @@ else if (ShowEmptyState)
     [Inject] protected BlobService BlobService { get; set; } = default!;
     [Inject] protected IDialogService DialogService { get; set; } = default!;
     [Inject] protected IDbContextFactory<CheapCommunicationContext<TUser>> ContextFactory { get; set; } = default!;
+    [Inject] protected IServiceProvider ServiceProvider { get; set; } = default!;
 
     #endregion
 
@@ -136,7 +169,7 @@ else if (ShowEmptyState)
     public EventCallback<FileAttachment> OnDelete { get; set; }
 
     /// <summary>
-    /// Event callback for when an image is updated (visibility or display index changed).
+    /// Event callback for when an image is updated (visibility, display index, or caption and tags changed).
     /// </summary>
     [Parameter]
     public EventCallback<FileAttachment> OnUpdate { get; set; }
@@ -150,6 +183,9 @@ else if (ShowEmptyState)
     [Parameter]
     public bool ShowEmptyState { get; set; } = true;
 
+    /// <summary>
+    /// Shows an Analyze action on each card when an <see cref="IVisionService"/> is registered; it stores the caption and tags on the attachment.
+    /// </summary>
     [Parameter]
     public bool EnableImageAnalysis { get; set; } = false;
 
@@ -159,7 +195,15 @@ else if (ShowEmptyState)
 
     private bool IsProcessing { get; set; } = false;
 
+    // Optional: the panel works without a vision service, it just hides the Analyze action.
+    private IVisionService? _vision;
+
+    private bool CanAnalyze => EnableImageAnalysis && _vision is not null;
+
     #endregion
+
+    protected override void OnInitialized() =>
+        _vision = ServiceProvider.GetService<IVisionService>();
 
     #region Event Handlers
 
@@ -265,6 +309,62 @@ else if (ShowEmptyState)
         }
     }
 
+    private async Task AnalyzeImageAsync(FileAttachment file)
+    {
+        if (file == null || IsProcessing || _vision is null) return;
+
+        var oldDescription = file.Description;
+        var oldTags = file.Tags;
+        var saved = false;
+
+        try
+        {
+            IsProcessing = true;
+
+            await using var stream = await BlobService.GetFileStreamAsync(file.FileName, BlobContainer);
+            if (stream is null)
+            {
+                Debug.WriteLine($"Error analyzing image {file.FileName}: the file could not be read");
+                SnackbarService.Add(Loc["AnalyzeErrorMessage"].Value, Severity.Error);
+                return;
+            }
+
+            var analysis = await _vision.AnalyzeImageAsync(stream);
+            if (!ImageAnalysisApplier.Apply(file, analysis))
+            {
+                Debug.WriteLine($"Error analyzing image {file.FileName}: {analysis.ErrorMessage}");
+                SnackbarService.Add(Loc["AnalyzeErrorMessage"].Value, Severity.Error);
+                return;
+            }
+
+            using var context = ContextFactory.CreateDbContext();
+            await context.FileAttachments
+                .Where(x => x.Id == file.Id)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(x => x.Description, file.Description)
+                    .SetProperty(x => x.Tags, file.Tags));
+            saved = true;
+            await OnUpdate.InvokeAsync(file);
+            SnackbarService.Add(Loc["AnalyzeDone"].Value, Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error analyzing image {file.FileName}: {ex.Message}");
+            SnackbarService.Add(Loc["AnalyzeErrorMessage"].Value, Severity.Error);
+
+            // Revert only when the row was not written; after a failing OnUpdate the new values are already stored
+            if (!saved)
+            {
+                file.Description = oldDescription;
+                file.Tags = oldTags;
+            }
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
     #endregion
 
     #region Helper Methods
@@ -287,40 +387,6 @@ else if (ShowEmptyState)
 
     private static string GetImageAltText(FileAttachment image) =>
         $"Image: {image.FileName}";
-
-    #endregion
-
-    #region Image Analysis (Future Enhancement)
-
-    // TODO: Implement image analysis when VisionServiceOptions configuration is available
-    // This method demonstrates how to integrate Azure Cognitive Services for image analysis
-    private async Task AnalyzeImageAsync(FileAttachment image)
-    {
-        if (!EnableImageAnalysis) return;
-
-        try
-        {
-            // Implementation would go here when VisionServiceOptions is properly configured
-            // Example structure for future implementation:
-
-            // using var imageSource = VisionSource.FromUrl(new Uri(image.BlobUrl));
-            // var analysisOptions = new ImageAnalysisOptions()
-            // {
-            //     Features = ImageAnalysisFeature.Caption | ImageAnalysisFeature.Text,
-            //     Language = "en",
-            //     GenderNeutralCaption = true
-            // };
-
-            // using var analyzer = new ImageAnalyzer(visionServiceOptions, imageSource, analysisOptions);
-            // var result = analyzer.Analyze();
-
-            // Process and store analysis results...
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"Error analyzing image {image.FileName}: {ex.Message}");
-        }
-    }
 
     #endregion
 }

@@ -163,7 +163,7 @@ Renders a file from a URL by its content type: an image, a video player, a PDF f
 
 ### ImagePanel & ImageComponent
 
-`ImageComponent` loads a blob SAS URL for a `FileAttachment` (or takes a plain `Uri`) and renders it through `FileDisplay`. `ImagePanel` lists attachments with controls to change their display order, toggle visibility and delete them.
+`ImageComponent` loads a blob SAS URL for a `FileAttachment` (or takes a plain `Uri`) and renders it through `FileDisplay`. `ImagePanel` lists attachments with controls to change their display order, toggle visibility and delete them. With `EnableImageAnalysis="true"` and a registered `IVisionService` each card gets an Analyze action that stores the caption in `Description` and the tags in `Tags`, shown under the image.
 
 ---
 

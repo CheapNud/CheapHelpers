@@ -101,17 +101,20 @@ var translatorService = new TranslatorService(
 ### Vision Service Configuration
 
 ```csharp
-// Via Options Pattern
-services.Configure<VisionServiceOptions>(options =>
+// From the "AzureVision" configuration section
+services.AddAzureVision(Configuration);
+
+// Or in code
+services.AddAzureVision(options =>
 {
     options.Endpoint = "https://your-resource.cognitiveservices.azure.com";
     options.ApiKey = "your-vision-api-key";
     options.DefaultLanguage = "en";
     options.GenderNeutralCaption = true;
 });
-
-services.AddScoped<IVisionService, AzureVisionService>();
 ```
+
+`AddAzureVision` binds the `AzureVision` section and validates the options at startup, so a missing `Endpoint` or `ApiKey` stops the app from starting instead of failing on the first analysis. The service is registered as a singleton.
 
 **VisionServiceOptions:**
 ```csharp
@@ -446,12 +449,11 @@ public void ConfigureServices(IServiceCollection services)
     });
 
     // Vision Service
-    services.Configure<VisionServiceOptions>(
-        Configuration.GetSection("Azure:Vision")
-    );
-    services.AddScoped<IVisionService, AzureVisionService>();
+    services.AddAzureVision(Configuration);
 }
 ```
+
+`AddAzureVision` binds the `AzureVision` section and validates the options at startup, so a missing `Endpoint` or `ApiKey` stops the app from starting instead of failing on the first analysis.
 
 ### appsettings.json
 
@@ -462,13 +464,13 @@ public void ConfigureServices(IServiceCollection services)
       "Key": "your-translator-key",
       "Endpoint": "https://api.cognitive.microsofttranslator.com",
       "DocumentEndpoint": "https://your-resource.cognitiveservices.azure.com"
-    },
-    "Vision": {
-      "Endpoint": "https://your-vision.cognitiveservices.azure.com",
-      "ApiKey": "your-vision-key",
-      "DefaultLanguage": "en",
-      "GenderNeutralCaption": true
     }
+  },
+  "AzureVision": {
+    "Endpoint": "https://your-vision.cognitiveservices.azure.com",
+    "ApiKey": "your-vision-key",
+    "DefaultLanguage": "en",
+    "GenderNeutralCaption": true
   }
 }
 ```
@@ -477,7 +479,7 @@ public void ConfigureServices(IServiceCollection services)
 
 ```bash
 dotnet user-secrets set "Azure:Translator:Key" "your-translator-key"
-dotnet user-secrets set "Azure:Vision:ApiKey" "your-vision-key"
+dotnet user-secrets set "AzureVision:ApiKey" "your-vision-key"
 ```
 
 ## Common Scenarios

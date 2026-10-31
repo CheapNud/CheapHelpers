@@ -14,9 +14,6 @@
   <PropertyGroup Label="Version Management">
     <VersionPrefix>0.0.0</VersionPrefix>
     <VersionSuffix>local</VersionSuffix>
-    <!-- Fixed on purpose: EncryptionHelper derives its key from the assembly full name, so an
-         assembly version that followed the tag would make earlier ciphertext unreadable -->
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <!-- ================================================================ -->

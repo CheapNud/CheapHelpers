@@ -106,6 +106,22 @@ builder.Services.Configure<WhisperSttOptions>(builder.Configuration.GetSection(W
 builder.Services.AddWhisperSpeechToText();
 ```
 
+### Image Helpers
+`ImageHelpers.EncodePng` turns a raw 8-bit pixel buffer (RGB, BGR, RGBA or BGRA) into a PNG, optionally shrunk so its longest side fits a cap. `ImageHelpers.NormalizePhoto` turns an uploaded photo upright and re-encodes it as JPEG without EXIF or other metadata, and returns null for formats libvips cannot load, such as BMP, so the caller can store the original.
+
+**Key Classes:**
+- `ImageHelpers`, `PixelBandOrder`
+
+```csharp
+using CheapHelpers.Services.Imaging;
+
+// A BGRA frame from a capture API, at most 1024 pixels on its longest side
+byte[] png = ImageHelpers.EncodePng(frame, width, height, PixelBandOrder.Bgra, maxLongestSide: 1024);
+
+// An uploaded photo; null means libvips cannot load it, so keep the original
+byte[] jpeg = ImageHelpers.NormalizePhoto(uploadBytes) ?? uploadBytes;
+```
+
 ## Quick Start
 
 ### Installation

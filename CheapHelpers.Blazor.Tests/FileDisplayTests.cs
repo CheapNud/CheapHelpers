@@ -65,6 +65,20 @@ public class FileDisplayTests : BunitContext
     }
 
     [Fact]
+    public void Keeps_an_open_link_for_a_pdf_when_the_header_is_off()
+    {
+        var cut = Render<FileDisplay>(parameters => parameters
+            .Add(p => p.Url, FileUrl)
+            .Add(p => p.ContentType, "application/pdf")
+            .Add(p => p.Title, "Invoice")
+            .Add(p => p.ShowHeader, false));
+
+        Assert.Equal(FileUrl, cut.Find("iframe").GetAttribute("src"));
+        AssertOpenLink(cut, FileUrl);
+        Assert.DoesNotContain("Invoice", cut.Find("div").TextContent);
+    }
+
+    [Fact]
     public void Announces_a_quicktime_video_as_mp4()
     {
         var cut = RenderFile("https://example.test/files/clip.mov", null);

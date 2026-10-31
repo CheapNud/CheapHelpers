@@ -14,6 +14,11 @@
             }
         </MudStack>
     }
+    else if (_url is not null && _kind is FileKind.Pdf or FileKind.Other)
+    {
+        @* A PDF or unknown file keeps an open path without the header, since it may not render inline *@
+        <MudIconButton Icon="@Icons.Material.Filled.OpenInNew" Size="Size.Small" Href="@_url" Target="_blank" aria-label="Open" />
+    }
     @switch (_kind)
     {
         case FileKind.Image:

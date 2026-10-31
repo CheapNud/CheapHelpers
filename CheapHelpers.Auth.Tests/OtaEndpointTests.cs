@@ -112,12 +112,24 @@ public class OtaEndpointTests
     public async Task A_failing_source_gives_503(string path)
     {
         var cancellationToken = TestContext.Current.CancellationToken;
-        await using var app = await StartAsync(new FakeReleaseSource(Releases) { Fail = true }, cancellationToken);
+        await using var app = await StartAsync(new FakeReleaseSource(Releases) { Failure = new HttpRequestException("forge down") }, cancellationToken);
 
         using var response = await app.GetTestClient().GetAsync(Prefix + path, cancellationToken);
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
         Assert.Equal("Release source unavailable", await response.Content.ReadAsStringAsync(cancellationToken));
+    }
+
+    [Fact]
+    public async Task A_source_timeout_gives_503()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var timedOut = new TaskCanceledException("timed out", new TimeoutException());
+        await using var app = await StartAsync(new FakeReleaseSource(Releases) { Failure = timedOut }, cancellationToken);
+
+        using var response = await app.GetTestClient().GetAsync($"{Prefix}/releases", cancellationToken);
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
     }
 
     [Fact]
@@ -204,22 +216,22 @@ public class OtaEndpointTests
     {
         public Dictionary<(string Version, string AssetName), string> Assets { get; } = [];
 
-        public bool Fail { get; init; }
+        public Exception? Failure { get; init; }
 
         public int AssetCalls { get; private set; }
 
         public async Task<IReadOnlyList<OtaRelease>> GetReleasesAsync(CancellationToken cancellationToken = default)
         {
             await Task.Yield();
-            return Fail ? throw new HttpRequestException("forge down") : releases;
+            return Failure is null ? releases : throw Failure;
         }
 
         public async Task<Stream?> OpenAssetAsync(string version, string assetName, CancellationToken cancellationToken = default)
         {
             await Task.Yield();
             AssetCalls++;
-            if (Fail)
-                throw new HttpRequestException("forge down");
+            if (Failure is not null)
+                throw Failure;
 
             return Assets.TryGetValue((version, assetName), out var content) ? new MemoryStream(Encoding.UTF8.GetBytes(content)) : null;
         }

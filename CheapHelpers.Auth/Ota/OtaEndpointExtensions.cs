@@ -29,14 +29,15 @@ public static class OtaEndpointExtensions
     {
         var group = endpoints.MapGroup(routePrefix).AllowAnonymous();
 
-        // The asset endpoint opens its stream before it returns, so a source failure is caught here before any byte is sent
+        // The asset endpoint opens its stream before it returns, so a source failure is caught here before any byte is sent.
+        // HttpClient reports its own timeout as a cancellation with a TimeoutException inside; a client abort is left alone.
         group.AddEndpointFilter(async (invocationContext, next) =>
         {
             try
             {
                 return await next(invocationContext);
             }
-            catch (HttpRequestException)
+            catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException { InnerException: TimeoutException })
             {
                 return Results.Text(UnavailableMessage, TextContentType, statusCode: StatusCodes.Status503ServiceUnavailable);
             }

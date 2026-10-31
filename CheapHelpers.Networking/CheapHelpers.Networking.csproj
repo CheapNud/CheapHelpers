@@ -12,8 +12,8 @@
     <Product>CheapHelpers</Product>
     <Description>Network scanning, device discovery, and IoT device management with cross-platform support. Includes UPnP/SSDP, mDNS/Zeroconf, HTTP, SSH, and Windows service detection.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</PackageProjectUrl>
-    <RepositoryUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>networking;network-scanner;device-discovery;iot;mac-address;subnet-scan;network-tools;upnp;ssdp;mdns;zeroconf;bonjour</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

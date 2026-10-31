@@ -30,8 +30,8 @@
     <Product>CheapHelpers</Product>
     <Description>Media processing utilities including FFmpeg integration, hardware detection (GPU/NVENC), dependency management for video processing tools, and process management helpers. Supports Windows and Linux platforms.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</PackageProjectUrl>
-    <RepositoryUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>ffmpeg;video;media;hardware-detection;nvenc;gpu;video-processing;dependency-management</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

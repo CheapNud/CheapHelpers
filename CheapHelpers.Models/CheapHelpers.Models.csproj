@@ -18,8 +18,8 @@
     <Product>CheapHelpers</Product>
     <Description>Shared data models, DTOs, and entity interfaces for CheapHelpers projects</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</PackageProjectUrl>
-    <RepositoryUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>models;dto;entities;data;dotnet</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

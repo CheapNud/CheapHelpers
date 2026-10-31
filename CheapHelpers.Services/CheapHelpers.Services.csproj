@@ -12,8 +12,8 @@
     <Product>CheapHelpers</Product>
     <Description>Business services including email with templates, PDF generation, Azure integration, and document processing</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</PackageProjectUrl>
-    <RepositoryUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>services;email;pdf;azure;documents;mailkit</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

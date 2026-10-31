@@ -18,8 +18,8 @@
     <Product>CheapHelpers</Product>
     <Description>Barcode generation and reading on ZXing.Net with no native image dependency</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</PackageProjectUrl>
-    <RepositoryUrl>https://git.cheapludes.be/cheapnud/CheapHelpers</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CheapNud/CheapHelpers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>barcode;qrcode;zxing;dotnet</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

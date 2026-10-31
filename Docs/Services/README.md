@@ -256,10 +256,11 @@ public void ConfigureServices(IServiceCollection services)
         Configuration["Azure:Translator:DocumentEndpoint"]
     ));
 
-    services.Configure<VisionServiceOptions>(Configuration.GetSection("Azure:Vision"));
-    services.AddScoped<IVisionService, AzureVisionService>();
+    services.AddAzureVision(Configuration);
 }
 ```
+
+`AddAzureVision` binds the `AzureVision` section and validates the options at startup, so a missing `Endpoint` or `ApiKey` stops the app from starting instead of failing on the first analysis.
 
 ## Common Integration Scenarios
 
@@ -330,13 +331,13 @@ Key NuGet packages used:
       "Key": "your-translator-key",
       "Endpoint": "https://api.cognitive.microsofttranslator.com",
       "DocumentEndpoint": "https://your-resource.cognitiveservices.azure.com"
-    },
-    "Vision": {
-      "Endpoint": "https://your-vision.cognitiveservices.azure.com",
-      "ApiKey": "your-vision-key",
-      "DefaultLanguage": "en",
-      "GenderNeutralCaption": true
     }
+  },
+  "AzureVision": {
+    "Endpoint": "https://your-vision.cognitiveservices.azure.com",
+    "ApiKey": "your-vision-key",
+    "DefaultLanguage": "en",
+    "GenderNeutralCaption": true
   }
 }
 ```

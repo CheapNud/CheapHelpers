@@ -27,13 +27,13 @@ public sealed class JobQueue<TPayload, TContext>(
     private volatile bool _paused = options.Value.StartPaused;
 
     /// <summary>Raised for progress reports that pass the event throttle.</summary>
-    public Action<JobProgress>? ProgressChanged { get; set; }
+    public event Action<JobProgress>? ProgressChanged;
 
     /// <summary>Raised with the fresh row after every status change.</summary>
-    public Action<JobRecord>? StatusChanged { get; set; }
+    public event Action<JobRecord>? StatusChanged;
 
     /// <summary>Raised with the new value when the queue is paused or resumed.</summary>
-    public Action<bool>? PausedChanged { get; set; }
+    public event Action<bool>? PausedChanged;
 
     /// <summary>True while the worker claims no new jobs; running jobs carry on.</summary>
     public bool IsPaused => _paused;

@@ -67,9 +67,9 @@ Returning completes the job. Throwing fails the attempt. Honour the token: it is
 | `ClearFinishedAsync(ct)` | Deletes Completed, Cancelled and DeadLetter jobs and returns the count. |
 | `GetStatisticsAsync(ct)` | Counts jobs per status. |
 | `Pause()` / `Resume()` / `IsPaused` | Stops and restarts claiming new jobs; running jobs carry on. |
-| `ProgressChanged` | `Action<JobProgress>` raised for throttled progress reports. |
-| `StatusChanged` | `Action<JobRecord>` raised with the fresh row after every status change. |
-| `PausedChanged` | `Action<bool>` raised on pause and resume. |
+| `ProgressChanged` | Event of `Action<JobProgress>` raised for throttled progress reports. |
+| `StatusChanged` | Event of `Action<JobRecord>` raised with the fresh row after every status change. |
+| `PausedChanged` | Event of `Action<bool>` raised on pause and resume. |
 
 Subscribers are called one by one, so a subscriber that throws is logged and the others still run.
 

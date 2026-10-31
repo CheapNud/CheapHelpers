@@ -41,7 +41,7 @@ public sealed class JobWorker<TPayload, TContext>(
 
                     await RunOnceAsync(stoppingToken);
                 }
-                catch (Exception ex) when (ex is not OperationCanceledException)
+                catch (Exception ex) when (!stoppingToken.IsCancellationRequested)
                 {
                     logger.LogError(ex, "Recovering or claiming jobs failed; trying again after the poll interval");
                 }

@@ -1,0 +1,95 @@
+@* Renders a file from a URL by its content type: an image, a video player, a PDF frame,
+   or only the title line. Every kind gets an Open button, because phone browsers may refuse
+   to render a PDF inline. *@
+@using MimeMapping
+
+<div class="@Class">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+        <MudText Typo="Typo.body2">@_displayTitle</MudText>
+        <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.OpenInNew" Href="@Url" Target="_blank">Open</MudButton>
+    </MudStack>
+    @switch (_kind)
+    {
+        case FileKind.Image:
+            <MudImage Src="@Url" Alt="@Title" ObjectFit="@ObjectFit" Height="@Height" Fluid="true" Class="rounded" @onclick="OnClick" />
+            break;
+        case FileKind.Video:
+            @* MudBlazor has no video component *@
+            <video controls style="max-width:100%;height:@(Height)px"><source src="@Url" type="@_contentType" /></video>
+            break;
+        case FileKind.Pdf:
+            @* MudBlazor has no frame component *@
+            <iframe src="@Url" title="@Title" style="width:100%;height:@(Height)px;border:0"></iframe>
+            break;
+    }
+</div>
+
+@code {
+    private const int DefaultHeight = 400;
+    private const string PdfContentType = "application/pdf";
+
+    private enum FileKind { Other, Image, Video, Pdf }
+
+    private FileKind _kind;
+    private string _contentType = string.Empty;
+    private string _displayTitle = string.Empty;
+
+    /// <summary>
+    /// The address of the file; rendered only as an attribute value, never as markup.
+    /// </summary>
+    [EditorRequired]
+    [Parameter]
+    public string Url { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The MIME type of the file; when null the type comes from the extension of the URL path.
+    /// </summary>
+    [Parameter]
+    public string? ContentType { get; set; }
+
+    /// <summary>
+    /// Alt text and the text line above the file; defaults to the file name from the URL path.
+    /// </summary>
+    [Parameter]
+    public string? Title { get; set; }
+
+    /// <summary>
+    /// Height in pixels of the image, video or PDF frame.
+    /// </summary>
+    [Parameter]
+    public int Height { get; set; } = DefaultHeight;
+
+    /// <summary>
+    /// CSS classes for the outer element.
+    /// </summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    /// <summary>
+    /// How an image fills its box.
+    /// </summary>
+    [Parameter]
+    public ObjectFit ObjectFit { get; set; } = ObjectFit.Contain;
+
+    /// <summary>
+    /// Raised when an image is clicked; other kinds ignore it.
+    /// </summary>
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    /// <inheritdoc />
+    protected override void OnParametersSet()
+    {
+        // A SAS URL carries its signature in the query string, so cut it off before reading the extension
+        var path = Url.Split(['?', '#'], 2)[0];
+        _contentType = string.IsNullOrWhiteSpace(ContentType) ? MimeUtility.GetMimeMapping(path) : ContentType;
+        _displayTitle = Title ?? Uri.UnescapeDataString(Path.GetFileName(path));
+        _kind = _contentType switch
+        {
+            _ when _contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) => FileKind.Image,
+            _ when _contentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase) => FileKind.Video,
+            _ when _contentType.StartsWith(PdfContentType, StringComparison.OrdinalIgnoreCase) => FileKind.Pdf,
+            _ => FileKind.Other,
+        };
+    }
+}

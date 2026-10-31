@@ -79,7 +79,6 @@
   <ItemGroup>
     <None Include="wwwroot\js\boot.js" />
     <None Include="wwwroot\js\infiniteScroll.js" />
-    <None Include="wwwroot\js\pdfThumbnails.js" />
     <None Include="wwwroot\js\site.js" />
     <None Include="wwwroot\js\textEditor.js" />
   </ItemGroup>

@@ -2,30 +2,13 @@
 @using CheapHelpers.Services.Storage
 @using CheapHelpers.Services.Storage.Configuration
 @using Microsoft.AspNetCore.Components.Web
-@using MimeMapping
 @using MudBlazor
 
-<div class="@Class">
-    @if (!string.IsNullOrWhiteSpace(ext) && !string.IsNullOrWhiteSpace(url))
+<div class="@Class" style="@Style">
+    @if (!string.IsNullOrWhiteSpace(url))
     {
         <MudTooltip Text="Click to open full screen">
-            @if (ext.Contains(".mp4", StringComparison.OrdinalIgnoreCase)
-                    || ext.Contains(".mov", StringComparison.OrdinalIgnoreCase))
-            {
-                <video style="@Style" width="400" height="@Height" controls>
-                    <source src="@url" type="@KnownMimeTypes.Mp4">
-                </video>
-            }
-            else if (ext.Contains(".pdf", StringComparison.OrdinalIgnoreCase))
-            {
-                <a href=@url target="_blank">
-                    <MudImage Style="@Style" ObjectPosition="@ObjectPosition" ObjectFit="@ObjectFit" Src="pdfpreview.png" Alt="@Image.FileName" Height="@Height" Fluid="false" />
-                </a>
-            }
-            else
-            {
-                <MudImage Class="rounded " Style="@Style" ObjectPosition="@ObjectPosition" ObjectFit="@ObjectFit" Src="@url" @onclick="@OnClick" Height="@Height" Fluid="false" />
-            }
+            <FileDisplay Url="@url" ContentType="@contentType" Title="@(Alt ?? Image?.FileName)" Height="@(Height ?? DefaultHeight)" ObjectFit="@ObjectFit" OnClick="@OnClick" />
         </MudTooltip>
     }
     else
@@ -35,8 +18,10 @@
 </div>
 
 @code {
+    private const int DefaultHeight = 200;
+
     string url;
-    string ext;
+    string? contentType;
 
     [Parameter]
     public FileAttachment Image { get; set; }
@@ -54,14 +39,18 @@
     public string Style { get; set; }
 
     [Parameter]
-    public int? Height { get; set; } = 200;
+    public int? Height { get; set; } = DefaultHeight;
 
+    /// <summary>
+    /// Alt text and title line for the file; defaults to the attachment file name.
+    /// </summary>
     [Parameter]
-    public bool Fluid { get; set; } = false;
+    public string? Alt { get; set; }
 
     [Parameter]
     public ObjectFit ObjectFit { get; set; } = ObjectFit.Fill;
 
+    // Unused since rendering moved to FileDisplay; kept so existing callers still compile.
     [Parameter]
     public ObjectPosition ObjectPosition { get; set; } = ObjectPosition.Center;
 
@@ -103,7 +92,8 @@
             url = "noimageplaceholder.jpg";
         }
 
-        ext = Path.GetExtension(url);
+        // Null lets FileDisplay take the type from the extension of the URL path
+        contentType = string.IsNullOrWhiteSpace(Image?.MimeType) ? null : Image.MimeType;
     }
 
     private async Task ShowImage(string uri)

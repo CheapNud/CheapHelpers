@@ -19,13 +19,13 @@ public sealed class OpenAiCompatibleLlmClientTests
     [Fact]
     public async Task Generate_fills_model_temperature_and_max_tokens_from_the_options()
     {
-        var server = new FakeLlmServer().Reply(TestClients.CompatReply("hi"));
+        var server = new RecordingHttpHandler().Reply(TestClients.CompatReply("hi"));
         var client = TestClients.Compatible(server, Options());
 
         var response = await client.GenerateAsync(new LlmRequest { Messages = [LlmMessage.User("hi")] }, TestContext.Current.CancellationToken);
 
         Assert.Equal("hi", response.TextContent);
-        using var body = JsonDocument.Parse(Assert.Single(server.PostedBodies));
+        using var body = JsonDocument.Parse(Assert.Single(server.RequestBodies)!);
         Assert.Equal("mistralai/mistral-large-4-0", body.RootElement.GetProperty("model").GetString());
         Assert.Equal(1.0, body.RootElement.GetProperty("temperature").GetDouble());
         Assert.Equal(4096, body.RootElement.GetProperty("max_tokens").GetInt32());
@@ -37,7 +37,7 @@ public sealed class OpenAiCompatibleLlmClientTests
     [Fact]
     public async Task Attribution_headers_are_sent_only_when_configured()
     {
-        var server = new FakeLlmServer().Reply(TestClients.CompatReply("a")).Reply(TestClients.CompatReply("b"));
+        var server = new RecordingHttpHandler().Reply(TestClients.CompatReply("a")).Reply(TestClients.CompatReply("b"));
         var options = Options();
         var client = TestClients.Compatible(server, options);
 
@@ -55,7 +55,7 @@ public sealed class OpenAiCompatibleLlmClientTests
     [Fact]
     public async Task Generate_with_a_schema_sends_a_strict_response_format_and_fills_structured_json()
     {
-        var server = new FakeLlmServer().Reply(TestClients.CompatReply("""{"score":4}"""));
+        var server = new RecordingHttpHandler().Reply(TestClients.CompatReply("""{"score":4}"""));
         var client = TestClients.Compatible(server, Options());
 
         var response = await client.GenerateAsync(new LlmRequest
@@ -64,7 +64,7 @@ public sealed class OpenAiCompatibleLlmClientTests
             ResponseSchema = new LlmJsonSchema("Rating", RatingSchema),
         }, TestContext.Current.CancellationToken);
 
-        using var body = JsonDocument.Parse(Assert.Single(server.PostedBodies));
+        using var body = JsonDocument.Parse(Assert.Single(server.RequestBodies)!);
         var format = body.RootElement.GetProperty("response_format");
         Assert.Equal("json_schema", format.GetProperty("type").GetString());
         var jsonSchema = format.GetProperty("json_schema");
@@ -78,7 +78,7 @@ public sealed class OpenAiCompatibleLlmClientTests
     [Fact]
     public async Task Retries_send_a_fresh_request_with_the_same_body()
     {
-        var server = new FakeLlmServer()
+        var server = new RecordingHttpHandler()
             .Reply("""{"error":"busy"}""", HttpStatusCode.ServiceUnavailable)
             .Reply(TestClients.CompatReply("ok"));
         var client = TestClients.Compatible(server, Options());
@@ -86,15 +86,15 @@ public sealed class OpenAiCompatibleLlmClientTests
         var response = await client.GenerateAsync(new LlmRequest { Messages = [LlmMessage.User("hi")] }, TestContext.Current.CancellationToken);
 
         Assert.Equal("ok", response.TextContent);
-        Assert.Equal(2, server.PostedBodies.Count);
-        Assert.Equal(server.PostedBodies[0], server.PostedBodies[1]);
+        Assert.Equal(2, server.RequestBodies.Count);
+        Assert.Equal(server.RequestBodies[0], server.RequestBodies[1]);
         Assert.NotSame(server.Requests[0], server.Requests[1]);
     }
 
     [Fact]
     public async Task Client_errors_are_not_retried()
     {
-        var server = new FakeLlmServer().Reply("""{"error":"bad key"}""", HttpStatusCode.Unauthorized);
+        var server = new RecordingHttpHandler().Reply("""{"error":"bad key"}""", HttpStatusCode.Unauthorized);
         var client = TestClients.Compatible(server, Options());
 
         var ex = await Assert.ThrowsAsync<HttpRequestException>(() =>
@@ -107,7 +107,7 @@ public sealed class OpenAiCompatibleLlmClientTests
     [Fact]
     public async Task Generate_with_a_cancelled_token_throws_before_sending()
     {
-        var server = new FakeLlmServer().Reply(TestClients.CompatReply("never"));
+        var server = new RecordingHttpHandler().Reply(TestClients.CompatReply("never"));
         var client = TestClients.Compatible(server, Options());
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
@@ -123,7 +123,7 @@ public sealed class OpenAiCompatibleLlmClientTests
     {
         var tracker = new LlmUsageTracker();
         tracker.Record(UsagePurpose.Chat, new LlmUsage { PromptTokens = 10, CompletionTokens = 5 });
-        var server = new FakeLlmServer();
+        var server = new RecordingHttpHandler();
         var options = Options();
         options.MaxSessionTokens = 10;
         var client = TestClients.Compatible(server, options, tracker);
@@ -143,7 +143,7 @@ public sealed class OpenAiCompatibleLlmClientTests
             "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":7,\"completion_tokens\":3,\"total_tokens\":10}}\n\n" +
             "data: [DONE]\n\n";
         var tracker = new LlmUsageTracker();
-        var server = new FakeLlmServer().Reply(stream, contentType: "text/event-stream");
+        var server = new RecordingHttpHandler().Reply(stream, contentType: "text/event-stream");
         var client = TestClients.Compatible(server, Options(), tracker);
 
         var chunks = new List<LlmStreamChunk>();
@@ -153,7 +153,7 @@ public sealed class OpenAiCompatibleLlmClientTests
         Assert.Equal("Hello", string.Concat(chunks.Select(c => c.ContentDelta)));
         Assert.Equal("stop", chunks[^1].FinishReason);
         Assert.Equal(10, tracker.TotalTokens);
-        using var body = JsonDocument.Parse(Assert.Single(server.PostedBodies));
+        using var body = JsonDocument.Parse(Assert.Single(server.RequestBodies)!);
         Assert.True(body.RootElement.GetProperty("stream").GetBoolean());
         Assert.True(body.RootElement.GetProperty("stream_options").GetProperty("include_usage").GetBoolean());
     }
@@ -164,7 +164,7 @@ public sealed class OpenAiCompatibleLlmClientTests
         const string stream =
             "data: {\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hel\"}}]}\n\n" +
             "data: {\"error\":{\"message\":\"upstream failure\"}}\n\n";
-        var server = new FakeLlmServer().Reply(stream, contentType: "text/event-stream");
+        var server = new RecordingHttpHandler().Reply(stream, contentType: "text/event-stream");
         var client = TestClients.Compatible(server, Options());
 
         var ex = await Assert.ThrowsAsync<HttpRequestException>(async () =>
@@ -178,7 +178,7 @@ public sealed class OpenAiCompatibleLlmClientTests
     [Fact]
     public async Task Stream_with_a_schema_is_not_supported()
     {
-        var server = new FakeLlmServer();
+        var server = new RecordingHttpHandler();
         var client = TestClients.Compatible(server, Options());
 
         await Assert.ThrowsAsync<NotSupportedException>(async () =>
@@ -196,14 +196,14 @@ public sealed class OpenAiCompatibleLlmClientTests
     [Fact]
     public async Task Generate_strips_zero_width_spaces_from_user_text_when_enabled()
     {
-        var server = new FakeLlmServer().Reply(TestClients.CompatReply("ok"));
+        var server = new RecordingHttpHandler().Reply(TestClients.CompatReply("ok"));
         var options = Options();
         options.StripInvisibleCharacters = true;
         var client = TestClients.Compatible(server, options);
 
         await client.GenerateAsync(new LlmRequest { Messages = [LlmMessage.User("hel​lo​ world")] }, TestContext.Current.CancellationToken);
 
-        var body = Assert.Single(server.PostedBodies);
+        var body = Assert.Single(server.RequestBodies);
         // Ordinal: a culture-aware search ignores zero-width characters and would match anywhere.
         Assert.DoesNotContain("​", body, StringComparison.Ordinal);
         Assert.DoesNotContain("\\u200B", body, StringComparison.OrdinalIgnoreCase);
@@ -213,7 +213,7 @@ public sealed class OpenAiCompatibleLlmClientTests
     [Fact]
     public async Task Generate_over_the_input_character_limit_throws_before_sending()
     {
-        var server = new FakeLlmServer();
+        var server = new RecordingHttpHandler();
         var options = Options();
         options.MaxInputCharacters = 5;
         var client = TestClients.Compatible(server, options);

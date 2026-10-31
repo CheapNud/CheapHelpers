@@ -11,10 +11,10 @@ public sealed class RoutedClientsTests
          "usage":{"input_tokens":5,"output_tokens":1}}
         """;
 
-    private static (RoutedLlmClient Router, FakeLlmServer Compat, FakeLlmServer Native) Make(LlmOptions options)
+    private static (RoutedLlmClient Router, RecordingHttpHandler Compat, RecordingHttpHandler Native) Make(LlmOptions options)
     {
-        var compatServer = new FakeLlmServer();
-        var nativeServer = new FakeLlmServer();
+        var compatServer = new RecordingHttpHandler();
+        var nativeServer = new RecordingHttpHandler();
         var monitor = new TestOptionsMonitor<LlmOptions>(options);
         var router = new RoutedLlmClient(
             monitor,

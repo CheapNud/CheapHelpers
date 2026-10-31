@@ -69,7 +69,7 @@ public class SharedSecretAuthenticationTests
     {
         var cancellationToken = TestContext.Current.CancellationToken;
 
-        await using var app = await TestApp.StartAsync(
+        await using var app = await TestWebApp.StartAsync(
             builder =>
             {
                 builder.Services.AddAuthentication(SharedSecretDefaults.AuthenticationScheme)

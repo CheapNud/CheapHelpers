@@ -8,6 +8,7 @@
   <Project Path="CheapHelpers.Auth.Tests/CheapHelpers.Auth.Tests.csproj" />
   <Project Path="CheapHelpers.Avalonia.Bridge/CheapHelpers.Avalonia.Bridge.csproj" />
   <Project Path="CheapHelpers.Barcodes/CheapHelpers.Barcodes.csproj" />
+  <Project Path="CheapHelpers.Blazor.Tests/CheapHelpers.Blazor.Tests.csproj" />
   <Project Path="CheapHelpers.Blazor/CheapHelpers.Blazor.csproj" />
   <Project Path="CheapHelpers.EF/CheapHelpers.EF.csproj" />
   <Project Path="CheapHelpers.Jobs/CheapHelpers.Jobs.csproj" />
@@ -19,6 +20,9 @@
   <Project Path="CheapHelpers.Models/CheapHelpers.Models.csproj" />
   <Project Path="CheapHelpers.Networking/CheapHelpers.Networking.csproj" />
   <Project Path="CheapHelpers.Services/CheapHelpers.Services.csproj" />
+  <Project Path="CheapHelpers.Services.Tests/CheapHelpers.Services.Tests.csproj" />
+  <Project Path="CheapHelpers.Testing/CheapHelpers.Testing.csproj" />
+  <Project Path="CheapHelpers.Testing.Tests/CheapHelpers.Testing.Tests.csproj" />
   <Project Path="CheapHelpers.Tests/CheapHelpers.Tests.csproj" />
   <Project Path="CheapHelpers/CheapHelpers.csproj" />
 </Solution>

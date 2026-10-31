@@ -29,7 +29,7 @@ public class PlexAuthEndpointTests
         var cancellationToken = TestContext.Current.CancellationToken;
         var plexOptions = new PlexAuthOptions { CallbackBaseUrl = callbackBaseUrl };
 
-        await using var app = await TestApp.StartAsync(
+        await using var app = await TestWebApp.StartAsync(
             builder =>
             {
                 builder.Services.AddSingleton(plexOptions);

@@ -20,9 +20,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CheapHelpers.Llm\CheapHelpers.Llm.csproj" />
+    <ProjectReference Include="..\CheapHelpers.Testing\CheapHelpers.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <Using Include="CheapHelpers.Testing" />
     <Using Include="Xunit" />
   </ItemGroup>
 

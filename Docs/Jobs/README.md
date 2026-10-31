@@ -63,7 +63,7 @@ Returning completes the job. Throwing fails the attempt. Honour the token: it is
 | `GetAsync(id, ct)` | Returns one job row, or null. |
 | `ListAsync(status, ct)` | Lists jobs oldest first, optionally filtered by status. |
 | `CancelAsync(id, ct)` | Cancels a Pending job, or cancels the token of a job running in this process; the worker then records Cancelled. |
-| `RetryAsync(id, ct)` | Puts a DeadLetter or Cancelled job back to Pending with its retry count reset. |
+| `RetryAsync(id, ct)` | Puts a DeadLetter or Cancelled job back to Pending with its retry count reset. Also accepts a Running job that this process is not running, to rescue rows whose owner is gone; the job runs twice if that owner is still alive. |
 | `ClearFinishedAsync(ct)` | Deletes Completed, Cancelled and DeadLetter jobs and returns the count. |
 | `GetStatisticsAsync(ct)` | Counts jobs per status. |
 | `Pause()` / `Resume()` / `IsPaused` | Stops and restarts claiming new jobs; running jobs carry on. |
@@ -78,7 +78,7 @@ Subscribers are called one by one, so a subscriber that throws is logged and the
 - **Claim**: the worker picks the oldest Pending job whose `AvailableAt` has passed and sets it Running with one conditional update. When another worker got there first, zero rows change and it looks for the next job. It wakes on every enqueue and otherwise checks every `PollInterval`.
 - **Retry with backoff**: a throwing processor increases `RetryCount`, stores the message in `LastError` (up to 2000 characters) and puts the job back to Pending with `AvailableAt` set `2^RetryCount` seconds ahead.
 - **Dead letter**: a job that fails again after `MaxRetries` retries goes to DeadLetter. Only `RetryAsync` brings it back.
-- **Recovery after restart**: at startup the worker requeues Running jobs claimed on this machine by a process that no longer exists. Each counts as a used retry, so a job that keeps crashing the process ends in DeadLetter. Jobs claimed on other machines are left alone.
+- **Recovery after restart**: at startup the worker requeues Running jobs claimed on this machine by a process that no longer exists. Each counts as a used retry, so a job that keeps crashing the process ends in DeadLetter. Jobs claimed on other machines are left alone, because their owner may still be running them. When a host name never comes back (a container recreated under a new name), rescue its rows with `RetryAsync`.
 - **Graceful stop**: on shutdown the worker cancels running jobs and waits up to `ShutdownTimeout`. Jobs that do not finish stay Running and are recovered on the next start.
 - **Progress**: `ReportProgressAsync` writes to the database at most once per `ProgressWriteInterval` and raises `ProgressChanged` at most once per `ProgressEventInterval`. The first report and any report at 100 percent always go through. Above 2 percent the estimate is `elapsed / (percent / 100) - elapsed`, measured from the first report.
 

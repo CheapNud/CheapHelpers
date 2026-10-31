@@ -26,4 +26,18 @@ public sealed class JobRecoveryTests
         Assert.Equal(JobStatus.Running, untouched.Status);
         Assert.Equal(0, untouched.RetryCount);
     }
+
+    [Fact]
+    public async Task Retry_rescues_a_running_row_that_this_process_does_not_run()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var harness = new JobQueueHarness();
+        var stranded = await harness.SeedAsync(JobStatus.Running, "gone-container", MissingProcessId);
+
+        Assert.True(await harness.Queue.RetryAsync(stranded, ct));
+
+        var job = await harness.GetAsync(stranded);
+        Assert.Equal(JobStatus.Pending, job.Status);
+        Assert.Equal(0, job.RetryCount);
+    }
 }

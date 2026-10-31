@@ -107,6 +107,7 @@ public sealed class JobQueueTests
         var id = await harness.Queue.EnqueueAsync(new TestPayload("a", 1), ct: ct);
         await harness.Worker.RunOnceAsync(ct);
         await harness.Processor.Started.Task.WaitAsync(WaitLimit, ct);
+        Assert.False(await harness.Queue.RetryAsync(id, ct));
         Assert.True(await harness.Queue.CancelAsync(id, ct));
         await harness.Worker.WhenIdleAsync().WaitAsync(WaitLimit, ct);
 

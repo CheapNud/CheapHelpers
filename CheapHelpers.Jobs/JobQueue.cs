@@ -127,15 +127,21 @@ public sealed class JobQueue<TPayload, TContext>(
         }
     }
 
-    /// <summary>Puts a DeadLetter or Cancelled job back to Pending with a fresh retry budget. False for any other state.</summary>
+    /// <summary>
+    /// Puts a DeadLetter or Cancelled job back to Pending with a fresh retry budget. A Running job that this process is
+    /// not running is accepted too, to rescue rows whose owner is gone for good (a container that came back under another
+    /// host name); only do that when the owner is known to be dead, or the job runs twice. False for any other state.
+    /// </summary>
     public async Task<bool> RetryAsync(Guid id, CancellationToken ct)
     {
         var now = timeProvider.GetUtcNow();
+        var rescueRunning = !RunningJobs.ContainsKey(id);
         int changed;
         await using (var db = await contextFactory.CreateDbContextAsync(ct))
         {
             changed = await db.Set<JobRecord>()
-                .Where(j => j.Id == id && (j.Status == JobStatus.DeadLetter || j.Status == JobStatus.Cancelled))
+                .Where(j => j.Id == id
+                    && (j.Status == JobStatus.DeadLetter || j.Status == JobStatus.Cancelled || (rescueRunning && j.Status == JobStatus.Running)))
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(j => j.Status, JobStatus.Pending)
                     .SetProperty(j => j.RetryCount, 0)

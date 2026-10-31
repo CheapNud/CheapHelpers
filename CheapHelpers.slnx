@@ -10,6 +10,8 @@
   <Project Path="CheapHelpers.Barcodes/CheapHelpers.Barcodes.csproj" />
   <Project Path="CheapHelpers.Blazor/CheapHelpers.Blazor.csproj" />
   <Project Path="CheapHelpers.EF/CheapHelpers.EF.csproj" />
+  <Project Path="CheapHelpers.Jobs/CheapHelpers.Jobs.csproj" />
+  <Project Path="CheapHelpers.Jobs.Tests/CheapHelpers.Jobs.Tests.csproj" />
   <Project Path="CheapHelpers.Llm/CheapHelpers.Llm.csproj" />
   <Project Path="CheapHelpers.Llm.Tests/CheapHelpers.Llm.Tests.csproj" />
   <Project Path="CheapHelpers.MAUI/CheapHelpers.MAUI.csproj" />

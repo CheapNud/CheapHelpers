@@ -1,8 +1,10 @@
 using CheapHelpers.Networking.Core;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace CheapHelpers.Networking.Detection;
@@ -13,6 +15,7 @@ namespace CheapHelpers.Networking.Detection;
 /// <remarks>
 /// Implements SSDP (Simple Service Discovery Protocol) for UPnP device discovery.
 /// Sends M-SEARCH multicast requests to 239.255.255.250:1900 and parses responses.
+/// Descriptions are fetched only from the announcing device's own address over plain http, with redirects off and a 256 KB cap.
 /// </remarks>
 public class UpnpDetector : IDeviceTypeDetector, IDisposable
 {
@@ -29,17 +32,32 @@ public class UpnpDetector : IDeviceTypeDetector, IDisposable
     private const string SsdpMulticastAddress = "239.255.255.250";
     private const int SsdpPort = 1900;
     private const int DiscoveryTimeoutMs = 3000;
+    private const long MaxDescriptionBytes = 256 * 1024;
+
+    // A hostile description must not be able to pull local files or URLs through an external entity
+    private static readonly XmlReaderSettings DescriptionReaderSettings = new()
+    {
+        DtdProcessing = DtdProcessing.Prohibit,
+        XmlResolver = null
+    };
 
     public int Priority => 90; // Higher priority than HTTP - UPnP is very reliable
 
     public UpnpDetector(ILogger<UpnpDetector> logger, Microsoft.Extensions.Options.IOptions<PortDetectionOptions> portOptions)
+        : this(logger, portOptions, new HttpClient(new SocketsHttpHandler { AllowAutoRedirect = false })
+        {
+            Timeout = TimeSpan.FromMilliseconds(portOptions.Value.PortConnectionTimeoutMs),
+            MaxResponseContentBufferSize = MaxDescriptionBytes
+        })
+    {
+    }
+
+    /// <summary>Creates the detector over the given client; used by tests to inject a recording handler.</summary>
+    internal UpnpDetector(ILogger<UpnpDetector> logger, Microsoft.Extensions.Options.IOptions<PortDetectionOptions> portOptions, HttpClient httpClient)
     {
         _logger = logger;
         _portOptions = portOptions.Value;
-        _httpClient = new HttpClient
-        {
-            Timeout = TimeSpan.FromMilliseconds(_portOptions.PortConnectionTimeoutMs)
-        };
+        _httpClient = httpClient;
     }
 
     public async Task<string?> DetectDeviceTypeAsync(string ipAddress)
@@ -216,7 +234,8 @@ public class UpnpDetector : IDeviceTypeDetector, IDisposable
                     var result = await udpClient.ReceiveAsync(_cts.Token);
                     var responseText = Encoding.UTF8.GetString(result.Buffer);
 
-                    await ProcessSsdpResponseAsync(responseText);
+                    // The description fetch runs in the background so the listener keeps receiving
+                    _ = ProcessSsdpResponseAsync(responseText, result.RemoteEndPoint.Address);
                 }
                 catch (SocketException ex) when (ex.SocketErrorCode == SocketError.TimedOut)
                 {
@@ -239,7 +258,8 @@ public class UpnpDetector : IDeviceTypeDetector, IDisposable
         }
     }
 
-    private async Task ProcessSsdpResponseAsync(string responseText)
+    /// <summary>Handles one SSDP reply from <paramref name="sender"/>; returns the device info it cached, or null when nothing was cached.</summary>
+    internal async Task<string?> ProcessSsdpResponseAsync(string responseText, IPAddress sender)
     {
         try
         {
@@ -247,48 +267,94 @@ public class UpnpDetector : IDeviceTypeDetector, IDisposable
             var headers = ParseHttpHeaders(responseText);
 
             if (!headers.TryGetValue("LOCATION", out var location) || string.IsNullOrEmpty(location))
-                return;
+                return null;
 
             _logger.LogDebug("UPnP device discovered: {Location}", location);
 
-            // Extract IP from location URL
-            if (Uri.TryCreate(location, UriKind.Absolute, out var locationUri))
+            if (!IsAcceptableLocation(location, sender, out var locationUri))
             {
-                var ipAddress = locationUri.Host;
+                _logger.LogDebug("Ignoring UPnP location {Location} from {Sender}", location, sender);
+                return null;
+            }
 
-                // Fetch and parse device description asynchronously
-                _ = Task.Run(async () =>
+            var ipAddress = Normalize(sender).ToString();
+
+            // Fetch and parse device description asynchronously
+            return await Task.Run(async () =>
+            {
+                try
                 {
-                    try
-                    {
-                        var serverInfo = headers.TryGetValue("SERVER", out var server) ? server : null;
-                        var deviceInfo = await GetDeviceInfoAsync(location, serverInfo);
+                    var serverInfo = headers.TryGetValue("SERVER", out var server) ? server : null;
+                    var deviceInfo = await GetDeviceInfoAsync(locationUri, serverInfo);
 
-                        if (!string.IsNullOrEmpty(deviceInfo))
+                    if (!string.IsNullOrEmpty(deviceInfo))
+                    {
+                        await _cacheLock.WaitAsync();
+                        try
                         {
-                            await _cacheLock.WaitAsync();
-                            try
-                            {
-                                _deviceCache[ipAddress] = deviceInfo;
-                                _logger.LogDebug("Cached UPnP info for {IpAddress}: {Info}", ipAddress, deviceInfo);
-                            }
-                            finally
-                            {
-                                _cacheLock.Release();
-                            }
+                            _deviceCache[ipAddress] = deviceInfo;
+                            _logger.LogDebug("Cached UPnP info for {IpAddress}: {Info}", ipAddress, deviceInfo);
+                        }
+                        finally
+                        {
+                            _cacheLock.Release();
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogDebug(ex, "Error processing UPnP device at {IpAddress}", ipAddress);
-                    }
-                });
-            }
+
+                    return deviceInfo;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Error processing UPnP device at {IpAddress}", ipAddress);
+                    return null;
+                }
+            });
         }
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "Error parsing SSDP response");
+            return null;
         }
+    }
+
+    /// <summary>
+    /// True when <paramref name="location"/> is a plain http URL whose host is the literal address of <paramref name="sender"/>
+    /// and that address is not loopback, link-local, multicast or unspecified.
+    /// </summary>
+    internal static bool IsAcceptableLocation(string location, IPAddress sender, [NotNullWhen(true)] out Uri? uri)
+    {
+        if (!Uri.TryCreate(location, UriKind.Absolute, out uri)
+            || uri.Scheme != Uri.UriSchemeHttp
+            || uri.HostNameType is not (UriHostNameType.IPv4 or UriHostNameType.IPv6)
+            || !IPAddress.TryParse(uri.Host, out var host))
+        {
+            uri = null;
+            return false;
+        }
+
+        host = Normalize(host);
+        if (!host.Equals(Normalize(sender)) || IsForbiddenAddress(host))
+        {
+            uri = null;
+            return false;
+        }
+
+        return true;
+    }
+
+    private static IPAddress Normalize(IPAddress address) => address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address;
+
+    private static bool IsForbiddenAddress(IPAddress address)
+    {
+        if (IPAddress.IsLoopback(address) || address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
+            return true;
+
+        if (address.AddressFamily == AddressFamily.InterNetworkV6)
+            return address.IsIPv6LinkLocal || address.IsIPv6Multicast;
+
+        var bytes = address.GetAddressBytes();
+        return (bytes[0] == 169 && bytes[1] == 254) // link-local
+            || bytes[0] is >= 224 and <= 239;      // multicast
     }
 
     private Dictionary<string, string> ParseHttpHeaders(string httpText)
@@ -310,15 +376,16 @@ public class UpnpDetector : IDeviceTypeDetector, IDisposable
         return headers;
     }
 
-    private async Task<string?> GetDeviceInfoAsync(string location, string? serverInfo)
+    private async Task<string?> GetDeviceInfoAsync(Uri location, string? serverInfo)
     {
         try
         {
-            // Fetch the device description XML
+            // Fetch the device description XML; a body above the buffer cap throws and takes the fallback below
             var descriptionXml = await _httpClient.GetStringAsync(location);
 
             // Parse XML to extract device info
-            var xmlDoc = XDocument.Parse(descriptionXml);
+            using var xmlReader = XmlReader.Create(new StringReader(descriptionXml), DescriptionReaderSettings);
+            var xmlDoc = XDocument.Load(xmlReader);
             XNamespace upnpNs = "urn:schemas-upnp-org:device-1-0";
             var deviceElement = xmlDoc.Descendants(upnpNs + "device").FirstOrDefault();
 

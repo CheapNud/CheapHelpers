@@ -44,6 +44,20 @@ public class ImageAnalysisApplierTests
     }
 
     [Fact]
+    public void Drops_the_least_confident_tags_until_the_json_fits()
+    {
+        var attachment = new GenericFileAttachment();
+        var tags = Enumerable.Range(0, ImageAnalysisApplier.MaxTags).Select(i => ($"{i:D2}{new string('x', 60)}", 0.99 - i / 100.0)).ToArray();
+
+        ImageAnalysisApplier.Apply(attachment, Success(Caption, tags));
+
+        var stored = attachment.GetTags();
+        Assert.InRange(attachment.Tags!.Length, 1, ImageAnalysisApplier.MaxTagsLength);
+        Assert.InRange(stored.Count, 1, ImageAnalysisApplier.MaxTags - 1);
+        Assert.Equal(tags.Take(stored.Count).Select(t => t.Item1), stored);
+    }
+
+    [Fact]
     public void Trims_the_caption_to_the_description_limit()
     {
         var attachment = new GenericFileAttachment();

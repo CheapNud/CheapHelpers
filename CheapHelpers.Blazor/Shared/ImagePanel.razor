@@ -315,6 +315,7 @@ else if (ShowEmptyState)
 
         var oldDescription = file.Description;
         var oldTags = file.Tags;
+        var saved = false;
 
         try
         {
@@ -342,6 +343,7 @@ else if (ShowEmptyState)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(x => x.Description, file.Description)
                     .SetProperty(x => x.Tags, file.Tags));
+            saved = true;
             await OnUpdate.InvokeAsync(file);
             SnackbarService.Add(Loc["AnalyzeDone"].Value, Severity.Success);
         }
@@ -350,9 +352,12 @@ else if (ShowEmptyState)
             Debug.WriteLine($"Error analyzing image {file.FileName}: {ex.Message}");
             SnackbarService.Add(Loc["AnalyzeErrorMessage"].Value, Severity.Error);
 
-            // Revert the change on error
-            file.Description = oldDescription;
-            file.Tags = oldTags;
+            // Revert only when the row was not written; after a failing OnUpdate the new values are already stored
+            if (!saved)
+            {
+                file.Description = oldDescription;
+                file.Tags = oldTags;
+            }
         }
         finally
         {

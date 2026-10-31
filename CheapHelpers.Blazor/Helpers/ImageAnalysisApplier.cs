@@ -17,6 +17,9 @@ internal static class ImageAnalysisApplier
     /// <summary>Length limit of <see cref="FileAttachment.Description"/>.</summary>
     internal const int MaxDescriptionLength = 500;
 
+    /// <summary>Length limit of the serialized <see cref="FileAttachment.Tags"/>.</summary>
+    internal const int MaxTagsLength = 1000;
+
     /// <summary>
     /// Applies <paramref name="result"/> to <paramref name="attachment"/>; returns false and changes nothing when the analysis failed.
     /// </summary>
@@ -30,12 +33,20 @@ internal static class ImageAnalysisApplier
             ? null
             : caption[..Math.Min(caption.Length, MaxDescriptionLength)];
 
-        attachment.SetTags(result.Tags
+        List<string> tags = [.. result.Tags
             .Where(t => t.Confidence >= MinTagConfidence && !string.IsNullOrWhiteSpace(t.Name))
             .OrderByDescending(t => t.Confidence)
             .Select(t => t.Name)
             .Distinct()
-            .Take(MaxTags));
+            .Take(MaxTags)];
+
+        // Drop the least confident tags until the stored JSON fits the column.
+        attachment.SetTags(tags);
+        while (attachment.Tags?.Length > MaxTagsLength)
+        {
+            tags.RemoveAt(tags.Count - 1);
+            attachment.SetTags(tags);
+        }
 
         return true;
     }

@@ -130,6 +130,8 @@ public sealed class JobWorker<TPayload, TContext>(
         }
         catch (Exception ex)
         {
+            // Transient faults are retried by the execution strategy configured on the app's DbContext; past that the
+            // row stays Running and the next start recovers it
             logger.LogError(ex, "Recording the outcome of job {JobId} failed", job.Id);
         }
         finally

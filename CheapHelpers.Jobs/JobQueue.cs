@@ -225,17 +225,18 @@ public sealed class JobQueue<TPayload, TContext>(
         {
             var now = timeProvider.GetUtcNow();
             await using var db = await contextFactory.CreateDbContextAsync(hostToken);
-            var candidate = await db.Set<JobRecord>()
+            var job = await db.Set<JobRecord>()
+                .AsNoTracking()
                 .Where(j => j.Status == JobStatus.Pending && j.AvailableAt <= now)
                 .OrderBy(j => j.CreatedAt)
-                .Select(j => (Guid?)j.Id)
                 .FirstOrDefaultAsync(hostToken);
 
-            if (candidate is not { } id)
+            if (job is null)
             {
                 return null;
             }
 
+            var id = job.Id;
             var cancellation = CancellationTokenSource.CreateLinkedTokenSource(hostToken);
             RunningJobs[id] = cancellation;
             try
@@ -252,7 +253,12 @@ public sealed class JobQueue<TPayload, TContext>(
 
                 if (claimed > 0)
                 {
-                    var job = await db.Set<JobRecord>().AsNoTracking().FirstAsync(j => j.Id == id, hostToken);
+                    // Applied in memory rather than read back, so nothing can fail between the claim and the hand-over
+                    job.Status = JobStatus.Running;
+                    job.StartedAt = now;
+                    job.MachineName = Environment.MachineName;
+                    job.ProcessId = Environment.ProcessId;
+                    job.LastUpdatedAt = now;
                     Raise(StatusChanged, job);
                     return (job, cancellation);
                 }
@@ -354,9 +360,11 @@ public sealed class JobQueue<TPayload, TContext>(
         {
             var candidates = await db.Set<JobRecord>()
                 .AsNoTracking()
-                .Where(j => j.Status == JobStatus.Running && j.MachineName == machine && j.ProcessId != self)
+                .Where(j => j.Status == JobStatus.Running && j.MachineName == machine)
                 .ToListAsync(ct);
-            orphans = candidates.Where(j => j.ProcessId is not { } pid || !IsProcessAlive(pid)).ToList();
+            // Recovery runs before this worker claims anything, so a row carrying this process id belongs to an earlier
+            // process that got the same id; containers often run the app as process 1 on every start
+            orphans = candidates.Where(j => j.ProcessId is not { } pid || pid == self || !IsProcessAlive(pid)).ToList();
         }
 
         var now = timeProvider.GetUtcNow();
@@ -364,10 +372,11 @@ public sealed class JobQueue<TPayload, TContext>(
         {
             // Same rule as a failed attempt, so an interrupted job gets the same number of tries as a throwing one
             var deadLetter = job.RetryCount >= job.MaxRetries;
+            int changed;
             await using (var db = await contextFactory.CreateDbContextAsync(ct))
             {
                 // Guarded on the snapshot so a job another worker already requeued and claimed again is not touched
-                await db.Set<JobRecord>()
+                changed = await db.Set<JobRecord>()
                     .Where(j => j.Id == job.Id && j.Status == JobStatus.Running && j.ProcessId == job.ProcessId && j.RetryCount == job.RetryCount)
                     .ExecuteUpdateAsync(s =>
                     {
@@ -379,6 +388,11 @@ public sealed class JobQueue<TPayload, TContext>(
                             s.SetProperty(j => j.CompletedAt, now);
                         }
                     }, ct);
+            }
+
+            if (changed == 0)
+            {
+                continue;
             }
 
             logger.LogInformation("Recovered job {JobId} left running by process {ProcessId}", job.Id, job.ProcessId);

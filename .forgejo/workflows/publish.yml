@@ -34,7 +34,7 @@ jobs:
       - name: Test
         run: dotnet test CheapHelpers.CI.slnx --configuration ${{ env.CONFIGURATION }} --no-build --verbosity normal || echo "No test projects found"
 
-  # 10 base packages (CI solution excludes MAUI + MediaProcessing)
+  # 8 base packages (CI solution excludes MAUI + MediaProcessing)
   publish-base:
     name: Publish Base Packages
     needs: build-test

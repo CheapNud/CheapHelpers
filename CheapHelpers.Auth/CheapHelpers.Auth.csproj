@@ -46,7 +46,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CheapHelpers\CheapHelpers.csproj" />
-    <ProjectReference Include="..\CheapHelpers.Models\CheapHelpers.Models.csproj" />
     <!-- ApiKeyService stores keys through CheapBusinessContext -->
     <ProjectReference Include="..\CheapHelpers.EF\CheapHelpers.EF.csproj" />
   </ItemGroup>

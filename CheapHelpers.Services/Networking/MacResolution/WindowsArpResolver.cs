@@ -24,7 +24,8 @@ public class WindowsArpResolver(ILogger<WindowsArpResolver> logger) : IMacAddres
                 CreateNoWindow = true
             };
 
-            using var arpProcess = Process.Start(processInfo);
+            // Fully qualified: the CheapHelpers.Process namespace shadows the Process class here
+            using var arpProcess = System.Diagnostics.Process.Start(processInfo);
             if (arpProcess != null)
             {
                 var arpOutput = await arpProcess.StandardOutput.ReadToEndAsync();

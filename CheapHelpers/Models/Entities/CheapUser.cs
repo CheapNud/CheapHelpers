@@ -1,4 +1,4 @@
-// CheapHelpers.Models/Entities/CheapUser.cs (Truly generic for library consumers)
+// CheapHelpers/Models/Entities/CheapUser.cs (Truly generic for library consumers)
 using CheapHelpers;
 using CheapHelpers.Extensions;
 using CheapHelpers.Models.Enums;
@@ -12,6 +12,33 @@ namespace CheapHelpers.Models.Entities
     /// Base user class with common properties for CheapHelpers applications
     /// Extend this in your application for additional properties
     /// </summary>
+    /// <example>
+    /// How library consumers would extend it in their applications:
+    /// <code>
+    /// public class ApplicationUser : CheapUser
+    /// {
+    ///     // Add any app-specific properties here
+    ///     public string? Department { get; set; }
+    ///
+    ///     // If you want strongly-typed navigation properties (optional), add them:
+    ///     public bool IsAdminNavExpanded
+    ///     {
+    ///         get => GetExpandState("Admin");
+    ///         set => SetExpandState("Admin", value);
+    ///     }
+    ///
+    ///     public bool IsReportsNavExpanded
+    ///     {
+    ///         get => GetExpandState("Reports");
+    ///         set => SetExpandState("Reports", value);
+    ///     }
+    ///
+    ///     // Or just use the generic methods directly:
+    ///     // user.GetExpandState("Admin")
+    ///     // user.SetExpandState("Admin", true)
+    /// }
+    /// </code>
+    /// </example>
     public abstract class CheapUser : IdentityUser
     {
         public string FirstName { get; set; } = string.Empty;
@@ -206,35 +233,3 @@ namespace CheapHelpers.Models.Entities
         }
     }
 }
-
-// Example: How library consumers would extend it in their applications
-/*
-// YourApp/Models/ApplicationUser.cs
-using CheapHelpers.Models.Entities;
-
-namespace YourApp.Models
-{
-    public class ApplicationUser : CheapUser
-    {
-        // Add any app-specific properties here
-        public string? Department { get; set; }
-        
-        // If you want strongly-typed navigation properties (optional), add them:
-        public bool IsAdminNavExpanded
-        {
-            get => GetExpandState("Admin");
-            set => SetExpandState("Admin", value);
-        }
-        
-        public bool IsReportsNavExpanded
-        {
-            get => GetExpandState("Reports");
-            set => SetExpandState("Reports", value);
-        }
-        
-        // Or just use the generic methods directly:
-        // user.GetExpandState("Admin")
-        // user.SetExpandState("Admin", true)
-    }
-}
-*/

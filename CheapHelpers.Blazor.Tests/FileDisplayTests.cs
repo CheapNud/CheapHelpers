@@ -51,13 +51,13 @@ public class FileDisplayTests : BunitContext
     }
 
     [Fact]
-    public void Hides_the_title_and_open_link_when_the_header_is_off()
+    public void Hides_the_title_and_open_link_for_an_image_thumbnail()
     {
         var cut = Render<FileDisplay>(parameters => parameters
             .Add(p => p.Url, FileUrl)
             .Add(p => p.ContentType, "image/png")
             .Add(p => p.Title, "Photo")
-            .Add(p => p.ShowHeader, false));
+            .Add(p => p.Thumbnail, true));
 
         Assert.Empty(cut.FindAll("a"));
         Assert.DoesNotContain("Photo", cut.Find("div").TextContent);
@@ -65,15 +65,15 @@ public class FileDisplayTests : BunitContext
     }
 
     [Fact]
-    public void Keeps_an_open_link_for_a_pdf_when_the_header_is_off()
+    public void Shows_a_pdf_thumbnail_as_an_open_link_without_a_frame()
     {
         var cut = Render<FileDisplay>(parameters => parameters
             .Add(p => p.Url, FileUrl)
             .Add(p => p.ContentType, "application/pdf")
             .Add(p => p.Title, "Invoice")
-            .Add(p => p.ShowHeader, false));
+            .Add(p => p.Thumbnail, true));
 
-        Assert.Equal(FileUrl, cut.Find("iframe").GetAttribute("src"));
+        Assert.Empty(cut.FindAll("iframe"));
         AssertOpenLink(cut, FileUrl);
         Assert.DoesNotContain("Invoice", cut.Find("div").TextContent);
     }

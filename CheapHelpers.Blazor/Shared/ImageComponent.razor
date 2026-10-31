@@ -4,12 +4,12 @@
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
 
-@* ShowHeader is off so ImagePanel and avatars show only the thumbnail, without FileDisplay's title line and Open button. *@
+@* Thumbnail mode so ImagePanel and avatars show only the image, or an icon with an Open link for a PDF, without FileDisplay's title line. *@
 <div class="@Class" style="@Style">
     @if (!string.IsNullOrWhiteSpace(url))
     {
         <MudTooltip Text="Click to open full screen">
-            <FileDisplay Url="@url" ContentType="@contentType" Title="@(Alt ?? Image?.FileName)" Height="@(Height ?? DefaultHeight)" ObjectFit="@ObjectFit" OnClick="@OnClick" ShowHeader="false" />
+            <FileDisplay Url="@url" ContentType="@contentType" Title="@(Alt ?? Image?.FileName)" Height="@(Height ?? DefaultHeight)" ObjectFit="@ObjectFit" OnClick="@OnClick" Thumbnail="true" />
         </MudTooltip>
     }
     else

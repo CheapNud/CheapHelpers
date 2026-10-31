@@ -1,44 +1,10 @@
 <!--
-  ============================================================================
-  CheapHelpers Solution - Centralized Build Configuration
-  ============================================================================
+  Shared build settings for every project in the CheapHelpers solution.
 
-  This file provides centralized version management and common build properties
-  for all projects in the CheapHelpers solution.
-
-  HOW VERSION MANAGEMENT WORKS:
-  =============================
-
-  1. UPDATING VERSIONS:
-     - Change VersionPrefix below to update all project versions simultaneously
-     - Example: <VersionPrefix>1.2.3</VersionPrefix>
-     - All projects will automatically use this version
-
-  2. PRE-RELEASE VERSIONS:
-     - Set VersionSuffix for pre-release versions
-     - Examples:
-       * <VersionSuffix>-alpha</VersionSuffix>  → 1.0.0-alpha
-       * <VersionSuffix>-beta.1</VersionSuffix> → 1.0.0-beta.1
-       * <VersionSuffix>-rc.2</VersionSuffix>   → 1.0.0-rc.2
-     - Leave empty for stable releases
-
-  3. ASSEMBLY VERSIONING:
-     - AssemblyVersion: Strong name version (use for breaking changes only)
-     - FileVersion: File system version (matches VersionPrefix by default)
-     - InformationalVersion: Automatically combines VersionPrefix + VersionSuffix
-
-  4. VERSION STRATEGY:
-     - Semantic Versioning (SemVer 2.0): MAJOR.MINOR.PATCH
-     - MAJOR: Breaking changes
-     - MINOR: New features (backward-compatible)
-     - PATCH: Bug fixes (backward-compatible)
-
-  5. OVERRIDING IN INDIVIDUAL PROJECTS:
-     - Individual projects can override specific properties if needed
-     - Example: CheapHelpers.Blazor can set custom PackageVersion if required
-     - Not recommended unless there's a specific reason
-
-  ============================================================================
+  Versioning: the release workflow passes -p:Version=<tag without v> to dotnet pack,
+  so every package in a release carries the tag's number. No csproj sets a version.
+  A local pack without that property yields 0.0.0-local, so it can never be mistaken
+  for a release.
 -->
 <Project>
 
@@ -46,18 +12,8 @@
   <!-- CENTRALIZED VERSION MANAGEMENT                                   -->
   <!-- ================================================================ -->
   <PropertyGroup Label="Version Management">
-    <!-- Main version number - UPDATE THIS to change all project versions -->
-    <VersionPrefix>1.0.0</VersionPrefix>
-
-    <!-- Pre-release suffix (empty for stable releases) -->
-    <!-- Examples: -alpha, -beta, -beta.1, -rc.1 -->
-    <VersionSuffix></VersionSuffix>
-
-    <!-- Assembly version (for strong naming) - Only increment for breaking changes -->
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-
-    <!-- File version (shown in file properties) -->
-    <FileVersion>1.0.0.0</FileVersion>
+    <VersionPrefix>0.0.0</VersionPrefix>
+    <VersionSuffix>local</VersionSuffix>
   </PropertyGroup>
 
   <!-- ================================================================ -->

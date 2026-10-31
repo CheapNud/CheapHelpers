@@ -1,6 +1,7 @@
 name: Publish NuGet
 
-# Release mechanism: push a v*.*.* tag. Base packages build on the Linux runner pool (x-8,
+# Release mechanism: push a v*.*.* tag; the tag minus its v is the version of every package.
+# Base packages build on the Linux runner pool (x-8,
 # ubuntu-latest = the ci-dotnet image with the .NET 11 SDK baked in, so no actions/setup-dotnet);
 # MAUI + MediaProcessing pack on the Windows runner (SANCTUARY) using the host SDK/workloads
 # directly — no actions/setup-dotnet on Windows either (installing an SDK there triggers a UAC prompt
@@ -41,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Pack base packages
-        run: dotnet pack CheapHelpers.CI.slnx --configuration ${{ env.CONFIGURATION }} -p:EnableWindowsTargeting=true --output ./nupkgs
+        run: dotnet pack CheapHelpers.CI.slnx --configuration ${{ env.CONFIGURATION }} -p:EnableWindowsTargeting=true -p:Version=${GITHUB_REF_NAME#v} --output ./nupkgs
       - name: Publish base packages to NuGet.org
         # --no-symbols: some snupkgs contain no .pdb (nuget.org rejects them with 400, which
         # aborts the loop). The old GitHub workflow masked this with `|| true` — symbols were
@@ -74,8 +75,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Restore MAUI
         run: dotnet restore CheapHelpers.MAUI/CheapHelpers.MAUI.csproj
+      - name: Read the version from the tag
+        run: echo VERSION=%GITHUB_REF_NAME:~1%>> %GITHUB_ENV%
       - name: Pack MAUI
-        run: dotnet pack CheapHelpers.MAUI/CheapHelpers.MAUI.csproj --configuration ${{ env.CONFIGURATION }} --no-restore --output ./nupkgs
+        run: dotnet pack CheapHelpers.MAUI/CheapHelpers.MAUI.csproj --configuration ${{ env.CONFIGURATION }} --no-restore -p:Version=%VERSION% --output ./nupkgs
       - name: Publish MAUI to NuGet.org
         run: dotnet nuget push nupkgs\*.nupkg --api-key %NUGET_API_KEY% --source %NUGET_SOURCE% --skip-duplicate --no-symbols
         env:
@@ -100,8 +103,10 @@ jobs:
           ping -n 601 127.0.0.1 >nul
       - name: Restore MediaProcessing
         run: dotnet restore CheapHelpers.MediaProcessing/CheapHelpers.MediaProcessing.csproj -p:EnableWindowsTargeting=true
+      - name: Read the version from the tag
+        run: echo VERSION=%GITHUB_REF_NAME:~1%>> %GITHUB_ENV%
       - name: Pack MediaProcessing
-        run: dotnet pack CheapHelpers.MediaProcessing/CheapHelpers.MediaProcessing.csproj --configuration ${{ env.CONFIGURATION }} --no-restore -p:EnableWindowsTargeting=true --output ./nupkgs
+        run: dotnet pack CheapHelpers.MediaProcessing/CheapHelpers.MediaProcessing.csproj --configuration ${{ env.CONFIGURATION }} --no-restore -p:EnableWindowsTargeting=true -p:Version=%VERSION% --output ./nupkgs
       - name: Publish MediaProcessing to NuGet.org
         run: dotnet nuget push nupkgs\CheapHelpers.MediaProcessing.*.nupkg --api-key %NUGET_API_KEY% --source %NUGET_SOURCE% --skip-duplicate --no-symbols
         env:

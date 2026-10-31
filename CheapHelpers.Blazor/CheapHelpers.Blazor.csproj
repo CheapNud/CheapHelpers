@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>net11.0</TargetFramework>
-    <Version>4.0.4</Version>
     <Nullable>enable</Nullable>
     <!-- Keep the props-based static web asset manifest. With the net11.0 JSON manifest the consuming
          app's SDK labels the compressed copies of our assets without the _content/ prefix, so any app

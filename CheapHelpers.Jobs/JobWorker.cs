@@ -136,7 +136,8 @@ public sealed class JobWorker<TPayload, TContext>(
         }
         finally
         {
-            queue.RunningJobs.TryRemove(job.Id, out _);
+            // Only this attempt's entry: a retried job may already be registered again under the same id
+            queue.RunningJobs.TryRemove(KeyValuePair.Create(job.Id, jobSource));
             jobSource.Dispose();
             _slots.Release();
             queue.Signal();

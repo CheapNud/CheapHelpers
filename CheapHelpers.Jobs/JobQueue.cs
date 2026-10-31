@@ -266,12 +266,12 @@ public sealed class JobQueue<TPayload, TContext>(
             }
             catch
             {
-                RunningJobs.TryRemove(id, out _);
+                RunningJobs.TryRemove(KeyValuePair.Create(id, cancellation));
                 cancellation.Dispose();
                 throw;
             }
 
-            RunningJobs.TryRemove(id, out _);
+            RunningJobs.TryRemove(KeyValuePair.Create(id, cancellation));
             cancellation.Dispose();
         }
     }
@@ -364,7 +364,9 @@ public sealed class JobQueue<TPayload, TContext>(
                 .Where(j => j.Status == JobStatus.Running && j.MachineName == machine)
                 .ToListAsync(ct);
             // Recovery runs before this worker claims anything, so a row carrying this process id belongs to an earlier
-            // process that got the same id; containers often run the app as process 1 on every start
+            // process that got the same id; containers often run the app as process 1 on every start. A dead worker's id
+            // taken over by an unrelated live process keeps its rows Running until that process exits, because the table
+            // stores no process start time to tell the two apart
             orphans = candidates.Where(j => j.ProcessId is not { } pid || pid == self || !IsProcessAlive(pid)).ToList();
         }
 

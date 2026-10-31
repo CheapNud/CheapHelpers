@@ -7,21 +7,24 @@
 @using Microsoft.AspNetCore.WebUtilities
 @using System.Text
 
-<MudForm @ref="_form" Model="@_model" Validation="@(_validator?.ValidateValue)">
-    <MudTextField Class="mt-3" Label="@Loc["FirstName"]" Variant="Variant.Outlined"
-                  @bind-Value="_model.FirstName" For="@(() => _model.FirstName)" />
-    <MudTextField Class="mt-3" Label="@Loc["LastName"]" Variant="Variant.Outlined"
-                  @bind-Value="_model.LastName" For="@(() => _model.LastName)" />
-    <MudTextField Class="mt-3" Label="@Loc["Email"]" Required="true" InputMode="InputMode.email"
-                  InputType="InputType.Email" Variant="Variant.Outlined"
-                  @bind-Value="_model.Email" For="@(() => _model.Email)" />
-    <PasswordTextField For="@(() => _model.Password)" Class="mt-3" @bind-Value="_model.Password" />
-    <PasswordTextField For="@(() => _model.ConfirmPassword)" Class="mt-3" @bind-Value="_model.ConfirmPassword" />
-</MudForm>
-<MudCheckBox @bind-Value="_sendMail" Label="@Loc["SendConfirmationEmail"]" Class="mt-3" Color="Color.Primary" />
-<MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" OnClick="RegisterAccount">
-    @Loc["Create"]
-</MudButton>
+@if (BlazorOptions.RegistrationEnabled)
+{
+    <MudForm @ref="_form" Model="@_model" Validation="@(_validator?.ValidateValue)">
+        <MudTextField Class="mt-3" Label="@Loc["FirstName"]" Variant="Variant.Outlined"
+                      @bind-Value="_model.FirstName" For="@(() => _model.FirstName)" />
+        <MudTextField Class="mt-3" Label="@Loc["LastName"]" Variant="Variant.Outlined"
+                      @bind-Value="_model.LastName" For="@(() => _model.LastName)" />
+        <MudTextField Class="mt-3" Label="@Loc["Email"]" Required="true" InputMode="InputMode.email"
+                      InputType="InputType.Email" Variant="Variant.Outlined"
+                      @bind-Value="_model.Email" For="@(() => _model.Email)" />
+        <PasswordTextField For="@(() => _model.Password)" Class="mt-3" @bind-Value="_model.Password" />
+        <PasswordTextField For="@(() => _model.ConfirmPassword)" Class="mt-3" @bind-Value="_model.ConfirmPassword" />
+    </MudForm>
+    <MudCheckBox @bind-Value="_sendMail" Label="@Loc["SendConfirmationEmail"]" Class="mt-3" Color="Color.Primary" />
+    <MudButton Class="mt-3" Variant="Variant.Filled" Color="Color.Primary" OnClick="RegisterAccount">
+        @Loc["Create"]
+    </MudButton>
+}
 
 @code {
     public class RegisterViewModel
@@ -53,6 +56,12 @@
 
     protected override void OnInitialized()
     {
+        if (!BlazorOptions.RegistrationEnabled)
+        {
+            Nav.NotFound();
+            return;
+        }
+
         _validator = new RegisterValidator();
     }
 

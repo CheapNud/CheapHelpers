@@ -102,7 +102,6 @@
   <ItemGroup>
     <ProjectReference Include="..\CheapHelpers.Barcodes\CheapHelpers.Barcodes.csproj" />
     <ProjectReference Include="..\CheapHelpers.EF\CheapHelpers.EF.csproj" />
-    <ProjectReference Include="..\CheapHelpers.Models\CheapHelpers.Models.csproj" />
     <ProjectReference Include="..\CheapHelpers\CheapHelpers.csproj" />
   </ItemGroup>
 

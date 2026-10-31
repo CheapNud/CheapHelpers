@@ -48,7 +48,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CheapHelpers.Models\CheapHelpers.Models.csproj" />
     <ProjectReference Include="..\CheapHelpers\CheapHelpers.csproj" />
   </ItemGroup>
 

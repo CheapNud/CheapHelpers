@@ -11,7 +11,6 @@
   <Project Path="CheapHelpers.EF.Tests/CheapHelpers.EF.Tests.csproj" />
   <Project Path="CheapHelpers.Llm/CheapHelpers.Llm.csproj" />
   <Project Path="CheapHelpers.Llm.Tests/CheapHelpers.Llm.Tests.csproj" />
-  <Project Path="CheapHelpers.Models/CheapHelpers.Models.csproj" />
   <Project Path="CheapHelpers.Networking/CheapHelpers.Networking.csproj" />
   <Project Path="CheapHelpers.Services/CheapHelpers.Services.csproj" />
   <Project Path="CheapHelpers.Services.Tests/CheapHelpers.Services.Tests.csproj" />

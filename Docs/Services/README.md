@@ -371,7 +371,6 @@ Key NuGet packages used:
 ## Related Packages
 
 - **CheapHelpers** - Core utilities and extensions
-- **CheapHelpers.Models** - Shared models and DTOs
 - **CheapHelpers.EF** - Entity Framework utilities
 - **CheapHelpers.Blazor** - Blazor components
 - **CheapHelpers.Barcodes** - Barcode generation and reading; Services adds the `ReadBarcode(byte[])` extension that decodes image files

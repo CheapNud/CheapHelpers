@@ -6,8 +6,7 @@ A collection of production-ready C# utilities, extensions, and services for .NET
 
 | Package | Version | Description |
 |---------|---------|-------------|
-| [CheapHelpers](https://www.nuget.org/packages/CheapHelpers) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.svg) | Core utilities, extensions, threading, and scheduling |
-| [CheapHelpers.Models](https://www.nuget.org/packages/CheapHelpers.Models) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Models.svg) | Shared entities, DTOs, enums, and UBL invoice models |
+| [CheapHelpers](https://www.nuget.org/packages/CheapHelpers) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.svg) | Core utilities, extensions, threading, scheduling, and the shared entities, DTOs and enums |
 | [CheapHelpers.EF](https://www.nuget.org/packages/CheapHelpers.EF) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.EF.svg) | Entity Framework repository pattern with Identity support and a persistent job queue |
 | [CheapHelpers.Services](https://www.nuget.org/packages/CheapHelpers.Services) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Services.svg) | Email, PDF, billing, reporting, notifications, and integrations |
 | [CheapHelpers.Barcodes](https://www.nuget.org/packages/CheapHelpers.Barcodes) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Barcodes.svg) | Barcode generation and reading on ZXing.Net with no native image dependency |
@@ -325,8 +324,7 @@ scanner.Start();
 ## Project Structure
 
 ```
-CheapHelpers/                      Core utilities, extensions, scheduling, threading
-CheapHelpers.Models/               Entities, DTOs, enums, UBL invoice models
+CheapHelpers/                      Core utilities, extensions, scheduling, threading; Models/ holds entities, DTOs, enums, UBL invoice models
 CheapHelpers.EF/                   Entity Framework, CheapContext, repositories
 CheapHelpers.Auth/                 Plex, OAuth/OIDC, shared secret, forwarded headers, Data Protection
   ├── ApiKeys/                     API key generation, validation, rate-limiting middleware

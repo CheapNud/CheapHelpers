@@ -24,7 +24,8 @@ public class LinuxArpResolver(ILogger<LinuxArpResolver> logger) : IMacAddressRes
                 CreateNoWindow = true
             };
 
-            using var ipProcess = Process.Start(processInfo);
+            // Fully qualified: the CheapHelpers.Process namespace shadows the Process class here
+            using var ipProcess = System.Diagnostics.Process.Start(processInfo);
             if (ipProcess != null)
             {
                 var ipOutput = await ipProcess.StandardOutput.ReadToEndAsync();

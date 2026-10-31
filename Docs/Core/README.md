@@ -343,7 +343,7 @@ public IQueryable<T> ApplySort<T>(IQueryable<T> query, string column, bool ascen
 - **[CheapHelpers.Blazor](../Blazor/)** - Blazor-specific helpers and components
 - **[CheapHelpers.EF](../EF/)** - Entity Framework utilities
 - **[CheapHelpers.MAUI](../MAUI/)** - MAUI/Xamarin helpers
-- **[CheapHelpers.Networking](../Networking/)** - Network utilities
+- **[Networking](../Services/Networking/)** - Network scanner, discovery and detectors (in CheapHelpers.Services)
 - **[CheapHelpers.Services](../Services/)** - Service layer helpers
 
 ## See Also

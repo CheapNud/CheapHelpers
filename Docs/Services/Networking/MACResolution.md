@@ -1,6 +1,6 @@
 # MAC Address Resolution
 
-CheapHelpers.Networking provides cross-platform MAC address resolution from IP addresses using platform-specific ARP table implementations.
+CheapHelpers.Services provides cross-platform MAC address resolution from IP addresses using platform-specific ARP table implementations.
 
 ## Overview
 

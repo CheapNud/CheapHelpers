@@ -126,6 +126,13 @@ byte[] drawing = ImageHelpers.DrawingToPng(tiffBytes, maxWidth: 1600);
 
 For bulk runs over many drawings, set `NetVips.Cache.Max = 0` once at startup so the operation cache does not keep their buffers alive.
 
+### Networking
+The network scanner sweeps subnets, resolves hostnames and MAC addresses, and finds devices through UPnP/SSDP and mDNS. Pluggable detectors then identify each device type over HTTP, SSH and Windows services.
+
+- [Scanner](Networking/Scanner.md) - NetworkScanner usage and configuration
+- [Detectors](Networking/Detectors.md) - Device type detection strategies
+- [MACResolution](Networking/MACResolution.md) - Cross-platform MAC address resolution
+
 ## Quick Start
 
 ### Installation

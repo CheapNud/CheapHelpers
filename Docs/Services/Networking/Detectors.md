@@ -1,6 +1,6 @@
 # Device Type Detectors
 
-CheapHelpers.Networking provides a pluggable detector architecture for identifying device types on your network. Detectors run in priority order and use various protocols and techniques to determine what type of device is at each IP address.
+CheapHelpers.Services provides a pluggable detector architecture for identifying device types on your network. Detectors run in priority order and use various protocols and techniques to determine what type of device is at each IP address.
 
 ## Overview
 

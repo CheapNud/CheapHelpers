@@ -8,12 +8,11 @@ A collection of production-ready C# utilities, extensions, and services for .NET
 |---------|---------|-------------|
 | [CheapHelpers](https://www.nuget.org/packages/CheapHelpers) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.svg) | Core utilities, extensions, threading, scheduling, and the shared entities, DTOs and enums |
 | [CheapHelpers.EF](https://www.nuget.org/packages/CheapHelpers.EF) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.EF.svg) | Entity Framework repository pattern with Identity support and a persistent job queue |
-| [CheapHelpers.Services](https://www.nuget.org/packages/CheapHelpers.Services) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Services.svg) | Email, PDF, billing, reporting, notifications, and integrations |
+| [CheapHelpers.Services](https://www.nuget.org/packages/CheapHelpers.Services) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Services.svg) | Email, PDF, billing, reporting, notifications, and integrations, network scanning and device detection |
 | [CheapHelpers.Barcodes](https://www.nuget.org/packages/CheapHelpers.Barcodes) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Barcodes.svg) | Barcode generation and reading on ZXing.Net with no native image dependency |
 | [CheapHelpers.Auth](https://www.nuget.org/packages/CheapHelpers.Auth) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Auth.svg) | Plex and OAuth sign-in, API keys, shared-secret auth, forwarded headers and Data Protection setup |
 | [CheapHelpers.Llm](https://www.nuget.org/packages/CheapHelpers.Llm) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Llm.svg) | LLM client for Anthropic and OpenAI-compatible providers with structured output |
 | [CheapHelpers.Blazor](https://www.nuget.org/packages/CheapHelpers.Blazor) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Blazor.svg) | Blazor components, account module, and Hybrid features |
-| [CheapHelpers.Networking](https://www.nuget.org/packages/CheapHelpers.Networking) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Networking.svg) | Network scanning, mDNS discovery, and device detection |
 | [CheapHelpers.MAUI](https://www.nuget.org/packages/CheapHelpers.MAUI) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.MAUI.svg) | MAUI platform implementations (iOS APNS, Android FCM) |
 | [CheapHelpers.MediaProcessing](https://www.nuget.org/packages/CheapHelpers.MediaProcessing) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.MediaProcessing.svg) | FFmpeg integration, hardware detection (Windows/Linux) |
 | [CheapHelpers.Avalonia.Bridge](https://www.nuget.org/packages/CheapHelpers.Avalonia.Bridge) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Avalonia.Bridge.svg) | Desktop notification bridge for Avalonia apps |
@@ -37,7 +36,7 @@ dotnet add package CheapHelpers.Auth
 dotnet add package CheapHelpers.Blazor
 
 # Network scanning and device discovery
-dotnet add package CheapHelpers.Networking
+dotnet add package CheapHelpers.Services
 ```
 
 ## Quick Start
@@ -341,6 +340,7 @@ CheapHelpers.Services/
   │   └── Xml/                     XML serialization
   ├── Email/                       MailKit, Microsoft Graph, SendGrid + Fluid templates
   ├── Geocoding/                   Mapbox, Azure Maps, Google Maps, PTV Maps
+  ├── Networking/                  Network scanner, mDNS discovery, device detectors
   ├── Notifications/               Multi-channel (InApp, Email, SMS, Push) + RabbitMQ
   ├── Polling/                     HTTP polling with exponential backoff
   ├── Reporting/                   Report generation, storage, distribution, scheduling
@@ -353,7 +353,6 @@ CheapHelpers.Blazor/
   ├── Pages/Account/               Full account module (login, register, 2FA, GDPR)
   ├── Services/                    UserService, ExternalUserProvisioner, RabbitMQ consumer
   └── Shared/                      LoginDisplay, PlexSignInCard, UploadFile, ImagePanel, Selectors
-CheapHelpers.Networking/           Network scanner, mDNS discovery, device detectors
 CheapHelpers.MediaProcessing/      FFmpeg integration, hardware detection (Win/Linux)
 CheapHelpers.MAUI/                 iOS APNS, Android FCM, status bar helpers
 CheapHelpers.Avalonia.Bridge/      Desktop notification adapter

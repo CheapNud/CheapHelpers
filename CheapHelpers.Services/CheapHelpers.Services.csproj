@@ -85,9 +85,11 @@
     <PackageReference Include="itext" Version="9.8.0" />
     <PackageReference Include="itext.pdfoptimizer" Version="4.1.5" />
     <PackageReference Include="MailKit" Version="4.18.2" />
+    <PackageReference Include="MeaMod.DNS" Version="1.0.71" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Connections" Version="1.2.13" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.14" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.14" />
     <PackageReference Include="Microsoft.Graph" Version="6.9.0" />
     <PackageReference Include="NetVips" Version="3.2.0" />
     <PackageReference Include="NetVips.Native" Version="8.18.7" />

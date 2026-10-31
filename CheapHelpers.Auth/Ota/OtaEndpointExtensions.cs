@@ -22,7 +22,7 @@ public static class OtaEndpointExtensions
     /// <c>GET {prefix}/releases/{version}/{assetName}</c>, all anonymous. Add rate limiting to the returned group.
     /// </summary>
     /// <remarks>
-    /// The list answers <c>[{version, tag, mandatory}]</c> newest first, latest answers an <see cref="OtaUpdateCheck"/> (404 without releases, 400 for an unknown architecture), an asset streams as octet-stream (400 for an unknown name, 404 when missing), and a failing source gives 503.
+    /// The list answers <c>[{version, tag, mandatory}]</c> newest first, latest answers an <see cref="OtaUpdateCheck"/> (404 without releases, 400 for an unknown architecture), an asset streams as octet-stream (400 for an unknown name, 404 when missing), and a source that cannot be reached gives 503.
     /// Releases are tagged <c>{TagPrefix}{version}</c> and marked mandatory by <see cref="OtaOptions.MandatoryMarker"/> in the body; the <c>.sha256</c> asset is CI-produced <c>sha256sum</c> output passed through untouched.
     /// </remarks>
     public static RouteGroupBuilder MapCheapOtaReleaseEndpoints(this IEndpointRouteBuilder endpoints, string routePrefix = DefaultRoutePrefix)
@@ -31,6 +31,7 @@ public static class OtaEndpointExtensions
 
         // The asset endpoint opens its stream before it returns, so a source failure is caught here before any byte is sent.
         // HttpClient reports its own timeout as a cancellation with a TimeoutException inside; a client abort is left alone.
+        // Local disk errors stay 500, because they are a fault of this server rather than an unreachable source.
         group.AddEndpointFilter(async (invocationContext, next) =>
         {
             try

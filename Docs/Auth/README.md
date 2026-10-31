@@ -198,7 +198,7 @@ The two paths in the answer are relative to the host, so pass the path base in `
 | `GET /api/ota/releases/latest` | `arch` (required), `since` (optional current version) | 200, 400 unknown or missing `arch`, 404 no release, 503 |
 | `GET /api/ota/releases/{version}/{assetName}` | none | 200 `application/octet-stream`, 400 unknown asset name, 404 missing, 503 |
 
-A 503 carries the plain text `Release source unavailable`. All three are anonymous; rate limiting is the app's choice.
+A 503 with the plain text `Release source unavailable` means the forge or upstream could not be reached or timed out. All three are anonymous; rate limiting is the app's choice.
 
 An update answer (`OtaUpdateCheck`), from `latest` or from `CheckAsync`:
 

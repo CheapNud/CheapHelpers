@@ -1,17 +1,10 @@
-# CheapHelpers.Jobs Documentation
+# Job queue
 
 Persistent job queue on EF Core. The jobs live in a table inside your own `DbContext`, so they survive a restart. A hosted worker claims Pending jobs, runs them through your processor, retries failures with a backoff, moves jobs that keep failing to a dead letter state, and resumes jobs that a crashed process left behind. Processors report progress that is throttled before it reaches the database or your callbacks, with an estimate of the time left.
 
-## Package Information
-
-- **Package**: CheapHelpers.Jobs
-- **Version**: 4.0.0
-- **Target Framework**: .NET 11.0 (net11.0)
-- **NuGet**: [CheapHelpers.Jobs](https://www.nuget.org/packages/CheapHelpers.Jobs)
-
 ## Mapping the table
 
-The package does not own a `DbContext`. Map the job table into yours and add one migration:
+CheapHelpers.EF does not own a `DbContext`. Map the job table into yours and add one migration:
 
 ```csharp
 protected override void OnModelCreating(ModelBuilder modelBuilder)

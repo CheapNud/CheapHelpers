@@ -1,3 +1,3 @@
-namespace CheapHelpers.Jobs.Tests;
+namespace CheapHelpers.EF.Tests;
 
 public sealed record TestPayload(string Name, int Count);

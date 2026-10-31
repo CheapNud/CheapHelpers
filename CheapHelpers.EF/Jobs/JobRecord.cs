@@ -1,4 +1,4 @@
-namespace CheapHelpers.Jobs;
+namespace CheapHelpers.EF.Jobs;
 
 /// <summary>One row of the job table; the EF entity mapped by <see cref="JobModelBuilderExtensions.ApplyJobQueue"/>.</summary>
 public sealed class JobRecord

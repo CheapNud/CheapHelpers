@@ -32,6 +32,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="CheapHelpers.EF.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- No FrameworkReference here on purpose: Microsoft.AspNetCore.App has no Android runtime
          pack (NETSDK1082), and keeping it out lets MAUI apps consume this package.
          Framework-dependent Identity wiring lives in CheapHelpers.Blazor. -->

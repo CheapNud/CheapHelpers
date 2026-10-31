@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace CheapHelpers.Jobs;
+namespace CheapHelpers.EF.Jobs;
 
 /// <summary>Registers the job queue and its worker.</summary>
 public static class JobServiceCollectionExtensions

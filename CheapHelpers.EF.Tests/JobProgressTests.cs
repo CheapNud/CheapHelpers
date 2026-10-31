@@ -1,4 +1,6 @@
-namespace CheapHelpers.Jobs.Tests;
+using CheapHelpers.EF.Jobs;
+
+namespace CheapHelpers.EF.Tests;
 
 public sealed class JobProgressTests
 {

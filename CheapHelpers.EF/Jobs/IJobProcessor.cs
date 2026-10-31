@@ -1,4 +1,4 @@
-namespace CheapHelpers.Jobs;
+namespace CheapHelpers.EF.Jobs;
 
 /// <summary>Does the work for one job; resolved from a new DI scope per job.</summary>
 public interface IJobProcessor<TPayload>

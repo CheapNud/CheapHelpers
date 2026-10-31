@@ -1,12 +1,11 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Text.Json;
 using System.Threading.Channels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace CheapHelpers.Jobs;
+namespace CheapHelpers.EF.Jobs;
 
 /// <summary>The job table as a queue: enqueue, inspect, cancel and retry jobs. Register as a singleton.</summary>
 public sealed class JobQueue<TPayload, TContext>(
@@ -450,7 +449,8 @@ public sealed class JobQueue<TPayload, TContext>(
     {
         try
         {
-            using var process = Process.GetProcessById(processId);
+            // Fully qualified: inside CheapHelpers.EF.Jobs a bare Process resolves to the CheapHelpers.Process namespace
+            using var process = System.Diagnostics.Process.GetProcessById(processId);
             return !process.HasExited;
         }
         catch (ArgumentException)

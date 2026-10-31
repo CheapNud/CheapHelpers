@@ -6,7 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace CheapHelpers.Jobs;
+namespace CheapHelpers.EF.Jobs;
 
 /// <summary>Hosted service that recovers interrupted jobs at startup, then claims and runs Pending jobs.</summary>
 public sealed class JobWorker<TPayload, TContext>(

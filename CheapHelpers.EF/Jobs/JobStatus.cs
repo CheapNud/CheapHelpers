@@ -1,4 +1,4 @@
-namespace CheapHelpers.Jobs;
+namespace CheapHelpers.EF.Jobs;
 
 /// <summary>Lifecycle state of a job row.</summary>
 public enum JobStatus

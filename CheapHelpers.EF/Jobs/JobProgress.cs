@@ -1,4 +1,4 @@
-namespace CheapHelpers.Jobs;
+namespace CheapHelpers.EF.Jobs;
 
 /// <summary>A progress report raised through <see cref="JobQueue{TPayload, TContext}.ProgressChanged"/>.</summary>
 /// <param name="Id">The job id.</param>

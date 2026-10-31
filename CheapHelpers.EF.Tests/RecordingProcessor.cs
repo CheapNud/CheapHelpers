@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
+using CheapHelpers.EF.Jobs;
 
-namespace CheapHelpers.Jobs.Tests;
+namespace CheapHelpers.EF.Tests;
 
 public sealed class RecordingProcessor : IJobProcessor<TestPayload>
 {

@@ -1,4 +1,4 @@
-namespace CheapHelpers.Jobs;
+namespace CheapHelpers.EF.Jobs;
 
 /// <summary>The job a processor works on, with a throttled progress reporter.</summary>
 public sealed class JobContext<TPayload>

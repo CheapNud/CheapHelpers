@@ -1,10 +1,12 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace CheapHelpers.Testing;
+namespace CheapHelpers.Auth.Testing;
 
 /// <summary>
 /// Signs a request in as whoever its Authorization header names, so tests can pick the user per request.
@@ -12,6 +14,7 @@ namespace CheapHelpers.Testing;
 /// The user id becomes the <see cref="ClaimTypes.NameIdentifier"/> claim and the <c>sub</c> claim, and every further
 /// <c>key=value</c> pair becomes a claim of type <c>key</c>. Values cannot contain <c>;</c> or <c>=</c>.
 /// No header, or a header with another scheme word, gives no result, so an endpoint that requires a user answers 401.
+/// It authenticates only in the Development or Test environment; anywhere else, or with no environment registered, every request fails.
 /// </summary>
 public sealed class TestAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
@@ -28,12 +31,23 @@ public sealed class TestAuthenticationHandler(
     private const string HeaderPrefix = SchemeName + " ";
     private const char SegmentSeparator = ';';
     private const char PairSeparator = '=';
+    private const string DevelopmentEnvironment = "Development";
+    private const string TestEnvironment = "Test";
+    private const string WrongEnvironmentFailure = "The Test scheme only runs in the Development or Test environment";
 
     /// <inheritdoc />
 #pragma warning disable CS1998 // the override has to return a Task, and reading a header has nothing to await
-    protected override async Task<AuthenticateResult> HandleAuthenticateAsync() =>
+    protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
 #pragma warning restore CS1998
-        Authenticate(Request.Headers.Authorization.ToString());
+    {
+        var environment = Context.RequestServices.GetService<IHostEnvironment>();
+        if (environment is null || !(environment.IsEnvironment(DevelopmentEnvironment) || environment.IsEnvironment(TestEnvironment)))
+        {
+            return AuthenticateResult.Fail(WrongEnvironmentFailure);
+        }
+
+        return Authenticate(Request.Headers.Authorization.ToString());
+    }
 
     private static AuthenticateResult Authenticate(string header)
     {

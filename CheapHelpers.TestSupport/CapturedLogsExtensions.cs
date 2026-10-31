@@ -1,6 +1,7 @@
+using CheapHelpers.Testing;
 using Microsoft.Extensions.Logging;
 
-namespace CheapHelpers.Testing;
+namespace CheapHelpers.TestSupport;
 
 /// <summary>
 /// Adds <see cref="CapturedLogs"/> to a logging builder.

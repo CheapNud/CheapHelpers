@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace CheapHelpers.Testing.Tests;
+namespace CheapHelpers.Tests;
 
 public class SqliteTestDatabaseTests
 {

@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace CheapHelpers.Testing.Tests;
+namespace CheapHelpers.Tests;
 
 public class RecordingHttpHandlerTests
 {

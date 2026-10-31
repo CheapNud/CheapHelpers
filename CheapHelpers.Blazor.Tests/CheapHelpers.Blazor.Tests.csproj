@@ -24,11 +24,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CheapHelpers.Blazor\CheapHelpers.Blazor.csproj" />
-    <ProjectReference Include="..\CheapHelpers.Testing\CheapHelpers.Testing.csproj" />
+    <ProjectReference Include="..\CheapHelpers.TestSupport\CheapHelpers.TestSupport.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Using Include="CheapHelpers.Testing" />
+    <Using Include="CheapHelpers.TestSupport" />
     <Using Include="Xunit" />
   </ItemGroup>
 

@@ -132,6 +132,9 @@ byte[] opened = PassphraseEnvelope.Decrypt(sealedBytes, passphrase);
 if (!PathHelpers.IsContainedIn(requestedPath, uploadRoot)) return Results.BadRequest();
 ```
 
+### Test Doubles
+**[TestDoubles.md](TestDoubles.md)** - `RecordingHttpHandler` and `CapturedLogs` for tests of code that talks to HTTP or writes logs
+
 ### Settings Corruption Handling
 **`SettingsServiceOptions.OnCorruptValue`** - `FileSettingsService` throws on a stored value it cannot deserialise (`CorruptValueHandling.Throw`, the default) or returns the default (`CorruptValueHandling.ReturnDefault`); a read never overwrites the stored value
 ```csharp

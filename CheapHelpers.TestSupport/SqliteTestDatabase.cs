@@ -1,7 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
-namespace CheapHelpers.Testing;
+namespace CheapHelpers.TestSupport;
 
 /// <summary>
 /// An in-memory SQLite database for one test. The database lives as long as the connection, and every context

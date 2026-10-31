@@ -1,4 +1,4 @@
-namespace CheapHelpers.Testing.Tests;
+namespace CheapHelpers.Tests;
 
 public sealed class Note
 {

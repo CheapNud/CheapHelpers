@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace CheapHelpers.Testing.Tests;
+namespace CheapHelpers.Tests;
 
 public class CapturedLogsTests
 {

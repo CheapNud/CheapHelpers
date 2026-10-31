@@ -8,6 +8,8 @@ namespace CheapHelpers.Services.Imaging;
 public static class ImageHelpers
 {
     private const int MinDimension = 1;
+    private const string IccProfileField = "icc-profile-data";
+    private const string SrgbProfile = "srgb";
 
     /// <summary>
     /// Encodes an 8-bit pixel buffer as PNG, optionally shrunk so its longest side is at most <paramref name="maxLongestSide"/>
@@ -87,7 +89,9 @@ public static class ImageHelpers
     private static byte[] SaveUprightJpeg(Image image, int? maxLongestSide)
     {
         using var upright = image.Autorot();
-        using var sized = Downsize(upright, maxLongestSide);
+        // Dropping the metadata also drops the ICC profile, so profiled pixels are moved into sRGB first to keep their colours
+        using var srgb = upright.Contains(IccProfileField) ? upright.IccTransform(SrgbProfile, embedded: true) : upright.Copy();
+        using var sized = Downsize(srgb, maxLongestSide);
         return sized.JpegsaveBuffer(keep: Enums.ForeignKeep.None);
     }
 

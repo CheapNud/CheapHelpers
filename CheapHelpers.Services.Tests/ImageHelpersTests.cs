@@ -76,6 +76,28 @@ public class ImageHelpersTests
     }
 
     [Fact]
+    public void NormalizePhoto_IccProfile_ConvertsToSrgbBeforeDroppingIt()
+    {
+        using var red = Image.Black(8, 8, bands: 3) + new double[] { 200, 60, 40 };
+        using var srgb = red.Cast(Enums.BandFormat.Uchar).Copy(interpretation: Enums.Interpretation.Srgb);
+        using var cmyk = srgb.IccTransform("cmyk", inputProfile: "srgb");
+        var jpeg = cmyk.JpegsaveBuffer();
+        using var profiled = Image.NewFromBuffer(jpeg);
+        using var expected = profiled.IccTransform("srgb", embedded: true);
+
+        var normalized = ImageHelpers.NormalizePhoto(jpeg);
+
+        Assert.NotNull(normalized);
+        using var decoded = Image.NewFromBuffer(normalized);
+        Assert.Equal(3, decoded.Bands);
+        Assert.False(decoded.Contains("icc-profile-data"));
+        var expectedPixel = expected.Getpoint(4, 4);
+        var actualPixel = decoded.Getpoint(4, 4);
+        for (var band = 0; band < 3; band++)
+            Assert.InRange(actualPixel[band], expectedPixel[band] - 3, expectedPixel[band] + 3);
+    }
+
+    [Fact]
     public void NormalizePhoto_Png_ReturnsJpeg()
     {
         var png = ImageHelpers.EncodePng(new byte[8 * 8 * 3], 8, 8, PixelBandOrder.Rgb);

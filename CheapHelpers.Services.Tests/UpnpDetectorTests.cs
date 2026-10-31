@@ -85,6 +85,20 @@ public class UpnpDetectorTests
     }
 
     [Fact]
+    public async Task ProcessSsdpResponse_MappedIpv6Sender_CachesUnderPlainIpv4()
+    {
+        var handler = new RecordingHttpHandler().Reply(DescriptionXml, contentType: XmlContentType);
+        var logger = new RecordingLogger<UpnpDetector>();
+        using var detector = new UpnpDetector(logger, Options.Create(new PortDetectionOptions()), handler.CreateClient());
+
+        await detector.ProcessSsdpResponseAsync(SsdpReply(DescriptionUrl), IPAddress.Parse("::ffff:192.168.1.20"));
+
+        // Read the key from the cache log line; a cache miss through DetectDeviceTypeAsync would start real discovery
+        var cached = Assert.Single(logger.Entries, entry => entry.ContainsKey("Info"));
+        Assert.Equal(DeviceAddress, cached["IpAddress"]);
+    }
+
+    [Fact]
     public async Task ProcessSsdpResponse_ExternalEntity_FallsBackToServerHeader()
     {
         var handler = new RecordingHttpHandler().Reply(ExternalEntityXml, contentType: XmlContentType);

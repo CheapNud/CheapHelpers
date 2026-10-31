@@ -277,7 +277,7 @@ public class UpnpDetector : IDeviceTypeDetector, IDisposable
                 return null;
             }
 
-            var ipAddress = sender.ToString();
+            var ipAddress = Normalize(sender).ToString();
 
             // Fetch and parse device description asynchronously
             return await Task.Run(async () =>

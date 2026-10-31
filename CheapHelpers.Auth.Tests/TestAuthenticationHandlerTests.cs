@@ -48,6 +48,18 @@ public class TestAuthenticationHandlerTests
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Answers_401_in_Staging_even_with_a_valid_header()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        await using var app = await StartAsync(Environments.Staging, cancellationToken);
+        using var client = app.GetTestClient().AsUser("u1");
+
+        using var response = await client.GetAsync(ClaimsPath, cancellationToken);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     private static Task<WebApplication> StartAsync(string environmentName, CancellationToken cancellationToken) =>
         TestWebApp.StartAsync(
             builder =>

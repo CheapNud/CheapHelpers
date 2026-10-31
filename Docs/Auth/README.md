@@ -19,6 +19,7 @@ CheapHelpers.Blazor references this package, so a Blazor app gets it automatical
 | `CheapHelpers.Auth.OAuth` | `OAuthProviderOptions` and the Google, Microsoft, GitHub, Apple and OpenID Connect options |
 | `CheapHelpers.Auth.Testing` | `AddTestAuthentication`, `AsUser` and the test authentication handler |
 | `CheapHelpers.Auth.ApiKeys` | `IApiKeyService`, `ApiKeyService<TUser>`, `ApiKeyOptions`, `ApiKeyMiddleware`, `IApiKeyValidator<TEntity>` and the result records |
+| `CheapHelpers.Auth.Ota` | `AddCheapOta`, `MapCheapOtaReleaseEndpoints` and `OtaUpdateChecker` for gateway updates |
 
 ## Plex
 
@@ -141,6 +142,83 @@ builder.Services.AddAuthorization();
 // later, on the client
 var client = app.GetTestClient().AsUser("u1", ("role", "Admin"));
 ```
+
+## Gateway updates
+
+The `CheapHelpers.Auth.Ota` namespace is the server half of over-the-air updates for gateway agents. It reads releases from a source, decides with `OtaUpdatePolicy` which release a device should install, and maps the public release endpoints that agents, installers and other instances call. Enrollment, device keys, heartbeats and the device-authenticated update check stay in the app.
+
+The source is picked with `Source`. Every source needs `Assets`, which maps an architecture key to its binary asset name.
+
+| `Source` | Reads from | Setting |
+|----------|------------|---------|
+| `Forge` (default) | The release API of a Gitea or Forgejo repository; the list is cached for `ReleaseCacheDuration` (5 minutes) | `ForgeRepoApiUrl`, optional `ForgeToken` |
+| `Upstream` | The release endpoints of another instance | `UpstreamUrl`, for example `https://other.example/api/ota` |
+| `LocalFolder` | A folder laid out as `{version}/{asset}`, with an empty `mandatory` file to mark a release | `LocalPath` |
+
+`InstancePin` keeps every device without its own pin on one version. A missing setting throws at startup with its name.
+
+```json
+{
+  "Ota": {
+    "Source": "Forge",
+    "ForgeRepoApiUrl": "https://forge.example/api/v1/repos/owner/agent",
+    "ForgeToken": "<from a secret store>",
+    "Assets": { "armv7": "agent-armv7", "aarch64": "agent-aarch64" }
+  }
+}
+```
+
+```csharp
+using CheapHelpers.Auth.Ota;
+
+builder.Services.AddCheapOta(builder.Configuration.GetSection("Ota"));
+builder.Services.AddRateLimiter(/* define a "public" policy */);
+
+app.MapCheapOtaReleaseEndpoints().RequireRateLimiting("public"); // /api/ota/...
+```
+
+The app's own device endpoint authenticates the device, loads its pin and asks `OtaUpdateChecker`:
+
+```csharp
+app.MapGet("/api/devices/update", async (HttpContext http, OtaUpdateChecker checker, CancellationToken ct) =>
+{
+    var device = await LoadAuthenticatedDeviceAsync(http, ct); // the app's own code
+    var update = await checker.CheckAsync(device.Version, device.Architecture, device.Pin, "/api/ota", ct);
+    return update is null ? Results.NoContent() : Results.Ok(update);
+});
+```
+
+The two paths in the answer are relative to the host, so pass the path base in `routePrefix` when the app runs under one. The `latest` endpoint takes its prefix from the request, which includes a path base or a parent group.
+
+### Wire contract
+
+| Endpoint | Query | Status codes |
+|----------|-------|--------------|
+| `GET /api/ota/releases` | none | 200, 503 |
+| `GET /api/ota/releases/latest` | `arch` (required), `since` (optional current version) | 200, 400 unknown or missing `arch`, 404 no release, 503 |
+| `GET /api/ota/releases/{version}/{assetName}` | none | 200 `application/octet-stream`, 400 unknown asset name, 404 missing, 503 |
+
+A 503 with the plain text `Release source unavailable` means the forge or upstream could not be reached or timed out. All three are anonymous; rate limiting is the app's choice.
+
+An update answer (`OtaUpdateCheck`), from `latest` or from `CheckAsync`:
+
+```json
+{
+  "version": "1.4.2",
+  "tag": "v1.4.2",
+  "mandatory": false,
+  "download_url": "/api/ota/releases/1.4.2/agent-armv7",
+  "sha256_url": "/api/ota/releases/1.4.2/agent-armv7.sha256"
+}
+```
+
+`mandatory` is true when any release above the device's current version is mandatory. The release list is newest first:
+
+```json
+[ { "version": "1.4.2", "tag": "v1.4.2", "mandatory": false } ]
+```
+
+Releases are tagged `<TagPrefix><major.minor.patch>` (`v1.4.2` by default); tags without the prefix or with a version that does not parse are ignored. A release is mandatory when its body contains `[mandatory]` (`MandatoryMarker`, any case). A mandatory release also lifts a pinned device. Each binary has a sibling asset `<asset>.sha256` that CI writes with `sha256sum` (`<64 hex>  <asset name>` and a newline); the server passes it through untouched. Devices download through these endpoints and never talk to the forge.
 
 ## Forwarded headers
 

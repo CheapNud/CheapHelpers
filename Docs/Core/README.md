@@ -135,6 +135,9 @@ if (!PathHelpers.IsContainedIn(requestedPath, uploadRoot)) return Results.BadReq
 ### Test Doubles
 **[TestDoubles.md](TestDoubles.md)** - `RecordingHttpHandler` and `CapturedLogs` for tests of code that talks to HTTP or writes logs
 
+### Gateway Updates
+**`OtaUpdatePolicy`** - picks the release a gateway should install from its current version, device pin and instance pin, with mandatory releases lifting pinned devices. **`IOtaReleaseSource`** lists releases and opens assets, with `ForgeReleaseSource` (Gitea or Forgejo release API, cached), `UpstreamReleaseSource` (another instance) and `LocalFolderReleaseSource` (`{version}/{asset}` folders). Registration and the public endpoints live in CheapHelpers.Auth ([Gateway updates](../Auth/README.md#gateway-updates)).
+
 ### Settings Corruption Handling
 **`SettingsServiceOptions.OnCorruptValue`** - `FileSettingsService` throws on a stored value it cannot deserialise (`CorruptValueHandling.Throw`, the default) or returns the default (`CorruptValueHandling.ReturnDefault`); a read never overwrites the stored value
 ```csharp

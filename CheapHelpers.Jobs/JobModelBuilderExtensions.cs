@@ -16,6 +16,8 @@ public static class JobModelBuilderExtensions
             job.Property(j => j.LastError).HasMaxLength(JobRecord.MaxErrorLength);
             // Bounded so the recovery index below is valid on providers that cannot index unbounded text
             job.Property(j => j.MachineName).HasMaxLength(JobRecord.MaxMachineNameLength);
+            // Stored as ticks: some providers map TimeSpan to a time-of-day type that cannot hold 24 hours or more
+            job.Property(j => j.EstimatedRemaining).HasConversion<long?>();
             job.HasIndex(j => new { j.Status, j.AvailableAt });
             job.HasIndex(j => new { j.MachineName, j.ProcessId });
         });

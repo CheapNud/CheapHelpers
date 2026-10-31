@@ -72,10 +72,10 @@ public sealed class JobWorker<TPayload, TContext>(
 
         while (!queue.IsPaused && _slots.Wait(0))
         {
-            JobRecord? job;
+            (JobRecord Job, CancellationTokenSource Cancellation)? claim;
             try
             {
-                job = await queue.TryClaimNextAsync(hostToken);
+                claim = await queue.TryClaimNextAsync(hostToken);
             }
             catch
             {
@@ -83,28 +83,30 @@ public sealed class JobWorker<TPayload, TContext>(
                 throw;
             }
 
-            if (job is null)
+            if (claim is not { } claimed)
             {
                 _slots.Release();
                 return;
             }
 
-            _jobTasks[job.Id] = Task.Run(() => RunJobAsync(job, hostToken), CancellationToken.None);
+            var (job, cancellation) = claimed;
+
+            _jobTasks[job.Id] = Task.Run(() => RunJobAsync(job, cancellation, hostToken), CancellationToken.None);
         }
     }
 
     /// <summary>Waits for every started job to finish.</summary>
     internal Task WhenIdleAsync() => Task.WhenAll(_jobTasks.Values);
 
-    private async Task RunJobAsync(JobRecord job, CancellationToken hostToken)
+    private async Task RunJobAsync(JobRecord job, CancellationTokenSource jobSource, CancellationToken hostToken)
     {
-        using var jobSource = CancellationTokenSource.CreateLinkedTokenSource(hostToken);
-        queue.RunningJobs[job.Id] = jobSource;
         try
         {
             // Bookkeeping writes use None: the outcome must be stored even while the host is stopping
             try
             {
+                // A cancel that arrived between the claim and this point still wins
+                jobSource.Token.ThrowIfCancellationRequested();
                 await using var scope = scopeFactory.CreateAsyncScope();
                 var processor = scope.ServiceProvider.GetRequiredService<IJobProcessor<TPayload>>();
                 var payload = JsonSerializer.Deserialize<TPayload>(job.PayloadJson)!;
@@ -133,6 +135,7 @@ public sealed class JobWorker<TPayload, TContext>(
         finally
         {
             queue.RunningJobs.TryRemove(job.Id, out _);
+            jobSource.Dispose();
             _slots.Release();
             queue.Signal();
         }

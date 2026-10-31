@@ -114,6 +114,29 @@ public sealed class JobQueueTests
     }
 
     [Fact]
+    public async Task Cancelling_as_soon_as_the_job_reads_running_stops_it_before_the_processor()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var harness = new JobQueueHarness();
+        Task<bool>? cancel = null;
+        harness.Queue.StatusChanged += job =>
+        {
+            if (job.Status == JobStatus.Running)
+            {
+                cancel = harness.Queue.CancelAsync(job.Id, ct);
+            }
+        };
+
+        var id = await harness.Queue.EnqueueAsync(new TestPayload("a", 1), ct: ct);
+        await harness.RunAsync(ct);
+
+        Assert.NotNull(cancel);
+        Assert.True(await cancel);
+        Assert.Empty(harness.Processor.Received);
+        Assert.Equal(JobStatus.Cancelled, (await harness.GetAsync(id)).Status);
+    }
+
+    [Fact]
     public async Task Throwing_progress_subscriber_does_not_stop_the_next_one()
     {
         var ct = TestContext.Current.CancellationToken;

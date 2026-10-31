@@ -214,40 +214,58 @@ public sealed class JobQueue<TPayload, TContext>(
         }
     }
 
-    /// <summary>Claims the oldest Pending job whose <see cref="JobRecord.AvailableAt"/> has passed, or returns null.</summary>
-    internal async Task<JobRecord?> TryClaimNextAsync(CancellationToken ct)
+    /// <summary>
+    /// Claims the oldest Pending job whose <see cref="JobRecord.AvailableAt"/> has passed, or returns null. The returned
+    /// cancellation source is linked to <paramref name="hostToken"/> and already registered, so <see cref="CancelAsync"/>
+    /// can reach the job from the moment its row reads Running.
+    /// </summary>
+    internal async Task<(JobRecord Job, CancellationTokenSource Cancellation)?> TryClaimNextAsync(CancellationToken hostToken)
     {
         while (true)
         {
             var now = timeProvider.GetUtcNow();
-            await using var db = await contextFactory.CreateDbContextAsync(ct);
+            await using var db = await contextFactory.CreateDbContextAsync(hostToken);
             var candidate = await db.Set<JobRecord>()
                 .Where(j => j.Status == JobStatus.Pending && j.AvailableAt <= now)
                 .OrderBy(j => j.CreatedAt)
                 .Select(j => (Guid?)j.Id)
-                .FirstOrDefaultAsync(ct);
+                .FirstOrDefaultAsync(hostToken);
 
             if (candidate is not { } id)
             {
                 return null;
             }
 
-            // The status guard makes the claim atomic: zero rows means another worker took it, so look again
-            var claimed = await db.Set<JobRecord>()
-                .Where(j => j.Id == id && j.Status == JobStatus.Pending)
-                .ExecuteUpdateAsync(s => s
-                    .SetProperty(j => j.Status, JobStatus.Running)
-                    .SetProperty(j => j.StartedAt, now)
-                    .SetProperty(j => j.MachineName, Environment.MachineName)
-                    .SetProperty(j => j.ProcessId, Environment.ProcessId)
-                    .SetProperty(j => j.LastUpdatedAt, now), ct);
-
-            if (claimed > 0)
+            var cancellation = CancellationTokenSource.CreateLinkedTokenSource(hostToken);
+            RunningJobs[id] = cancellation;
+            try
             {
-                var job = await db.Set<JobRecord>().AsNoTracking().FirstAsync(j => j.Id == id, ct);
-                Raise(StatusChanged, job);
-                return job;
+                // The status guard makes the claim atomic: zero rows means another worker took it, so look again
+                var claimed = await db.Set<JobRecord>()
+                    .Where(j => j.Id == id && j.Status == JobStatus.Pending)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(j => j.Status, JobStatus.Running)
+                        .SetProperty(j => j.StartedAt, now)
+                        .SetProperty(j => j.MachineName, Environment.MachineName)
+                        .SetProperty(j => j.ProcessId, Environment.ProcessId)
+                        .SetProperty(j => j.LastUpdatedAt, now), hostToken);
+
+                if (claimed > 0)
+                {
+                    var job = await db.Set<JobRecord>().AsNoTracking().FirstAsync(j => j.Id == id, hostToken);
+                    Raise(StatusChanged, job);
+                    return (job, cancellation);
+                }
             }
+            catch
+            {
+                RunningJobs.TryRemove(id, out _);
+                cancellation.Dispose();
+                throw;
+            }
+
+            RunningJobs.TryRemove(id, out _);
+            cancellation.Dispose();
         }
     }
 
@@ -348,8 +366,9 @@ public sealed class JobQueue<TPayload, TContext>(
             var deadLetter = job.RetryCount >= job.MaxRetries;
             await using (var db = await contextFactory.CreateDbContextAsync(ct))
             {
+                // Guarded on the snapshot so a job another worker already requeued and claimed again is not touched
                 await db.Set<JobRecord>()
-                    .Where(j => j.Id == job.Id && j.Status == JobStatus.Running)
+                    .Where(j => j.Id == job.Id && j.Status == JobStatus.Running && j.ProcessId == job.ProcessId && j.RetryCount == job.RetryCount)
                     .ExecuteUpdateAsync(s =>
                     {
                         s.SetProperty(j => j.RetryCount, job.RetryCount + 1)

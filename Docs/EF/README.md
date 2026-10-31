@@ -1,6 +1,8 @@
 # CheapHelpers.EF Documentation
 
-Entity Framework Core helpers. Other pages in this folder: [ContextExtensions](ContextExtensions.md), [PaginatedList](PaginatedList.md), [Repository](Repository.md).
+Entity Framework Core helpers. Other pages in this folder: [ContextExtensions](ContextExtensions.md), [PaginatedList](PaginatedList.md), [Repository](Repository.md), [Jobs](Jobs.md).
+
+The `CheapHelpers.EF.Jobs` namespace holds a persistent job queue that maps a job table into your own context, see [Jobs](Jobs.md).
 
 ## Startup helpers
 

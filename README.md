@@ -8,12 +8,11 @@ A collection of production-ready C# utilities, extensions, and services for .NET
 |---------|---------|-------------|
 | [CheapHelpers](https://www.nuget.org/packages/CheapHelpers) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.svg) | Core utilities, extensions, threading, and scheduling |
 | [CheapHelpers.Models](https://www.nuget.org/packages/CheapHelpers.Models) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Models.svg) | Shared entities, DTOs, enums, and UBL invoice models |
-| [CheapHelpers.EF](https://www.nuget.org/packages/CheapHelpers.EF) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.EF.svg) | Entity Framework repository pattern with Identity support |
+| [CheapHelpers.EF](https://www.nuget.org/packages/CheapHelpers.EF) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.EF.svg) | Entity Framework repository pattern with Identity support and a persistent job queue |
 | [CheapHelpers.Services](https://www.nuget.org/packages/CheapHelpers.Services) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Services.svg) | Email, PDF, billing, reporting, notifications, and integrations |
 | [CheapHelpers.Barcodes](https://www.nuget.org/packages/CheapHelpers.Barcodes) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Barcodes.svg) | Barcode generation and reading on ZXing.Net with no native image dependency |
 | [CheapHelpers.Auth](https://www.nuget.org/packages/CheapHelpers.Auth) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Auth.svg) | Plex and OAuth sign-in, API keys, shared-secret auth, forwarded headers and Data Protection setup |
 | [CheapHelpers.Llm](https://www.nuget.org/packages/CheapHelpers.Llm) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Llm.svg) | LLM client for Anthropic and OpenAI-compatible providers with structured output |
-| [CheapHelpers.Jobs](https://www.nuget.org/packages/CheapHelpers.Jobs) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Jobs.svg) | Persistent job queue on EF Core with retries, resume after restart, throttled progress and ETA |
 | [CheapHelpers.Testing](https://www.nuget.org/packages/CheapHelpers.Testing) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Testing.svg) | Test doubles: SQLite in-memory database, recording HTTP handler, test authentication, captured logs, test web host |
 | [CheapHelpers.Blazor](https://www.nuget.org/packages/CheapHelpers.Blazor) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Blazor.svg) | Blazor components, account module, and Hybrid features |
 | [CheapHelpers.Networking](https://www.nuget.org/packages/CheapHelpers.Networking) | ![NuGet](https://img.shields.io/nuget/v/CheapHelpers.Networking.svg) | Network scanning, mDNS discovery, and device detection |

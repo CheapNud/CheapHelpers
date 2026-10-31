@@ -11,6 +11,7 @@ public static class ImageHelpers
     private const string IccProfileField = "icc-profile-data";
     private const string SrgbProfile = "srgb";
     private const int NoHeightLimit = 10_000_000;
+    private const double PaperWhite = 255;
 
     /// <summary>
     /// Encodes an 8-bit pixel buffer as PNG, optionally shrunk so its longest side is at most <paramref name="maxLongestSide"/>
@@ -103,7 +104,8 @@ public static class ImageHelpers
 
         // libvips caps the height at the width when none is given, which would shrink tall drawings
         using var thumb = Image.ThumbnailBuffer(imageBytes, maxWidth, height: NoHeightLimit, size: Enums.Size.Down);
-        using var flat = thumb.HasAlpha() ? thumb.Flatten() : thumb.Copy();
+        // Thumbnail already hands back 8-bit pixels for 16-bit scans; a transparent background becomes paper white, not black
+        using var flat = thumb.HasAlpha() ? thumb.Flatten(background: [PaperWhite]) : thumb.Copy();
         using var grey = flat.Bands > 1 ? flat.Colourspace(Enums.Interpretation.Bw) : flat.Copy();
         return grey.PngsaveBuffer();
     }

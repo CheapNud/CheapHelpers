@@ -201,6 +201,40 @@ public class ImageHelpersTests
         Assert.Equal(40, decoded.Height);
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    public void DrawingToPng_TransparentBackground_FlattensOntoWhite(int colourBands)
+    {
+        // Black ink everywhere, opaque only in the left half
+        using var coordinates = Image.Xyz(40, 20);
+        using var x = coordinates[0];
+        using var alpha = x < 20;
+        using var ink = Image.Black(40, 20, bands: colourBands).Cast(Enums.BandFormat.Uchar);
+        using var withAlpha = ink.Bandjoin(alpha);
+        using var tagged = withAlpha.Copy(interpretation: colourBands == 1 ? Enums.Interpretation.Bw : Enums.Interpretation.Srgb);
+
+        var png = ImageHelpers.DrawingToPng(tagged.PngsaveBuffer(), maxWidth: 100);
+
+        using var decoded = Image.NewFromBuffer(png);
+        Assert.Equal(1, decoded.Bands);
+        Assert.Equal(0, decoded.Getpoint(5, 10)[0]);
+        Assert.Equal(255, decoded.Getpoint(35, 10)[0]);
+    }
+
+    [Fact]
+    public void DrawingToPng_SixteenBitGrey_GivesEightBit()
+    {
+        using var grey = Image.Black(40, 20) + 32768;
+        using var deep = grey.Cast(Enums.BandFormat.Ushort).Copy(interpretation: Enums.Interpretation.Grey16);
+
+        var png = ImageHelpers.DrawingToPng(deep.PngsaveBuffer(), maxWidth: 100);
+
+        using var decoded = Image.NewFromBuffer(png);
+        Assert.Equal(Enums.BandFormat.Uchar, decoded.Format);
+        Assert.Equal(128, decoded.Getpoint(5, 5)[0]);
+    }
+
     [Fact]
     public void DrawingToPng_Garbage_ThrowsVipsException()
     {

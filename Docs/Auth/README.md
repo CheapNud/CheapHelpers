@@ -17,6 +17,7 @@ CheapHelpers.Blazor references this package, so a Blazor app gets it automatical
 | `CheapHelpers.Auth` | Every `AddXxx`, `MapXxx` and `UseXxx` extension, `IExternalAuthProvider`, `IExternalUserProvisioner`, `ExternalUserInfo`, `ExternalProvisionResult`, the shared-secret handler |
 | `CheapHelpers.Auth.Plex` | `IPlexAuthService`, `PlexAuthService`, `PlexAuthOptions`, `PlexUser`, `PlexPin`, `PlexAuthResult`, `PlexConstants` |
 | `CheapHelpers.Auth.OAuth` | `OAuthProviderOptions` and the Google, Microsoft, GitHub, Apple and OpenID Connect options |
+| `CheapHelpers.Auth.Testing` | `AddTestAuthentication`, `AsUser` and the test authentication handler |
 | `CheapHelpers.Auth.ApiKeys` | `IApiKeyService`, `ApiKeyService<TUser>`, `ApiKeyOptions`, `ApiKeyMiddleware`, `IApiKeyValidator<TEntity>` and the result records |
 
 ## Plex
@@ -127,6 +128,19 @@ app.MapPost("/webhooks/scan", HandleScan)
 ```
 
 Callers send `X-Shared-Secret: <secret>` or `Authorization: Bearer <secret>`. `HeaderName`, `AllowBearer` and `PrincipalName` change the defaults. An empty `Secret` throws on first use.
+
+## Test authentication
+
+A header-driven authentication scheme for integration tests, in the `CheapHelpers.Auth.Testing` namespace. It signs a request in as whoever the `Authorization: Test <userId>[;key=value]*` header names. The user id becomes the `NameIdentifier` and `sub` claims, every `key=value` pair becomes a claim. No header gives no result, so an endpoint that requires a user answers 401.
+
+```csharp
+using CheapHelpers.Auth.Testing;
+
+builder.Services.AddTestAuthentication();
+builder.Services.AddAuthorization();
+// later, on the client
+var client = app.GetTestClient().AsUser("u1", ("role", "Admin"));
+```
 
 ## Forwarded headers
 

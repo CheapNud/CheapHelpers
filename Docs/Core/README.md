@@ -132,6 +132,9 @@ byte[] opened = PassphraseEnvelope.Decrypt(sealedBytes, passphrase);
 if (!PathHelpers.IsContainedIn(requestedPath, uploadRoot)) return Results.BadRequest();
 ```
 
+### Test Doubles
+**[TestDoubles.md](TestDoubles.md)** - `RecordingHttpHandler` and `CapturedLogs` for tests of code that talks to HTTP or writes logs
+
 ### Settings Corruption Handling
 **`SettingsServiceOptions.OnCorruptValue`** - `FileSettingsService` throws on a stored value it cannot deserialise (`CorruptValueHandling.Throw`, the default) or returns the default (`CorruptValueHandling.ReturnDefault`); a read never overwrites the stored value
 ```csharp
@@ -213,6 +216,7 @@ if (result.Success)
 ## Dependencies
 
 - **Microsoft.Extensions.Caching.Memory** (9.0.10) - Memory caching infrastructure
+- **Microsoft.Extensions.Logging** (10.0.14) - Logging builder extensions used by `CapturedLogs`
 - **MimeMapping** (3.1.0) - MIME type detection
 - **MoreLinq** (4.4.0) - Additional LINQ methods
 - **Newtonsoft.Json** (13.0.4) - JSON serialization

@@ -241,9 +241,10 @@ public sealed class JobQueue<TPayload, TContext>(
             RunningJobs[id] = cancellation;
             try
             {
-                // The status guard makes the claim atomic: zero rows means another worker took it, so look again
+                // The guard makes the claim atomic and keeps the snapshot current: zero rows means another worker took
+                // or changed the row, so look again
                 var claimed = await db.Set<JobRecord>()
-                    .Where(j => j.Id == id && j.Status == JobStatus.Pending)
+                    .Where(j => j.Id == id && j.Status == JobStatus.Pending && j.RetryCount == job.RetryCount && j.AvailableAt <= now)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(j => j.Status, JobStatus.Running)
                         .SetProperty(j => j.StartedAt, now)

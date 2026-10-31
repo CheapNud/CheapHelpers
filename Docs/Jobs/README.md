@@ -97,4 +97,4 @@ Subscribers are called one by one, so a subscriber that throws is logged and the
 
 ## What it does not do
 
-It does not pause or suspend a job that is already running; pausing only stops new claims. There are no priorities, no jobs scheduled for a set time or on a cron, and one queue handles one payload type. `Kind` is a label for your own use and does not route jobs.
+It does not pause or suspend a job that is already running; pausing only stops new claims. There are no priorities, no jobs scheduled for a set time or on a cron, and one queue handles one payload type. Each `DbContext` holds one queue, because the job table has no payload type column; `AddCheapJobs` throws when a second queue is registered for the same context. `Kind` is a label for your own use and does not route jobs.

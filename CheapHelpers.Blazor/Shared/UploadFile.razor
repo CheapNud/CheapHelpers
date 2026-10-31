@@ -10,7 +10,7 @@
 @using FileTypeChecker;
 @using FileTypeChecker.Extensions;
 @using MimeMapping;
-@using NetVips
+@using CheapHelpers.Services.Imaging
 @typeparam T
 
 @if (typeof(T) == typeof(IReadOnlyList<IBrowserFile>))
@@ -579,16 +579,13 @@ else
                 using MemoryStream outStream = new MemoryStream();
                 var isimage = stream.IsImage();
                 stream.Position = 0;
-                // NetVips.Native has no BMP loader; a BMP carries no orientation tag, so it is stored as uploaded.
-                // Both probes read from the stream, so it is rewound after each one
-                isimage = isimage && Image.FindLoadStream(stream) is not null;
-                stream.Position = 0;
+                // NetVips.Native has no BMP loader, so a BMP comes back null and is stored as uploaded
+                var normalized = isimage ? ImageHelpers.NormalizePhoto(stream) : null;
+                isimage = normalized is not null;
 
-                if (isimage)
+                if (normalized is not null)
                 {
-                    using var image = Image.NewFromStream(stream);
-                    using var upright = image.Autorot();
-                    upright.JpegsaveStream(outStream);
+                    outStream.Write(normalized);
                 }
 
                 stream.Position = 0;

@@ -390,6 +390,9 @@ public static class AccountEndpointExtensions
             }
 
             await signInManager.RefreshSignInAsync(user);
+
+            // After the refresh, like AfterSignIn after the sign-in. A hook that changes data the cookie's claims
+            // carry calls RefreshSignInAsync again itself
             var target = afterChange is null ? null : await afterChange(user, httpContext);
             return Results.Redirect(target ?? routes.HomeRoute);
         }

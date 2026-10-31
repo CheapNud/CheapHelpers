@@ -109,34 +109,43 @@ public sealed class JobWorker<TPayload, TContext>(
     {
         try
         {
-            // Bookkeeping writes use None: the outcome must be stored even while the host is stopping
+            Exception? failure = null;
+            var outcome = JobStatus.Completed;
             try
             {
                 // A cancel that arrived between the claim and this point still wins
                 jobSource.Token.ThrowIfCancellationRequested();
                 // The scope ends before the outcome is stored, so a dependency that throws on disposal cannot undo Completed
-                await using (var scope = scopeFactory.CreateAsyncScope())
-                {
-                    var processor = scope.ServiceProvider.GetRequiredService<IJobProcessor<TPayload>>();
-                    var payload = JsonSerializer.Deserialize<TPayload>(job.PayloadJson)!;
-                    var context = new JobContext<TPayload>(job.Id, job.Kind, payload, job.RetryCount + 1, _options, timeProvider,
-                        queue.WriteProgressAsync, queue.RaiseProgress);
-                    await processor.ProcessAsync(context, jobSource.Token);
-                }
-
-                await queue.FinishAsync(job.Id, JobStatus.Completed, CancellationToken.None);
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var processor = scope.ServiceProvider.GetRequiredService<IJobProcessor<TPayload>>();
+                var payload = JsonSerializer.Deserialize<TPayload>(job.PayloadJson)!;
+                var context = new JobContext<TPayload>(job.Id, job.Kind, payload, job.RetryCount + 1, _options, timeProvider,
+                    queue.WriteProgressAsync, queue.RaiseProgress);
+                await processor.ProcessAsync(context, jobSource.Token);
             }
             catch (OperationCanceledException) when (hostToken.IsCancellationRequested)
             {
                 // Left Running on purpose; the next start recovers it
+                return;
             }
             catch (OperationCanceledException) when (jobSource.IsCancellationRequested)
             {
-                await queue.FinishAsync(job.Id, JobStatus.Cancelled, CancellationToken.None);
+                outcome = JobStatus.Cancelled;
             }
             catch (Exception ex)
             {
-                await queue.FailAttemptAsync(job, ex, CancellationToken.None);
+                failure = ex;
+            }
+
+            // Stored outside the handlers above, so a failing write is never mistaken for a failed attempt.
+            // None: the outcome must be stored even while the host is stopping
+            if (failure is not null)
+            {
+                await queue.FailAttemptAsync(job, failure, CancellationToken.None);
+            }
+            else
+            {
+                await queue.FinishAsync(job.Id, outcome, CancellationToken.None);
             }
         }
         catch (Exception ex)

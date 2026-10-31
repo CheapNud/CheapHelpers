@@ -283,7 +283,7 @@ public sealed class JobQueue<TPayload, TContext>(
         await using (var db = await contextFactory.CreateDbContextAsync(ct))
         {
             await db.Set<JobRecord>()
-                .Where(j => j.Id == id)
+                .Where(j => j.Id == id && j.Status == JobStatus.Running)
                 .ExecuteUpdateAsync(s =>
                 {
                     s.SetProperty(j => j.Status, status)
@@ -311,7 +311,7 @@ public sealed class JobQueue<TPayload, TContext>(
         await using (var db = await contextFactory.CreateDbContextAsync(ct))
         {
             await db.Set<JobRecord>()
-                .Where(j => j.Id == job.Id)
+                .Where(j => j.Id == job.Id && j.Status == JobStatus.Running)
                 .ExecuteUpdateAsync(s =>
                 {
                     s.SetProperty(j => j.RetryCount, retryCount)

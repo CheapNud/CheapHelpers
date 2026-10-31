@@ -19,6 +19,11 @@ namespace CheapHelpers.Blazor.Configuration
         public Func<CheapUser>? CreateUser { get; set; }
 
         /// <summary>
+        /// Shows the Register page. Off, the page answers with the router's not-found content; accounts are then created by the app, for example through IUserService.
+        /// </summary>
+        public bool RegistrationEnabled { get; set; } = true;
+
+        /// <summary>
         /// Enable localization support
         /// </summary>
         public bool EnableLocalization { get; set; } = true;

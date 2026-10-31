@@ -231,6 +231,8 @@ services.AddCheapHelpersBlazor<MyUser>(options =>
     {
         LoginRoute = "/auth/login",
     };
+    // The Register page answers with the router's not-found content; the app creates accounts itself, for example through IUserService
+    options.RegistrationEnabled = false;
 });
 
 // Map the account and culture endpoints (after app.UseAntiforgery()):
@@ -252,7 +254,30 @@ CheapHelpers.Llm 4.0.2 moves to Anthropic SDK 13.x, so apps that reference the A
 
 CheapHelpers.Auth 4.0.1 enforces `HostedDomain` on the server with Google's `hd` claim and rejects sign-ins that carry no email; CheapHelpers.Blazor 4.0.4 only moves to that Auth version. The other packages move their Microsoft dependencies to 10.0.14.
 
-To force a password change, let `AfterSignIn` return `routes.ChangePasswordRoute + "?forced=true"` when your own check says the user needs a new password. The change-password page then shows a warning that a new password is required. Keeping the user on that page until the password is changed stays in your app, for example in middleware that redirects other requests.
+To force a password change, let `AfterSignIn` return `routes.ChangePasswordRoute + "?forced=true"` when your own check says the user needs a new password. The change-password page then shows a warning that a new password is required. Keeping the user on that page until the password is changed stays in your app, for example in middleware that redirects other requests. `AfterPasswordChanged` runs after a successful change on that page, so that is where the app clears its own flag and stamps its changed-at date; return a path to redirect somewhere other than `HomeRoute`. The check in `AfterSignIn` must skip users without a password (`await userManager.HasPasswordAsync(user)` is false for accounts that only sign in externally), because they have nothing to change and would loop on the page.
+
+```csharp
+// MustChangePassword and PasswordChangedAt are the app's own MyUser properties
+var routes = app.Services.GetRequiredService<AccountRouteOptions>();
+app.MapCheapAccountEndpoints<MyUser>(options =>
+{
+    options.AfterSignIn = async (user, httpContext) =>
+    {
+        var userManager = httpContext.RequestServices.GetRequiredService<UserManager<MyUser>>();
+        return user.MustChangePassword && await userManager.HasPasswordAsync(user)
+            ? routes.ChangePasswordRoute + "?forced=true"
+            : null;
+    };
+    options.AfterPasswordChanged = async (user, httpContext) =>
+    {
+        var userManager = httpContext.RequestServices.GetRequiredService<UserManager<MyUser>>();
+        user.MustChangePassword = false;
+        user.PasswordChangedAt = DateTime.UtcNow;
+        await userManager.UpdateAsync(user);
+        return null;
+    };
+});
+```
 
 Passkeys appear on the login page and in the Security tab of the account page once the app sets `Stores.SchemaVersion = IdentitySchemaVersions.Version3` in its Identity options. Add one EF migration for the new `AspNetUserPasskeys` table. Nothing else is needed, because the package loads its passkey script on every page itself.
 

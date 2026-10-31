@@ -29,7 +29,12 @@ public sealed class OtaUpdateChecker(IOtaReleaseSource source, IOptions<OtaOptio
         var releases = await source.GetReleasesAsync(cancellationToken);
         var target = OtaUpdatePolicy.ResolveTarget(currentVersion, devicePin, _options.InstancePin, releases);
 
-        return target is null ? null : Build(target, assetName, OtaUpdatePolicy.IsMandatoryAbove(currentVersion, releases), routePrefix);
+        if (target is null)
+            return null;
+
+        // With no parsable current version only the newest release's flag counts, which would hide a mandatory release that lifted a pin
+        var mandatory = target.Mandatory || OtaUpdatePolicy.IsMandatoryAbove(currentVersion, releases);
+        return Build(target, assetName, mandatory, routePrefix);
     }
 
     /// <summary>The newest release regardless of pins, or null when there is none.</summary>

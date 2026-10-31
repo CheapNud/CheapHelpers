@@ -144,6 +144,18 @@ public class OtaEndpointTests
     }
 
     [Fact]
+    public async Task CheckAsync_keeps_the_mandatory_flag_of_a_release_that_lifts_a_pin_from_an_unknown_version()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var checker = new OtaUpdateChecker(new FakeReleaseSource(Releases), Options.Create(CreateOptions()));
+
+        var check = await checker.CheckAsync(null, "armv7", "1.0.0", Prefix, cancellationToken);
+
+        Assert.Equal("1.1.0", check?.Version);
+        Assert.True(check?.Mandatory);
+    }
+
+    [Fact]
     public async Task CheckAsync_returns_null_when_nothing_is_newer_and_throws_for_an_unknown_architecture()
     {
         var cancellationToken = TestContext.Current.CancellationToken;

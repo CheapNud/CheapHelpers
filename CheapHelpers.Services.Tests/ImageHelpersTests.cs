@@ -140,6 +140,77 @@ public class ImageHelpersTests
         Assert.Equal(ImageHelpers.NormalizePhoto(jpeg), ImageHelpers.NormalizePhoto(stream));
     }
 
+    [Fact]
+    public void DrawingToPng_Tiff_GivesGreyscalePng()
+    {
+        var png = ImageHelpers.DrawingToPng(LineDrawingTiff(400, 200), maxWidth: 100);
+
+        Assert.StartsWith("VipsForeignLoadPng", Image.FindLoadBuffer(png));
+        using var decoded = Image.NewFromBuffer(png);
+        Assert.Equal(1, decoded.Bands);
+        Assert.Equal(Enums.BandFormat.Uchar, decoded.Format);
+        Assert.Equal(100, decoded.Width);
+        Assert.Equal(50, decoded.Height);
+    }
+
+    [Fact]
+    public void DrawingToPng_TallDrawing_IsNotCappedByHeight()
+    {
+        var png = ImageHelpers.DrawingToPng(LineDrawingTiff(200, 800), maxWidth: 100);
+
+        using var decoded = Image.NewFromBuffer(png);
+        Assert.Equal(100, decoded.Width);
+        Assert.Equal(400, decoded.Height);
+    }
+
+    [Fact]
+    public void DrawingToPng_SmallDrawing_IsNotEnlarged()
+    {
+        var png = ImageHelpers.DrawingToPng(LineDrawingTiff(60, 30), maxWidth: 100);
+
+        using var decoded = Image.NewFromBuffer(png);
+        Assert.Equal(60, decoded.Width);
+        Assert.Equal(30, decoded.Height);
+    }
+
+    [Fact]
+    public void DrawingToPng_ThinLines_SurviveShrinking()
+    {
+        var png = ImageHelpers.DrawingToPng(LineDrawingTiff(400, 200), maxWidth: 100);
+
+        using var decoded = Image.NewFromBuffer(png);
+        // Each strip stays clear of the other line, so a bright pixel there can only come from the line under test
+        using var column = decoded.ExtractArea(50, 0, 1, 20);
+        using var row = decoded.ExtractArea(0, 25, 40, 1);
+        Assert.True(column.Max() > 0);
+        Assert.True(row.Max() > 0);
+        Assert.Equal(0, decoded.Getpoint(10, 10)[0]);
+    }
+
+    [Fact]
+    public void DrawingToPng_ColourPng_GivesOneBand()
+    {
+        using var colour = Image.Black(80, 40, bands: 3) + new double[] { 200, 60, 40 };
+        using var srgb = colour.Cast(Enums.BandFormat.Uchar).Copy(interpretation: Enums.Interpretation.Srgb);
+
+        var png = ImageHelpers.DrawingToPng(srgb.PngsaveBuffer(), maxWidth: 100);
+
+        using var decoded = Image.NewFromBuffer(png);
+        Assert.Equal(1, decoded.Bands);
+        Assert.Equal(80, decoded.Width);
+        Assert.Equal(40, decoded.Height);
+    }
+
+    [Fact]
+    public void DrawingToPng_Garbage_ThrowsVipsException()
+    {
+        var garbage = new byte[64];
+        new Random(1).NextBytes(garbage);
+
+        Assert.Throws<VipsException>(() => ImageHelpers.DrawingToPng(garbage, maxWidth: 100));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ImageHelpers.DrawingToPng(LineDrawingTiff(60, 30), maxWidth: 0));
+    }
+
     private static byte[] DecodePixels(byte[] png)
     {
         using var decoded = Image.NewFromBuffer(png);
@@ -158,6 +229,21 @@ public class ImageHelpersTests
         using var srgb = rgb.Copy(interpretation: Enums.Interpretation.Srgb);
         using var tagged = srgb.Mutate(mutable => mutable.Set(GValue.GIntType, OrientationField, RotateClockwise));
         return tagged.JpegsaveBuffer();
+    }
+
+    /// <summary>
+    /// A 1-bit CCITT G4 TIFF, black with a one-pixel white line down the middle column and one across the middle row
+    /// </summary>
+    private static byte[] LineDrawingTiff(int width, int height)
+    {
+        using var coordinates = Image.Xyz(width, height);
+        using var x = coordinates[0];
+        using var y = coordinates[1];
+        using var vertical = x.Equal(width / 2);
+        using var horizontal = y.Equal(height / 2);
+        using var lines = vertical | horizontal;
+        using var page = lines.Copy(interpretation: Enums.Interpretation.Bw);
+        return page.TiffsaveBuffer(compression: Enums.ForeignTiffCompression.Ccittfax4, bitdepth: 1);
     }
 
     /// <summary>

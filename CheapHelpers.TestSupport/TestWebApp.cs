@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 
-namespace CheapHelpers.Testing;
+namespace CheapHelpers.TestSupport;
 
 /// <summary>
 /// Starts a minimal app on the in-memory test server.

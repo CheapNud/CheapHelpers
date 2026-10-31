@@ -3,7 +3,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace CheapHelpers.Testing;
+namespace CheapHelpers.Auth.Testing;
 
 /// <summary>
 /// Registers <see cref="TestAuthenticationHandler"/> and sets its header on a client.

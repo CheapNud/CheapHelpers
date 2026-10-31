@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace CheapHelpers.Testing;
+namespace CheapHelpers.Auth.Testing;
 
 /// <summary>
 /// Signs a request in as whoever its Authorization header names, so tests can pick the user per request.

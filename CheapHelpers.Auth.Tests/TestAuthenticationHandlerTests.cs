@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace CheapHelpers.Testing.Tests;
+namespace CheapHelpers.Auth.Tests;
 
 public class TestAuthenticationHandlerTests
 {

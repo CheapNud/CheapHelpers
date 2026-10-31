@@ -19,8 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CheapHelpers\CheapHelpers.csproj" />
     <ProjectReference Include="..\CheapHelpers.Llm\CheapHelpers.Llm.csproj" />
-    <ProjectReference Include="..\CheapHelpers.Testing\CheapHelpers.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>

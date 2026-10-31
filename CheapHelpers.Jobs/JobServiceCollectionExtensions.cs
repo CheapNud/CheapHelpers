@@ -10,19 +10,17 @@ public static class JobServiceCollectionExtensions
     /// <summary>
     /// Registers the options, <see cref="TimeProvider.System"/> when no clock is registered, the queue as a singleton,
     /// <typeparamref name="TProcessor"/> as scoped and the worker as a hosted service. Register
-    /// <see cref="IDbContextFactory{TContext}"/> yourself. One queue per context: the job table has no payload type column.
+    /// <see cref="IDbContextFactory{TContext}"/> yourself. One queue per app: the options and the processor are shared registrations.
     /// </summary>
-    /// <exception cref="InvalidOperationException">A queue is already registered for <typeparamref name="TContext"/>.</exception>
+    /// <exception cref="InvalidOperationException">A queue is already registered.</exception>
     public static IServiceCollection AddCheapJobs<TPayload, TContext, TProcessor>(this IServiceCollection services, Action<JobQueueOptions>? configure = null)
         where TContext : DbContext
         where TProcessor : class, IJobProcessor<TPayload>
     {
-        // A second queue would share the one job table and claim jobs it cannot deserialise
-        if (services.Any(d => d.ServiceType.IsGenericType
-            && d.ServiceType.GetGenericTypeDefinition() == typeof(JobQueue<,>)
-            && d.ServiceType.GenericTypeArguments[1] == typeof(TContext)))
+        // A second queue would share the unnamed options and, on the same context, the job table, so it is refused
+        if (services.Any(d => d.ServiceType.IsGenericType && d.ServiceType.GetGenericTypeDefinition() == typeof(JobQueue<,>)))
         {
-            throw new InvalidOperationException($"A job queue is already registered for {typeof(TContext).Name}; use one payload type per DbContext.");
+            throw new InvalidOperationException("A job queue is already registered; one queue per app is supported.");
         }
 
         var optionsBuilder = services.AddOptions<JobQueueOptions>();

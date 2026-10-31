@@ -28,7 +28,7 @@ public sealed class JobRegistrationTests
     }
 
     [Fact]
-    public void AddCheapJobs_rejects_a_second_queue_on_the_same_context()
+    public void AddCheapJobs_rejects_a_second_queue()
     {
         var services = new ServiceCollection().AddCheapJobs<TestPayload, TestJobDbContext, RecordingProcessor>();
 

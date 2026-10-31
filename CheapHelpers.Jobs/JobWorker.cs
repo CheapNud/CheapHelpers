@@ -25,18 +25,25 @@ public sealed class JobWorker<TPayload, TContext>(
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await queue.RecoverAsync(stoppingToken);
+        var recovered = false;
         try
         {
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
+                    // Recovery must succeed before the first claim, so a database that is down at startup is retried here
+                    if (!recovered)
+                    {
+                        await queue.RecoverAsync(stoppingToken);
+                        recovered = true;
+                    }
+
                     await RunOnceAsync(stoppingToken);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    logger.LogError(ex, "Claiming jobs failed; trying again after the poll interval");
+                    logger.LogError(ex, "Recovering or claiming jobs failed; trying again after the poll interval");
                 }
 
                 await queue.WaitForWorkAsync(_options.PollInterval, stoppingToken);
@@ -107,12 +114,16 @@ public sealed class JobWorker<TPayload, TContext>(
             {
                 // A cancel that arrived between the claim and this point still wins
                 jobSource.Token.ThrowIfCancellationRequested();
-                await using var scope = scopeFactory.CreateAsyncScope();
-                var processor = scope.ServiceProvider.GetRequiredService<IJobProcessor<TPayload>>();
-                var payload = JsonSerializer.Deserialize<TPayload>(job.PayloadJson)!;
-                var context = new JobContext<TPayload>(job.Id, job.Kind, payload, job.RetryCount + 1, _options, timeProvider,
-                    queue.WriteProgressAsync, queue.RaiseProgress);
-                await processor.ProcessAsync(context, jobSource.Token);
+                // The scope ends before the outcome is stored, so a dependency that throws on disposal cannot undo Completed
+                await using (var scope = scopeFactory.CreateAsyncScope())
+                {
+                    var processor = scope.ServiceProvider.GetRequiredService<IJobProcessor<TPayload>>();
+                    var payload = JsonSerializer.Deserialize<TPayload>(job.PayloadJson)!;
+                    var context = new JobContext<TPayload>(job.Id, job.Kind, payload, job.RetryCount + 1, _options, timeProvider,
+                        queue.WriteProgressAsync, queue.RaiseProgress);
+                    await processor.ProcessAsync(context, jobSource.Token);
+                }
+
                 await queue.FinishAsync(job.Id, JobStatus.Completed, CancellationToken.None);
             }
             catch (OperationCanceledException) when (hostToken.IsCancellationRequested)

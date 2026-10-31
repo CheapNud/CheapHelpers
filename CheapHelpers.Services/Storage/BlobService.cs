@@ -3,9 +3,9 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using CheapHelpers.Extensions;
 using CheapHelpers.Models.Entities;
+using CheapHelpers.Services.Imaging;
 using CheapHelpers.Services.Storage.Configuration;
 using MimeMapping;
-using NetVips;
 using System.Diagnostics;
 
 namespace CheapHelpers.Services.Storage;
@@ -243,15 +243,14 @@ public class BlobService(BlobServiceClient blobServiceClient)
             }
 
             // NetVips.Native has no BMP loader; a BMP carries no orientation tag, so there is nothing to correct
-            if (Image.FindLoadBuffer(imageBytes) is null)
+            var normalized = ImageHelpers.NormalizePhoto(imageBytes);
+            if (normalized is null)
             {
                 Debug.WriteLine($"Cannot correct orientation: blob '{filename}' is not in a format libvips can load");
                 return;
             }
 
-            using var image = Image.NewFromBuffer(imageBytes);
-            using var upright = image.Autorot();
-            using var outStream = new MemoryStream(upright.JpegsaveBuffer());
+            using var outStream = new MemoryStream(normalized);
 
             await UploadFileAsync(outStream, filename, container);
             Debug.WriteLine($"Successfully corrected orientation for image '{filename}'");

@@ -5,7 +5,6 @@ LLM client for Anthropic and OpenAI-compatible providers with structured output 
 ## Package Information
 
 - **Package**: CheapHelpers.Llm
-- **Version**: 4.0.0
 - **Target Framework**: .NET 11.0 (net11.0)
 - **NuGet**: [CheapHelpers.Llm](https://www.nuget.org/packages/CheapHelpers.Llm)
 

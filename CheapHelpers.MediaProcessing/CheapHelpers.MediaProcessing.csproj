@@ -3,7 +3,6 @@
   <PropertyGroup>
     <!-- Multi-target for cross-platform support -->
     <TargetFrameworks>net11.0;net11.0-windows</TargetFrameworks>
-    <Version>4.0.1</Version>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 

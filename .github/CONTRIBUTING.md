@@ -8,7 +8,7 @@ Thank you for considering contributing to CheapHelpers! This document provides g
 - [Getting Started](#getting-started)
 - [Development Workflow](#development-workflow)
 - [Pull Request Process](#pull-request-process)
-- [Package Publishing](#package-publishing)
+- [Versions](#versions)
 - [Coding Standards](#coding-standards)
 - [Testing Guidelines](#testing-guidelines)
 - [Documentation](#documentation)
@@ -206,100 +206,15 @@ Describe how you tested these changes
 - [ ] Follows coding standards
 ```
 
-## Package Publishing
+## Versions
 
-### Who Can Publish
+Package versions come from the release tag. No `.csproj` file sets a version; a local pack without a version yields `0.0.0-local`.
 
-Only repository maintainers with access to NuGet API keys can publish packages to NuGet.org.
-
-### Publishing Process
-
-Publishing is **fully automated** via GitHub Actions. Manual publishing is not required.
-
-#### For Maintainers
-
-1. **Merge approved PRs** to `master` branch
-
-2. **Update version numbers** in `.csproj` files:
-   ```xml
-   <PropertyGroup>
-     <Version>1.2.3</Version>
-     <PackageVersion>1.2.3</PackageVersion>
-   </PropertyGroup>
-   ```
-
-3. **Create and push version tag**:
-   ```bash
-   git checkout master
-   git pull origin master
-   git tag -a v1.2.3 -m "Release version 1.2.3"
-   git push origin v1.2.3
-   ```
-
-4. **GitHub Actions handles**:
-   - Building all projects
-   - Running tests
-   - Packing NuGet packages
-   - Publishing to NuGet.org
-
-5. **Monitor workflow** in Actions tab
-
-6. **Create GitHub Release**:
-   - Go to Releases page
-   - Draft new release
-   - Use existing tag
-   - Write release notes
-   - Publish
-
-### Versioning Guidelines
-
-Follow [Semantic Versioning 2.0.0](https://semver.org/):
-
-**Given version MAJOR.MINOR.PATCH**:
+Follow [Semantic Versioning 2.0.0](https://semver.org/) when choosing a tag:
 
 - **MAJOR**: Incompatible API changes
 - **MINOR**: Backwards-compatible new features
 - **PATCH**: Backwards-compatible bug fixes
-
-**Examples**:
-- `v1.0.0` → `v1.0.1`: Bug fix
-- `v1.0.1` → `v1.1.0`: New feature
-- `v1.1.0` → `v2.0.0`: Breaking change
-
-### Pre-Release Versions
-
-For testing before official release:
-
-```bash
-git tag v1.2.3-beta.1
-git push origin v1.2.3-beta.1
-```
-
-Modify workflow to publish pre-releases if needed.
-
-### Package Metadata
-
-Ensure all packable projects have complete metadata:
-
-```xml
-<PropertyGroup>
-  <TargetFramework>net10.0</TargetFramework>
-  <IsPackable>true</IsPackable>
-  <Version>1.2.3</Version>
-  <PackageId>CheapHelpers.Blazor</PackageId>
-  <Title>CheapHelpers Blazor Utilities</Title>
-  <Authors>CheapNud</Authors>
-  <Company>CheapNud</Company>
-  <Description>Blazor and MudBlazor utility extensions</Description>
-  <PackageProjectUrl>https://github.com/CheapNud/CheapHelpers</PackageProjectUrl>
-  <RepositoryUrl>https://github.com/CheapNud/CheapHelpers.git</RepositoryUrl>
-  <RepositoryType>git</RepositoryType>
-  <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-  <PackageReadmeFile>README.md</PackageReadmeFile>
-  <PackageTags>blazor;mudblazor;helpers;utilities</PackageTags>
-  <PackageReleaseNotes>See https://github.com/CheapNud/CheapHelpers/releases</PackageReleaseNotes>
-</PropertyGroup>
-```
 
 ## Coding Standards
 

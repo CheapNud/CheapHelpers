@@ -5,7 +5,6 @@ Authentication building blocks for ASP.NET Core: Plex and OAuth sign-in, API key
 ## Package Information
 
 - **Package**: CheapHelpers.Auth
-- **Version**: 4.0.1
 - **Target Framework**: .NET 11.0 (net11.0)
 - **NuGet**: [CheapHelpers.Auth](https://www.nuget.org/packages/CheapHelpers.Auth)
 

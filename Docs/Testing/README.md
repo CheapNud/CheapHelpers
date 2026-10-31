@@ -5,7 +5,6 @@ Test doubles for apps on CheapHelpers: an in-memory SQLite database, a recording
 ## Package Information
 
 - **Package**: CheapHelpers.Testing
-- **Version**: 4.0.0
 - **Target Framework**: .NET 11.0 (net11.0)
 - **NuGet**: [CheapHelpers.Testing](https://www.nuget.org/packages/CheapHelpers.Testing)
 

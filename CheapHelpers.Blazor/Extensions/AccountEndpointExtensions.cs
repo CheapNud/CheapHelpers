@@ -242,7 +242,8 @@ public static class AccountEndpointExtensions
                 ? await userManager.ChangePasswordAsync(user, (string?)fc["OldPassword"] ?? string.Empty, newPassword)
                 : ConfirmationMismatch;
 
-            return await PasswordResultAsync(result, user, signInManager, routes.ChangePasswordRoute);
+            return await PasswordResultAsync(result, user, httpContext, signInManager, routes.ChangePasswordRoute,
+                options.AfterPasswordChanged);
         }).RequireAuthorization();
 
         group.MapPost("SetPassword", async (HttpContext httpContext, IFormCollection fc,
@@ -259,7 +260,8 @@ public static class AccountEndpointExtensions
                 ? await userManager.AddPasswordAsync(user, newPassword)
                 : ConfirmationMismatch;
 
-            return await PasswordResultAsync(result, user, signInManager, routes.SetPasswordRoute);
+            return await PasswordResultAsync(result, user, httpContext, signInManager, routes.SetPasswordRoute,
+                afterChange: null);
         }).RequireAuthorization();
 
         // WebAuthn options for registering a passkey, fetched by PasskeySubmit before it asks the authenticator.
@@ -378,7 +380,8 @@ public static class AccountEndpointExtensions
 
         IResult PasskeyRedirect(string status) => Results.Redirect($"{routes.PasskeysRoute}?passkey={status}");
 
-        async Task<IResult> PasswordResultAsync(IdentityResult result, TUser user, SignInManager<TUser> signInManager, string failureRoute)
+        async Task<IResult> PasswordResultAsync(IdentityResult result, TUser user, HttpContext httpContext,
+            SignInManager<TUser> signInManager, string failureRoute, Func<TUser, HttpContext, Task<string?>>? afterChange)
         {
             if (!result.Succeeded)
             {
@@ -387,7 +390,8 @@ public static class AccountEndpointExtensions
             }
 
             await signInManager.RefreshSignInAsync(user);
-            return Results.Redirect(routes.HomeRoute);
+            var target = afterChange is null ? null : await afterChange(user, httpContext);
+            return Results.Redirect(target ?? routes.HomeRoute);
         }
 
         return endpoints;

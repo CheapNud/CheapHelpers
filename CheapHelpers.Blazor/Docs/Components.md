@@ -153,7 +153,7 @@ Language/culture selection component.
 
 ### FileDisplay
 
-Renders a file from a URL by its content type: an image, a video player, a PDF frame, or only a text line for anything else, with an Open button on every kind. Without a content type it falls back to the extension of the URL path, ignoring any query string.
+Renders a file from a URL by its content type: an image, a video player, a PDF frame, or only a text line for anything else, with an Open button on every kind. Without a content type (or with `application/octet-stream`) it falls back to the extension of the URL path, ignoring any query string. Set `ShowHeader="false"` to hide the title line and the Open button, for example for a thumbnail.
 
 ```razor
 <FileDisplay Url="@fileUrl" ContentType="application/pdf" Title="Invoice" />

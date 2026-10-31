@@ -43,6 +43,28 @@ public class FileDisplayTests : BunitContext
     }
 
     [Fact]
+    public void Treats_octet_stream_as_an_unknown_type()
+    {
+        var cut = RenderFile(SignedPdfUrl, "application/octet-stream");
+
+        Assert.Equal(SignedPdfUrl, cut.Find("iframe").GetAttribute("src"));
+    }
+
+    [Fact]
+    public void Hides_the_title_and_open_link_when_the_header_is_off()
+    {
+        var cut = Render<FileDisplay>(parameters => parameters
+            .Add(p => p.Url, FileUrl)
+            .Add(p => p.ContentType, "image/png")
+            .Add(p => p.Title, "Photo")
+            .Add(p => p.ShowHeader, false));
+
+        Assert.Empty(cut.FindAll("a"));
+        Assert.DoesNotContain("Photo", cut.Find("div").TextContent);
+        Assert.Single(cut.FindAll("img"));
+    }
+
+    [Fact]
     public void Announces_a_quicktime_video_as_mp4()
     {
         var cut = RenderFile("https://example.test/files/clip.mov", null);

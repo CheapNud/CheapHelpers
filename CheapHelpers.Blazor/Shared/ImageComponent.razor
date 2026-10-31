@@ -4,12 +4,12 @@
 @using Microsoft.AspNetCore.Components.Web
 @using MudBlazor
 
-@* The title line and Open button from FileDisplay are intended: a phone may refuse to show a PDF inline. *@
+@* ShowHeader is off so ImagePanel and avatars show only the thumbnail, without FileDisplay's title line and Open button. *@
 <div class="@Class" style="@Style">
     @if (!string.IsNullOrWhiteSpace(url))
     {
         <MudTooltip Text="Click to open full screen">
-            <FileDisplay Url="@url" ContentType="@contentType" Title="@(Alt ?? Image?.FileName)" Height="@(Height ?? DefaultHeight)" ObjectFit="@ObjectFit" OnClick="@OnClick" />
+            <FileDisplay Url="@url" ContentType="@contentType" Title="@(Alt ?? Image?.FileName)" Height="@(Height ?? DefaultHeight)" ObjectFit="@ObjectFit" OnClick="@OnClick" ShowHeader="false" />
         </MudTooltip>
     }
     else

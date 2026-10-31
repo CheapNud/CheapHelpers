@@ -1,16 +1,19 @@
 @* Renders a file from a URL by its content type: an image, a video player, a PDF frame,
    or only the title line. Every kind gets an Open button, because phone browsers may refuse
-   to render a PDF inline. *@
+   to render a PDF inline; ShowHeader="false" hides that line for thumbnails. *@
 @using MimeMapping
 
 <div class="@Class">
-    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
-        <MudText Typo="Typo.body2">@_displayTitle</MudText>
-        @if (_url is not null)
-        {
-            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.OpenInNew" Href="@_url" Target="_blank">Open</MudButton>
-        }
-    </MudStack>
+    @if (ShowHeader)
+    {
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+            <MudText Typo="Typo.body2">@_displayTitle</MudText>
+            @if (_url is not null)
+            {
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.OpenInNew" Href="@_url" Target="_blank">Open</MudButton>
+            }
+        </MudStack>
+    }
     @switch (_kind)
     {
         case FileKind.Image:
@@ -32,6 +35,7 @@
     private const int DefaultHeight = 400;
     private const string PdfContentType = "application/pdf";
     private const string QuickTimeContentType = "video/quicktime";
+    private const string OctetStreamContentType = "application/octet-stream";
 
     private enum FileKind { Other, Image, Video, Pdf }
 
@@ -59,6 +63,12 @@
     /// </summary>
     [Parameter]
     public string? Title { get; set; }
+
+    /// <summary>
+    /// Shows the title line and the Open button above the file; false renders only the file itself.
+    /// </summary>
+    [Parameter]
+    public bool ShowHeader { get; set; } = true;
 
     /// <summary>
     /// Height in pixels of the image, video or PDF frame.
@@ -90,7 +100,9 @@
         // A SAS URL carries its signature in the query string, so cut it off before reading the extension
         _url = IsSafeUrl(Url) ? Url : null;
         var path = (_url ?? string.Empty).Split(['?', '#'], 2)[0];
-        _contentType = string.IsNullOrWhiteSpace(ContentType) ? MimeUtility.GetMimeMapping(path) : ContentType;
+        // A generic octet-stream type says nothing about the file, so the extension decides as if no type was given
+        var noUsefulType = string.IsNullOrWhiteSpace(ContentType) || string.Equals(ContentType, OctetStreamContentType, StringComparison.OrdinalIgnoreCase);
+        _contentType = noUsefulType ? MimeUtility.GetMimeMapping(path) : ContentType!;
         // Chromium skips a video/quicktime source, but most .mov uploads are H.264 and play when announced as MP4
         _videoType = string.Equals(_contentType, QuickTimeContentType, StringComparison.OrdinalIgnoreCase) ? KnownMimeTypes.Mp4 : _contentType;
         _displayTitle = Title ?? Uri.UnescapeDataString(Path.GetFileName(path));

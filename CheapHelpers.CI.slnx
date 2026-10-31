@@ -14,6 +14,8 @@
   <Project Path="CheapHelpers.Networking/CheapHelpers.Networking.csproj" />
   <Project Path="CheapHelpers.Services/CheapHelpers.Services.csproj" />
   <Project Path="CheapHelpers.Services.Tests/CheapHelpers.Services.Tests.csproj" />
+  <Project Path="CheapHelpers.Testing/CheapHelpers.Testing.csproj" />
+  <Project Path="CheapHelpers.Testing.Tests/CheapHelpers.Testing.Tests.csproj" />
   <Project Path="CheapHelpers.Tests/CheapHelpers.Tests.csproj" />
   <Project Path="CheapHelpers/CheapHelpers.csproj" />
 </Solution>

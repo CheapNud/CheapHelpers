@@ -83,7 +83,7 @@
     <PackageReference Include="Fluid.Core" Version="2.40.0" />
     <PackageReference Include="GoogleApi" Version="5.8.18" />
     <PackageReference Include="HtmlSanitizer" Version="9.2.1039" />
-    <PackageReference Include="ILove_PDF" Version="1.6.4" />
+    <PackageReference Include="ILove_PDF" Version="1.6.5" />
     <PackageReference Include="itext" Version="9.8.0" />
     <PackageReference Include="itext.pdfoptimizer" Version="4.1.5" />
     <PackageReference Include="MailKit" Version="4.18.2" />

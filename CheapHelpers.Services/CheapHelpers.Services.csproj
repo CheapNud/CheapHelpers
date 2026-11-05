@@ -78,7 +78,7 @@
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.30.1" />
     <PackageReference Include="ClosedXML" Version="0.105.1" />
-    <PackageReference Include="CsvHelper" Version="33.1.0" />
+    <PackageReference Include="CsvHelper" Version="34.0.0" />
     <PackageReference Include="Duende.IdentityModel" Version="8.1.0" />
     <PackageReference Include="Fluid.Core" Version="2.40.0" />
     <PackageReference Include="GoogleApi" Version="5.8.18" />

@@ -1,5 +1,4 @@
 ﻿using CsvHelper;
-using CsvHelper.Configuration;
 using System.Diagnostics;
 using System.Globalization;
 
@@ -21,13 +20,17 @@ public class CsvService : ICsvService
 
         try
         {
-            using var writer = new StreamWriter(filePath, !DefaultOverwriteFile);
-            var config = CreateCsvConfiguration();
-            using var csvWriter = new FormulaSafeCsvWriter(writer, config);
+            await using var writer = new StreamWriter(filePath, !DefaultOverwriteFile);
+            await using var csvWriter = CsvWriter.Create(writer, CreateOptions(), leaveOpen: true);
 
-            await csvWriter.WriteRecordsAsync(list);
+            foreach (var line in list)
+            {
+                csvWriter.WriteRecord(line);
+            }
 
-            Debug.WriteLine($"Successfully exported CSV file: {filePath} with {list.Count()} string records");
+            await csvWriter.FlushAsync();
+
+            Debug.WriteLine($"Successfully exported CSV file: {filePath} with string records");
         }
         catch (Exception ex)
         {
@@ -46,13 +49,12 @@ public class CsvService : ICsvService
 
         try
         {
-            using var writer = new StreamWriter(filePath, !DefaultOverwriteFile);
-            var config = CreateCsvConfiguration();
-            using var csvWriter = new FormulaSafeCsvWriter(writer, config);
+            await using var writer = new StreamWriter(filePath, !DefaultOverwriteFile);
+            await using var csvWriter = CsvWriter.Create(writer, CreateOptions(), leaveOpen: true);
 
-            await csvWriter.WriteRecordsAsync(list);
+            await WriteRecordsAsync<object>(csvWriter, list);
 
-            Debug.WriteLine($"Successfully exported CSV file: {filePath} with {list.Count()} dynamic records");
+            Debug.WriteLine($"Successfully exported CSV file: {filePath} with dynamic records");
         }
         catch (Exception ex)
         {
@@ -71,14 +73,14 @@ public class CsvService : ICsvService
 
         try
         {
+            var options = CreateOptions(culture, delimiter);
             var writer = new StreamWriter(stream, leaveOpen: true);
             await using (writer.ConfigureAwait(false))
             {
-                var config = CreateCsvConfiguration(culture, delimiter);
-                var csvWriter = new FormulaSafeCsvWriter(writer, config);
+                var csvWriter = CsvWriter.Create(writer, options, leaveOpen: true);
                 await using (csvWriter.ConfigureAwait(false))
                 {
-                    await csvWriter.WriteRecordsAsync(records);
+                    await WriteRecordsAsync(csvWriter, records);
                 }
             }
 
@@ -105,17 +107,108 @@ public class CsvService : ICsvService
     }
 
     /// <summary>
-    /// Creates the CSV configuration with default settings
+    /// Writes the records through the generated record writer when one exists, through the dynamic path for
+    /// dictionaries and expando objects, and through <see cref="WritePlainRecordsAsync{T}"/> for anything else.
     /// </summary>
-    private static CsvConfiguration CreateCsvConfiguration(string? culture = null, string? delimiter = null)
+    private static async Task WriteRecordsAsync<T>(CsvWriter csvWriter, IEnumerable<T> records)
     {
-        var ci = CultureInfo.CreateSpecificCulture(culture ?? DefaultCulture);
-        return new CsvConfiguration(ci)
+        // Typed dictionaries and expando objects take the library's dynamic path as well
+        if (CsvRecordWriter.IsRegistered<T>() || typeof(IDictionary<string, object?>).IsAssignableFrom(typeof(T)))
         {
-            Delimiter = delimiter ?? DefaultDelimiter,
-            // Quote-prefix cells starting with =, +, -, @, tab or CR so spreadsheets do not run them as formulas;
-            // FormulaSafeCsvWriter leaves plain numbers such as "-5" alone
-            InjectionOptions = InjectionOptions.Escape,
+            await csvWriter.WriteRecordsAsync(records);
+            return;
+        }
+
+        if (typeof(T) != typeof(object))
+        {
+            await WritePlainRecordsAsync(csvWriter, records, typeof(T));
+            return;
+        }
+
+        // The writer is chosen from the first record; the same enumerator then writes every record,
+        // so the source is read once and never buffered
+        using var enumerator = records.GetEnumerator();
+        if (!enumerator.MoveNext())
+        {
+            return;
+        }
+
+        // CsvHelper 34 rejects a null record in any position; a null first record fails the same way instead of writing nothing
+        var first = enumerator.Current ?? throw new ArgumentException("The sequence contains a null record.", nameof(records));
+
+        var allRecords = Resume(first, enumerator);
+        if (first is IDictionary<string, object?>)
+        {
+            await csvWriter.WriteRecordsAsync(allRecords);
+        }
+        else
+        {
+            // The columns come from the first record's type, so every record must be of that type
+            await WritePlainRecordsAsync(csvWriter, allRecords, first.GetType());
+        }
+    }
+
+    /// <summary>
+    /// Writes scalars one value per record and other types through <see cref="ReflectionRecordWriter{T}"/>.
+    /// </summary>
+    private static async Task WritePlainRecordsAsync<T>(CsvWriter csvWriter, IEnumerable<T> records, Type recordType)
+    {
+        if (IsScalar(recordType))
+        {
+            // Strings, numbers, enums and dates go out one value per record without a header, as CsvHelper 33 wrote them
+            foreach (var record in records)
+            {
+                ReflectionRecordWriter<T>.WriteValue(csvWriter, record);
+                await csvWriter.EndRecordAsync();
+            }
+
+            return;
+        }
+
+        await csvWriter.WriteRecordsAsync(records, new ReflectionRecordWriter<T>(recordType));
+    }
+
+    /// <summary>
+    /// Whether the type is written as one value: primitives, enums, strings and every <see cref="IFormattable"/>
+    /// (decimal, dates, times, Guid, the big numeric types).
+    /// </summary>
+    private static bool IsScalar(Type recordType)
+    {
+        var type = Nullable.GetUnderlyingType(recordType) ?? recordType;
+        return type.IsPrimitive || type.IsEnum || type == typeof(string) || typeof(IFormattable).IsAssignableFrom(type);
+    }
+
+    /// <summary>
+    /// Yields the record already read and then the rest of the enumerator.
+    /// </summary>
+    private static IEnumerable<T> Resume<T>(T first, IEnumerator<T> enumerator)
+    {
+        yield return first;
+        while (enumerator.MoveNext())
+        {
+            yield return enumerator.Current;
+        }
+    }
+
+    /// <summary>
+    /// Creates the CSV writer options with default settings
+    /// </summary>
+    private static CsvWriterOptions CreateOptions(string? culture = null, string? delimiter = null)
+    {
+        // CsvHelper 34 takes the separator as a single char, so longer delimiters are rejected up front
+        var separator = delimiter ?? DefaultDelimiter;
+        if (separator.Length != 1)
+        {
+            throw new ArgumentException("The delimiter must be exactly one character.", nameof(delimiter));
+        }
+
+        return CsvWriterOptions.Default with
+        {
+            Separator = separator[0],
+            FormatProvider = CultureInfo.CreateSpecificCulture(culture ?? DefaultCulture),
+            // Cells that start with =, +, -, @, tab or CR get a ' prefix so spreadsheets do not run them as formulas;
+            // typed numbers are never prefixed, but text that looks like a number ("-5") is, on purpose
+            Injection = CsvInjection.Escape,
         };
     }
 }

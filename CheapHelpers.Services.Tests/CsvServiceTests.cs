@@ -83,6 +83,14 @@ public partial class CsvServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Export_DynamicNullFirstRecord_Throws()
+    {
+        List<dynamic?> rows = [null, new SampleRow("Go", 3)];
+
+        await Assert.ThrowsAsync<ArgumentException>(() => _service.Export(Path.Combine(_folder, "null.csv"), rows!));
+    }
+
+    [Fact]
     public async Task ExportToBytes_CsvRecordType_UsesGeneratedWriter()
     {
         GeneratedRow[] rows = [new() { Game = "Chess", Players = 2 }];

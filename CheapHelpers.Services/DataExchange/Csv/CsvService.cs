@@ -127,10 +127,13 @@ public class CsvService : ICsvService
         // The writer is chosen from the first record; the same enumerator then writes every record,
         // so the source is read once and never buffered
         using var enumerator = records.GetEnumerator();
-        if (!enumerator.MoveNext() || enumerator.Current is not { } first)
+        if (!enumerator.MoveNext())
         {
             return;
         }
+
+        // CsvHelper 34 rejects a null record in any position; a null first record fails the same way instead of writing nothing
+        var first = enumerator.Current ?? throw new ArgumentException("The sequence contains a null record.", nameof(records));
 
         var allRecords = Resume(first, enumerator);
         if (first is IDictionary<string, object?>)
@@ -139,6 +142,7 @@ public class CsvService : ICsvService
         }
         else
         {
+            // The columns come from the first record's type, so every record must be of that type
             await WritePlainRecordsAsync(csvWriter, allRecords, first.GetType());
         }
     }
@@ -180,6 +184,7 @@ public class CsvService : ICsvService
     /// </summary>
     private static CsvWriterOptions CreateOptions(string? culture = null, string? delimiter = null)
     {
+        // CsvHelper 34 takes the separator as a single char, so longer delimiters are rejected up front
         var separator = delimiter ?? DefaultDelimiter;
         if (separator.Length != 1)
         {
@@ -191,7 +196,7 @@ public class CsvService : ICsvService
             Separator = separator[0],
             FormatProvider = CultureInfo.CreateSpecificCulture(culture ?? DefaultCulture),
             // Cells that start with =, +, -, @, tab or CR get a ' prefix so spreadsheets do not run them as formulas;
-            // typed numbers are never prefixed
+            // typed numbers are never prefixed, but text that looks like a number ("-5") is, on purpose
             Injection = CsvInjection.Escape,
         };
     }

@@ -112,7 +112,8 @@ public class CsvService : ICsvService
     /// </summary>
     private static async Task WriteRecordsAsync<T>(CsvWriter csvWriter, IEnumerable<T> records)
     {
-        if (CsvRecordWriter.IsRegistered<T>())
+        // Typed dictionaries and expando objects take the library's dynamic path as well
+        if (CsvRecordWriter.IsRegistered<T>() || typeof(IDictionary<string, object?>).IsAssignableFrom(typeof(T)))
         {
             await csvWriter.WriteRecordsAsync(records);
             return;

@@ -72,6 +72,16 @@ public partial class CsvServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ExportToBytes_TypedDictionaries_UseKeysAsHeader()
+    {
+        ExpandoObject[] expandos = [CreateExpando("Chess", 2)];
+        Dictionary<string, object?>[] dictionaries = [new() { ["Game"] = "Go", ["Players"] = 3 }];
+
+        Assert.Equal($"Game;Players{NewLine}Chess;2{NewLine}", Decode(await _service.ExportToBytesAsync(expandos)));
+        Assert.Equal($"Game;Players{NewLine}Go;3{NewLine}", Decode(await _service.ExportToBytesAsync(dictionaries)));
+    }
+
+    [Fact]
     public async Task Export_PlainDynamicObjects_WritesThroughReflection()
     {
         var path = Path.Combine(_folder, "plain.csv");

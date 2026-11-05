@@ -153,7 +153,7 @@ public class CsvService : ICsvService
     /// </summary>
     private static async Task WritePlainRecordsAsync<T>(CsvWriter csvWriter, IEnumerable<T> records, Type recordType)
     {
-        if (Type.GetTypeCode(Nullable.GetUnderlyingType(recordType) ?? recordType) != TypeCode.Object)
+        if (IsScalar(recordType))
         {
             // Strings, numbers, enums and dates go out one value per record without a header, as CsvHelper 33 wrote them
             foreach (var record in records)
@@ -166,6 +166,16 @@ public class CsvService : ICsvService
         }
 
         await csvWriter.WriteRecordsAsync(records, new ReflectionRecordWriter<T>(recordType));
+    }
+
+    /// <summary>
+    /// Whether the type is written as one value: primitives, enums, strings and every <see cref="IFormattable"/>
+    /// (decimal, dates, times, Guid, the big numeric types).
+    /// </summary>
+    private static bool IsScalar(Type recordType)
+    {
+        var type = Nullable.GetUnderlyingType(recordType) ?? recordType;
+        return type.IsPrimitive || type.IsEnum || type == typeof(string) || typeof(IFormattable).IsAssignableFrom(type);
     }
 
     /// <summary>

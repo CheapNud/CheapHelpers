@@ -122,6 +122,20 @@ public partial class CsvServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ExportToBytes_FormattableScalars_WritesOneValuePerRecord()
+    {
+        var guid = Guid.Parse("0f8fad5b-d9cb-469f-a165-70867728950e");
+        var offset = new DateTimeOffset(2026, 1, 2, 13, 4, 5, TimeSpan.FromHours(1));
+        var nlBe = System.Globalization.CultureInfo.CreateSpecificCulture("nl-BE");
+
+        Assert.Equal($"{guid}{NewLine}", Decode(await _service.ExportToBytesAsync(new[] { guid })));
+        Assert.Equal($"{offset.ToString(null, nlBe)}{NewLine}", Decode(await _service.ExportToBytesAsync(new[] { offset })));
+        Assert.Equal($"01:02:03{NewLine}", Decode(await _service.ExportToBytesAsync(new[] { new TimeSpan(1, 2, 3) })));
+        Assert.Equal($"2/01/2026{NewLine}", Decode(await _service.ExportToBytesAsync(new[] { new DateOnly(2026, 1, 2) })));
+        Assert.Equal($"1{NewLine}\"\"{NewLine}", Decode(await _service.ExportToBytesAsync(new int?[] { 1, null })));
+    }
+
+    [Fact]
     public async Task ExportToBytes_TwoCharacterDelimiter_Throws()
     {
         SessionRow[] rows = [new("2026-01-02", "Chess", "")];

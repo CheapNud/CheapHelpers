@@ -1,22 +1,18 @@
-﻿@using Microsoft.AspNetCore.Components.Authorization
-
-<AuthorizeView>
-    <MudDialog>
-        <DialogContent>
-            <MudGrid Justify="Justify.Center">
-                <MudItem>
-                    <MudImage Src="@SourceUrl" ObjectPosition="ObjectPosition.Center" ObjectFit="ObjectFit.Contain"
-                    Style="max-width: 95%; max-height: 85%; bottom: 0; left: 0; margin: auto; overflow: auto; position: fixed; right: 0; top: 0;"/>
-                </MudItem>
-            </MudGrid>
-        </DialogContent>
-    </MudDialog>
-</AuthorizeView>
-
+﻿@* Full-screen view of one image, opened by ImageComponent; a tap or Escape closes it. *@
+<MudDialog>
+    <DialogContent>
+        <div style="position:fixed;inset:0" @onclick="@(() => MudDialog.Close())">
+            <MudImage Src="@SourceUrl" ObjectPosition="ObjectPosition.Center" ObjectFit="ObjectFit.Contain"
+                      Style="max-width: 95%; max-height: 85%; bottom: 0; left: 0; margin: auto; overflow: auto; position: fixed; right: 0; top: 0;" />
+        </div>
+    </DialogContent>
+</MudDialog>
 
 @code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
     [EditorRequired]
     [Parameter]
     public string SourceUrl { get; set; }
-
 }

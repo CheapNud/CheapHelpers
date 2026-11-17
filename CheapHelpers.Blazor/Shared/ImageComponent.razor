@@ -9,7 +9,7 @@
     @if (!string.IsNullOrWhiteSpace(url))
     {
         <MudTooltip Text="Click to open full screen">
-            <FileDisplay Url="@url" ContentType="@contentType" Title="@(Alt ?? Image?.FileName)" Height="@(Height ?? DefaultHeight)" ObjectFit="@ObjectFit" OnClick="@OnClick" Thumbnail="true" />
+            <FileDisplay Url="@url" ContentType="@contentType" Title="@(Alt ?? Image?.FileName)" Height="@(Height ?? DefaultHeight)" ObjectFit="@ObjectFit" OnClick="@HandleClick" Thumbnail="true" />
         </MudTooltip>
     }
     else
@@ -65,21 +65,15 @@
     [Inject]
     private BlobService BlobService { get; set; }
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadImageUrlAsync();
-
-        if (!OnClick.HasDelegate)
-        {
-            OnClick = EventCallback.Factory.Create<MouseEventArgs>(this, () => ShowImage(url));
-        }
-    }
+    [Inject]
+    private IDialogService DialogService { get; set; } = default!;
 
     protected override async Task OnParametersSetAsync()
     {
         await LoadImageUrlAsync();
-        OnClick = EventCallback.Factory.Create<MouseEventArgs>(this, () => ShowImage(url));
     }
+
+    private Task HandleClick(MouseEventArgs args) => OnClick.HasDelegate ? OnClick.InvokeAsync(args) : ShowImage();
 
     private async Task LoadImageUrlAsync()
     {
@@ -101,8 +95,6 @@
         contentType = string.IsNullOrWhiteSpace(Image?.MimeType) ? null : Image.MimeType;
     }
 
-    private async Task ShowImage(string uri)
-    {
-        //await Dialog.ShowAsync<Image_Dialog>("Afbeelding", new DialogParameters { ["SourceUrl"] = uri }, new DialogOptions { MaxWidth = MaxWidth.False, FullScreen = true });
-    }
+    private Task ShowImage() =>
+        DialogService.ShowAsync<Image_Dialog>(new DialogParameters<Image_Dialog> { { x => x.SourceUrl, url } }, new DialogOptions { MaxWidth = MaxWidth.False, FullScreen = true, NoHeader = true, CloseOnEscapeKey = true });
 }

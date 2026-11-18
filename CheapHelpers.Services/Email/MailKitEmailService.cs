@@ -138,7 +138,7 @@ public class MailKitEmailService(
 
             await client.ConnectAsync(Host, Port, MailKit.Security.SecureSocketOptions.Auto);
             await client.AuthenticateAsync(_networkCredential);
-            await client.SendAsync(message);
+            await client.SendAsync(new MailKit.SendRequest(message));
             await client.DisconnectAsync(true);
         }
         catch (Exception ex)

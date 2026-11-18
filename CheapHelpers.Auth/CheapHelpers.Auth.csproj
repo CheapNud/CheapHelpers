@@ -35,8 +35,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AspNet.Security.OAuth.Apple" Version="10.0.0" />
-    <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="10.0.0" />
+    <PackageReference Include="AspNet.Security.OAuth.Apple" Version="11.0.0" />
+    <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="11.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="11.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="11.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="11.0.0" />

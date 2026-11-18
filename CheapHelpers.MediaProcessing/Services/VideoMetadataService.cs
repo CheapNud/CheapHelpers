@@ -158,7 +158,7 @@ public class VideoMetadataService
             if (!string.IsNullOrEmpty(outputDir))
                 Directory.CreateDirectory(outputDir);
 
-            await FFMpeg.Snapshot(filePath, outputPath, captureTime: captureTime)
+            await FFMpeg.Snapshot(mediaInfo, outputPath, captureTime: captureTime)
                 .CancellableThrough(cancellationToken)
                 .ProcessAsynchronously();
             return File.Exists(outputPath);

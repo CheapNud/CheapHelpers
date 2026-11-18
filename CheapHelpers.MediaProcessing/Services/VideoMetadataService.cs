@@ -50,9 +50,9 @@ public class VideoMetadataService
                 FileName = fileInfo.Name,
                 FileSizeBytes = fileInfo.Length,
                 Duration = mediaInfo.Duration,
-                Width = videoStream.Width,
-                Height = videoStream.Height,
-                FrameRate = videoStream.FrameRate,
+                Width = videoStream.Width ?? 0,
+                Height = videoStream.Height ?? 0,
+                FrameRate = videoStream.RealFrameRate,
                 VideoCodec = videoStream.CodecName ?? "unknown",
                 AudioCodec = audioStream?.CodecName,
                 Format = mediaInfo.Format.FormatName ?? Path.GetExtension(filePath).TrimStart('.'),
@@ -158,7 +158,9 @@ public class VideoMetadataService
             if (!string.IsNullOrEmpty(outputDir))
                 Directory.CreateDirectory(outputDir);
 
-            await FFMpeg.SnapshotAsync(filePath, outputPath, captureTime: captureTime, cancellationToken: cancellationToken);
+            await FFMpeg.Snapshot(mediaInfo, outputPath, captureTime: captureTime)
+                .CancellableThrough(cancellationToken)
+                .ProcessAsynchronously();
             return File.Exists(outputPath);
         }
         catch (Exception ex)

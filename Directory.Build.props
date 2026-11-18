@@ -71,7 +71,7 @@
   <ItemGroup Label="Source Link Package" Condition="'$(Configuration)' == 'Release'">
     <!-- Source Link maps the sources to the GitHub mirror -->
     <!-- The release workflow points origin at GitHub before packing, because the checkout comes from the self-hosted repository -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.402" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="11.0.100" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>

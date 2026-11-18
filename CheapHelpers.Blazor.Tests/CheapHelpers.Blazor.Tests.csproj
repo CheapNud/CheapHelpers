@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- net11.0 like CheapHelpers.Blazor itself; the 10.0.14 packages are the same ones the other test projects use on net11.0 -->
+    <!-- net11.0 like CheapHelpers.Blazor itself; the 11.0.0 packages are the same ones the other test projects use on net11.0 -->
     <TargetFramework>net11.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -15,8 +15,8 @@
 
   <ItemGroup>
     <PackageReference Include="bunit" Version="2.13.3" />
-    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.14" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.14" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="11.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="11.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageReference Include="xunit.v3" Version="4.0.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />

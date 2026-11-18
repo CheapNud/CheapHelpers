@@ -31,7 +31,7 @@
   <ItemGroup>
     <!-- Microsoft.Extensions.DependencyInjection.Abstractions is not listed on purpose: on net11.0 it ships
          in the shared framework and an explicit reference raises NU1510 -->
-    <PackageReference Include="System.IO.Hashing" Version="10.0.14" />
+    <PackageReference Include="System.IO.Hashing" Version="11.0.0" />
     <PackageReference Include="ZXing.Net" Version="0.16.11" />
   </ItemGroup>
 

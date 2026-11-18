@@ -54,4 +54,4 @@ var read = barcodes.ReadBarcode(File.ReadAllBytes("label.jpg"));
 ## Dependencies
 
 - ZXing.Net (0.16.11)
-- System.IO.Hashing (10.0.14), for the PNG chunk checksums
+- System.IO.Hashing (11.0.0), for the PNG chunk checksums
